@@ -4,6 +4,6 @@ __pycache__/
 .venv/
 venv/
 *.db
-data/*.csv
+data/trading_lab.db
 .pytest_cache/
 .DS_Store
