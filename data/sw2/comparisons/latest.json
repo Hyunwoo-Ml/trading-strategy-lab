@@ -1,4 +1,35 @@
 {
   "run_date": "2026-09-13",
-  "comparisons": []
+  "comparisons": [
+    {
+      "model_a": "baseline",
+      "model_b": "technical_only",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "n_a": 2,
+      "n_b": 2
+    },
+    {
+      "model_a": "baseline",
+      "model_b": "conservative",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "n_a": 2,
+      "n_b": 2
+    },
+    {
+      "model_a": "technical_only",
+      "model_b": "conservative",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "n_a": 2,
+      "n_b": 2
+    }
+  ]
 }
