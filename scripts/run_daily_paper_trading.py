@@ -38,12 +38,16 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sw1.criteria.generator import PriceCriteria, load_price_criteria_params  # noqa: E402
 from sw2.compare import compare_all_pairs  # noqa: E402
 from sw2.ledger import Portfolio, Position, Trade  # noqa: E402
 from sw2.models import TradingModel, default_registry  # noqa: E402
+from sw2.price_criteria_model import PriceCriteriaModel  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 SIGNALS_PATH = DATA_DIR / "signals" / "latest.csv"
+PRICE_CRITERIA_DIR = DATA_DIR / "sw1" / "price_criteria"
+PRICE_CRITERIA_CONFIG_DIR = Path(__file__).resolve().parent.parent / "sw1" / "config" / "price_criteria_models"
 PORTFOLIOS_DIR = DATA_DIR / "sw2" / "portfolios"
 EQUITY_DIR = DATA_DIR / "sw2" / "equity"
 COMPARISONS_DIR = DATA_DIR / "sw2" / "comparisons"
@@ -106,13 +110,97 @@ def process_model_for_day(model: TradingModel, portfolio: Portfolio, signals_df:
 
         if signal.signal == "buy_1" and ticker not in portfolio.positions:
             portfolio.buy(run_date, ticker, price, tranche_dollars, "buy_1")
-        elif signal.signal == "buy_2" and ticker in portfolio.positions:
+        elif (
+            signal.signal == "buy_2"
+            and ticker in portfolio.positions
+            and portfolio.positions[ticker].tranche_count < 2
+        ):
             portfolio.buy(run_date, ticker, price, tranche_dollars, "buy_2")
         elif signal.signal in ("stop_loss", "take_profit") and ticker in portfolio.positions:
             portfolio.sell_all(run_date, ticker, price, signal.signal)
         # hold / caution -> no action in v1
 
     portfolio.mark_to_market(run_date, prices)
+
+
+def process_price_criteria_model_for_day(
+    model: PriceCriteriaModel,
+    portfolio: Portfolio,
+    criteria_df: pd.DataFrame,
+    run_date: str,
+) -> None:
+    """Same trade-application shape as process_model_for_day, but decisions
+    come from SW1's exported price levels (sw1.criteria.generator) instead
+    of an abstract score -- see sw2/price_criteria_model.py. A model that
+    finds no ticker touching its levels today simply does nothing, by
+    design (per feedback: "매일 매매하는 게 아니라 기준이 닿아 있을 때만")."""
+    tranche_dollars = portfolio.starting_cash * TRANCHE_FRACTION
+    prices: dict[str, float] = {}
+
+    for _, row in criteria_df.iterrows():
+        ticker = row["ticker"]
+        price = float(row["close"])
+        prices[ticker] = price
+
+        criteria = PriceCriteria(
+            model_name=row["model_name"],
+            ticker=ticker,
+            date=row["date"],
+            close=price,
+            buy_1_price=float(row["buy_1_price"]),
+            buy_2_price=float(row["buy_2_price"]),
+            stop_loss_pct=float(row["stop_loss_pct"]),
+            target_price=float(row["target_price"]),
+            basis={
+                "buy_1": row.get("basis_buy_1", ""),
+                "buy_2": row.get("basis_buy_2", ""),
+                "target": row.get("basis_target", ""),
+            },
+        )
+
+        existing_position = portfolio.positions.get(ticker)
+        is_holding = existing_position is not None
+        tranche_count = existing_position.tranche_count if existing_position else 0
+        price_return = portfolio.price_return_from_entry(ticker, price)
+
+        signal = model.decide(
+            criteria=criteria,
+            is_holding=is_holding,
+            tranche_count=tranche_count,
+            price_return_from_entry=price_return,
+        )
+
+        if signal.signal == "buy_1" and ticker not in portfolio.positions:
+            portfolio.buy(run_date, ticker, price, tranche_dollars, "buy_1")
+        elif signal.signal == "buy_2" and ticker in portfolio.positions and tranche_count < 2:
+            portfolio.buy(run_date, ticker, price, tranche_dollars, "buy_2")
+        elif signal.signal in ("stop_loss", "take_profit") and ticker in portfolio.positions:
+            portfolio.sell_all(run_date, ticker, price, signal.signal)
+        # hold -> no action
+
+    portfolio.mark_to_market(run_date, prices)
+
+
+def _finalize_model_run(model_name: str, portfolio: Portfolio, returns_by_model: dict[str, pd.Series]) -> None:
+    """Shared save/report tail for both model types -- persist portfolio
+    state, write the equity CSV the dashboard reads, and stash daily
+    returns for the cross-model statistical comparison below."""
+    portfolio_path = PORTFOLIOS_DIR / f"{model_name}.json"
+    save_portfolio(portfolio, portfolio_path)
+
+    equity_df = portfolio.equity_df()
+    equity_path = EQUITY_DIR / f"{model_name}.csv"
+    equity_path.parent.mkdir(parents=True, exist_ok=True)
+    equity_df.to_csv(equity_path)
+    returns_by_model[model_name] = (
+        equity_df["daily_return"] if "daily_return" in equity_df else pd.Series(dtype=float)
+    )
+
+    latest_equity = portfolio.equity_curve[-1]["equity"] if portfolio.equity_curve else portfolio.cash
+    print(
+        f"[{model_name}] equity={latest_equity:.2f} cash={portfolio.cash:.2f} "
+        f"positions={list(portfolio.positions.keys())}"
+    )
 
 
 def main() -> int:
@@ -126,27 +214,24 @@ def main() -> int:
     registry = default_registry()
     returns_by_model: dict[str, pd.Series] = {}
 
+    # -- score-threshold models (sw1.scoring.integrate) -----------------
     for model in registry.all():
-        portfolio_path = PORTFOLIOS_DIR / f"{model.name}.json"
-        portfolio = load_or_create_portfolio(model.name, portfolio_path)
-
+        portfolio = load_or_create_portfolio(model.name, PORTFOLIOS_DIR / f"{model.name}.json")
         process_model_for_day(model, portfolio, signals_df, run_date)
+        _finalize_model_run(model.name, portfolio, returns_by_model)
 
-        save_portfolio(portfolio, portfolio_path)
+    # -- user-defined price-criteria models (sw1.criteria.generator) ----
+    for params in load_price_criteria_params(PRICE_CRITERIA_CONFIG_DIR):
+        model = PriceCriteriaModel(params=params)
+        criteria_path = PRICE_CRITERIA_DIR / model.name / "latest.csv"
+        if not criteria_path.exists():
+            print(f"[WARN] no price-criteria file at {criteria_path} for model {model.name} -- run scripts/generate_price_criteria.py first, skipping")
+            continue
+        criteria_df = pd.read_csv(criteria_path)
 
-        equity_df = portfolio.equity_df()
-        equity_path = EQUITY_DIR / f"{model.name}.csv"
-        equity_path.parent.mkdir(parents=True, exist_ok=True)
-        equity_df.to_csv(equity_path)
-        returns_by_model[model.name] = (
-            equity_df["daily_return"] if "daily_return" in equity_df else pd.Series(dtype=float)
-        )
-
-        latest_equity = portfolio.equity_curve[-1]["equity"] if portfolio.equity_curve else portfolio.cash
-        print(
-            f"[{model.name}] equity={latest_equity:.2f} cash={portfolio.cash:.2f} "
-            f"positions={list(portfolio.positions.keys())}"
-        )
+        portfolio = load_or_create_portfolio(model.name, PORTFOLIOS_DIR / f"{model.name}.json")
+        process_price_criteria_model_for_day(model, portfolio, criteria_df, run_date)
+        _finalize_model_run(model.name, portfolio, returns_by_model)
 
     comparisons = compare_all_pairs(returns_by_model)
     comparisons_path = COMPARISONS_DIR / "latest.json"
@@ -165,4 +250,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
