@@ -770,6 +770,7 @@
     var macd = parseNumOrNull(row.macd_hist);
     var bb = parseNumOrNull(row.bb_pct_b);
     var quant = parseNumOrNull(row.quant_score);
+    var news = parseNumOrNull(row.news_score);
     var date = row.date || "";
 
     var rsiInfo = rsiTag(rsi);
@@ -808,7 +809,9 @@
 
       '<div class="card-footer-row">' +
         '<span>뉴스 감성 점수</span>' +
-        '<span class="news-soon">준비 중</span>' +
+        (news === null ?
+          '<span class="news-soon">준비 중</span>' :
+          '<span class="metric-v ' + quantClass(news) + '">' + (news>=0?"+":"") + news.toFixed(2) + '</span>') +
       '</div>' +
     '</div>';
   }
