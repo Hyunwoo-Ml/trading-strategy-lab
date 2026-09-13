@@ -104,3 +104,36 @@ def test_load_price_criteria_params_validates_each_file(tmp_path):
     )
     with pytest.raises(ValueError, match="stop_loss_pct"):
         load_price_criteria_params(config_dir)
+
+
+# -- 2026-09-13 feedback: volume/weekly confirmation params --
+
+
+def test_min_volume_ratio_defaults_to_one():
+    params = PriceCriteriaParams(model_name="m")
+    assert params.min_volume_ratio == 1.0
+    assert params.require_weekly_uptrend is False
+
+
+def test_negative_min_volume_ratio_rejected():
+    params = PriceCriteriaParams(model_name="bad", min_volume_ratio=-0.5)
+    with pytest.raises(ValueError, match="min_volume_ratio"):
+        params.validate()
+
+
+def test_load_price_criteria_params_reads_new_confirmation_fields(tmp_path):
+    config_dir = tmp_path / "price_criteria_models"
+    config_dir.mkdir()
+    (config_dir / "model_1.json").write_text(
+        json.dumps(
+            {
+                "model_name": "model_1",
+                "min_volume_ratio": 1.3,
+                "require_weekly_uptrend": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    [params] = load_price_criteria_params(config_dir)
+    assert params.min_volume_ratio == 1.3
+    assert params.require_weekly_uptrend is True
