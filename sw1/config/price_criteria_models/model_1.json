@@ -1,0 +1,7 @@
+{
+  "model_name": "price_model_1",
+  "description": "볼린저 하단(20일)/50일 이동평균 중 더 얕은 지지선을 1차 매수가로, 60일 최저가와 볼린저 하단 중 더 깊은 지지선을 2차 매수가로 삼는다. 목표가는 손절%와 reward_risk_ratio로 역산한다 (target = 1차매수가 + risk*ratio).",
+  "stop_loss_pct": -0.08,
+  "reward_risk_ratio": 2.0,
+  "buy2_lookback_days": 60
+}
