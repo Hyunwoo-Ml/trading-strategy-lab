@@ -13,6 +13,12 @@ permissions:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    env:
+      # sw1/news/scorer.py -- only used when a ticker has a weekly
+      # commentary file under sw1/news/input/{TICKER}.txt; missing input
+      # (or a missing secret, for a fork/PR run) just skips that ticker's
+      # news score rather than failing the job.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,7 +26,7 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Collect M7 data (OHLCV + indicators + quant score)
+      - name: Collect M7 data (OHLCV + indicators + quant + news score)
         run: python scripts/collect_daily_data.py
       - name: Generate user-defined price-criteria models (buy1/buy2/target)
         run: python scripts/generate_price_criteria.py
