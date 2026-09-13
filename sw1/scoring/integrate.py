@@ -130,7 +130,7 @@ def compute_integrated_score(
 @dataclass
 class TradeSignal:
     signal: str  # "buy_1" | "buy_2" | "hold" | "caution" | "stop_loss" | "take_profit"
-    integrated_score: float
+    integrated_score: float | None
     reasons: list[str] = field(default_factory=list)
 
 
@@ -168,4 +168,3 @@ def classify_signal(
 
     reasons.append("integrated score within neutral band")
     return TradeSignal("hold", integrated_score, reasons)
-
