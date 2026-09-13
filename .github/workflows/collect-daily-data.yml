@@ -22,6 +22,8 @@ jobs:
         run: pip install -r requirements.txt
       - name: Collect M7 data (OHLCV + indicators + quant score)
         run: python scripts/collect_daily_data.py
+      - name: Generate user-defined price-criteria models (buy1/buy2/target)
+        run: python scripts/generate_price_criteria.py
       - name: Commit collected data
         run: |
           git config user.name "github-actions[bot]"
@@ -29,4 +31,3 @@ jobs:
           git add data/
           git diff --staged --quiet || git commit -m "chore: daily M7 data collection $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push
-
