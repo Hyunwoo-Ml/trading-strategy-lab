@@ -21,6 +21,10 @@ def wired_script(tmp_path, monkeypatch):
     monkeypatch.setattr(script, "PORTFOLIOS_DIR", data_dir / "sw2" / "portfolios")
     monkeypatch.setattr(script, "EQUITY_DIR", data_dir / "sw2" / "equity")
     monkeypatch.setattr(script, "COMPARISONS_DIR", data_dir / "sw2" / "comparisons")
+    # Point price-criteria paths at an empty scratch dir too -- otherwise
+    # these tests would pick up the real repo's sw1/config/price_criteria_models/*.json.
+    monkeypatch.setattr(script, "PRICE_CRITERIA_DIR", data_dir / "sw1" / "price_criteria")
+    monkeypatch.setattr(script, "PRICE_CRITERIA_CONFIG_DIR", tmp_path / "no_price_criteria_configs")
     script.SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
     return script
 
@@ -109,3 +113,80 @@ def test_comparisons_file_grows_once_enough_history_exists(wired_script):
     third = json.loads((wired_script.COMPARISONS_DIR / "latest.json").read_text())
     assert len(third["comparisons"]) == 3  # 3 equity points -> 2 valid daily returns -> 3 models -> 3 pairs
 
+
+# -- price-criteria models (sw1.criteria.generator / sw2.price_criteria_model) --
+
+def write_price_criteria_config(mod, model_name="price_model_1", **overrides):
+    mod.PRICE_CRITERIA_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {"model_name": model_name, "stop_loss_pct": -0.08, "reward_risk_ratio": 2.0, "buy2_lookback_days": 60}
+    payload.update(overrides)
+    (mod.PRICE_CRITERIA_CONFIG_DIR / f"{model_name}.json").write_text(json.dumps(payload), encoding="utf-8")
+
+
+def write_price_criteria_latest(mod, model_name, rows):
+    model_dir = mod.PRICE_CRITERIA_DIR / model_name
+    model_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_csv(model_dir / "latest.csv", index=False)
+
+
+def make_criteria_row(ticker="AAPL", close=200.0, buy_1_price=210.0, buy_2_price=190.0, stop_loss_pct=-0.08, target_price=240.0):
+    return {
+        "model_name": "price_model_1",
+        "ticker": ticker,
+        "date": "2026-09-13",
+        "close": close,
+        "buy_1_price": buy_1_price,
+        "buy_2_price": buy_2_price,
+        "stop_loss_pct": stop_loss_pct,
+        "target_price": target_price,
+        "basis_buy_1": "test",
+        "basis_buy_2": "test",
+        "basis_target": "test",
+    }
+
+
+def test_price_criteria_model_skipped_if_latest_csv_missing(wired_script, capsys):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    # no latest.csv written for price_model_1
+    assert wired_script.main() == 0
+    assert "skipping" in capsys.readouterr().out
+    assert not (wired_script.PORTFOLIOS_DIR / "price_model_1.json").exists()
+
+
+def test_price_criteria_model_opens_position_when_price_at_buy1(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    # close (200) is below buy_1_price (210) -> should trigger buy_1
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert "AAPL" in state["positions"]
+
+
+def test_price_criteria_model_holds_when_price_above_buy1(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    # close (220) is above buy_1_price (210) -> nothing should happen
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=220.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert state["positions"] == {}
+    assert state["trades"] == []
+
+
+def test_price_criteria_model_participates_in_comparisons(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row()])
+    wired_script.main()
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=201.0)])
+    wired_script.main()
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=202.0)])
+    wired_script.main()
+
+    third = json.loads((wired_script.COMPARISONS_DIR / "latest.json").read_text())
+    model_names = {c["model_a"] for c in third["comparisons"]} | {c["model_b"] for c in third["comparisons"]}
+    assert "price_model_1" in model_names
