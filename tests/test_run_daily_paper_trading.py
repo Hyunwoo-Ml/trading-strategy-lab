@@ -25,6 +25,11 @@ def wired_script(tmp_path, monkeypatch):
     # these tests would pick up the real repo's sw1/config/price_criteria_models/*.json.
     monkeypatch.setattr(script, "PRICE_CRITERIA_DIR", data_dir / "sw1" / "price_criteria")
     monkeypatch.setattr(script, "PRICE_CRITERIA_CONFIG_DIR", tmp_path / "no_price_criteria_configs")
+    # 2026-09-13: market-context inputs also point at empty scratch dirs, so
+    # these tests get market_regime=None / earnings_dates={} (i.e. "no
+    # filter applied") instead of picking up anything from the real repo.
+    monkeypatch.setattr(script, "INDICATORS_DIR", data_dir / "indicators")
+    monkeypatch.setattr(script, "MARKET_DIR", data_dir / "market")
     script.SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
     return script
 
@@ -190,3 +195,67 @@ def test_price_criteria_model_participates_in_comparisons(wired_script):
     third = json.loads((wired_script.COMPARISONS_DIR / "latest.json").read_text())
     model_names = {c["model_a"] for c in third["comparisons"]} | {c["model_b"] for c in third["comparisons"]}
     assert "price_model_1" in model_names
+
+
+# -- 2026-09-13 feedback: market regime / event blackout wired into the daily run --
+
+
+def write_market_regime(mod, regime="risk_on"):
+    mod.MARKET_DIR.mkdir(parents=True, exist_ok=True)
+    (mod.MARKET_DIR / "regime.json").write_text(json.dumps({"regime": regime}), encoding="utf-8")
+
+
+def write_earnings_dates(mod, dates: dict):
+    mod.MARKET_DIR.mkdir(parents=True, exist_ok=True)
+    (mod.MARKET_DIR / "earnings_dates.json").write_text(json.dumps(dates), encoding="utf-8")
+
+
+def test_risk_off_market_regime_blocks_price_criteria_buy1(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+    write_market_regime(wired_script, regime="risk_off")
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    # close (200) is below buy_1 (210) -- would normally trigger buy_1 --
+    # but risk_off should hold it back entirely.
+    assert state["positions"] == {}
+    assert state["trades"] == []
+
+
+def test_risk_on_market_regime_allows_price_criteria_buy1(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+    write_market_regime(wired_script, regime="risk_on")
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert "AAPL" in state["positions"]
+
+
+def test_missing_market_regime_file_applies_no_filter(wired_script):
+    # No data/market/regime.json written at all -- should behave exactly
+    # like before this feature existed (no filter, price condition alone decides).
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert "AAPL" in state["positions"]
+
+
+def test_earnings_blackout_blocks_price_criteria_buy1(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script)
+    write_price_criteria_latest(
+        wired_script, "price_model_1", [make_criteria_row(ticker="AAPL", close=200.0, buy_1_price=210.0)]
+    )
+    run_date = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).date().isoformat()
+    write_earnings_dates(wired_script, {"AAPL": run_date})
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert state["positions"] == {}
