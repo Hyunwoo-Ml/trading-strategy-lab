@@ -20,9 +20,15 @@ Output layout (all under data/, gitignored patterns updated to allow these):
   data/signals/history.csv       -- append-only log of every run's snapshot (this is
                                      what SW2 will eventually read for paper-trading
                                      history once it exists)
+  data/market/QQQ_indicators.csv -- market-wide (QQQ) OHLCV + indicators (2026-09-13:
+                                     feeds sw1.market.regime for the market-regime filter)
+  data/market/regime.json        -- today's market regime read (risk_on/risk_off + why)
+  data/market/earnings_dates.json -- best-effort next-earnings date per M7 ticker
+                                      (sw1.calendar.events), for SW2's event blackout
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,19 +37,72 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sw1.data.yahoo import fetch_m7_snapshot  # noqa: E402
+from sw1.calendar.events import fetch_next_earnings_date  # noqa: E402
+from sw1.data.yahoo import M7_TICKERS, fetch_m7_snapshot, fetch_ohlcv  # noqa: E402
 from sw1.indicators.technical import compute_all_technical_indicators  # noqa: E402
+from sw1.market.regime import MARKET_INDEX_TICKER, compute_market_regime  # noqa: E402
 from sw1.scoring.integrate import compute_quant_score  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OHLCV_DIR = DATA_DIR / "ohlcv"
 INDICATORS_DIR = DATA_DIR / "indicators"
 SIGNALS_DIR = DATA_DIR / "signals"
+MARKET_DIR = DATA_DIR / "market"
+
+
+def _collect_market_regime() -> None:
+    """Fetches the market index (QQQ) and writes both its indicator history
+    and today's risk_on/risk_off read. Failures here must never take down
+    the whole daily run -- sw1.market.regime already defaults to risk_on
+    when it can't tell, and SW2 treats a missing regime.json the same way
+    (see run_daily_paper_trading.py), so this degrades gracefully."""
+    try:
+        index_ohlcv = fetch_ohlcv(MARKET_INDEX_TICKER)
+        index_indicators = compute_all_technical_indicators(index_ohlcv)
+        index_indicators.to_csv(MARKET_DIR / f"{MARKET_INDEX_TICKER}_indicators.csv")
+
+        regime = compute_market_regime(index_indicators, index_ticker=MARKET_INDEX_TICKER)
+        (MARKET_DIR / "regime.json").write_text(
+            json.dumps(
+                {
+                    "date": regime.date,
+                    "regime": regime.regime,
+                    "index_ticker": regime.index_ticker,
+                    "close": regime.close,
+                    "ma_50": regime.ma_50,
+                    "ma_200": regime.ma_200,
+                    "reason": regime.reason,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(f"[market] {MARKET_INDEX_TICKER} regime={regime.regime} ({regime.reason})")
+    except Exception as exc:  # noqa: BLE001 -- never fail the whole run over the market filter
+        print(f"[WARN] could not compute market regime: {exc}")
+
+
+def _collect_earnings_dates() -> None:
+    """Best-effort forward-looking earnings date per ticker. See
+    sw1.calendar.events.fetch_next_earnings_date -- returns None on any
+    failure, which SW2's event-blackout check treats as "no earnings
+    filter for this ticker today" rather than an error."""
+    earnings_dates: dict[str, str | None] = {}
+    for ticker in M7_TICKERS:
+        earnings_dates[ticker] = fetch_next_earnings_date(ticker)
+    (MARKET_DIR / "earnings_dates.json").write_text(
+        json.dumps(earnings_dates, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(f"[market] earnings dates resolved for {sum(1 for v in earnings_dates.values() if v)}/{len(earnings_dates)} tickers")
 
 
 def main() -> int:
-    for d in (OHLCV_DIR, INDICATORS_DIR, SIGNALS_DIR):
+    for d in (OHLCV_DIR, INDICATORS_DIR, SIGNALS_DIR, MARKET_DIR):
         d.mkdir(parents=True, exist_ok=True)
+
+    _collect_market_regime()
+    _collect_earnings_dates()
 
     run_ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
     snapshot = fetch_m7_snapshot()
