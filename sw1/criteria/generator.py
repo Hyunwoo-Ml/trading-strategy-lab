@@ -48,6 +48,14 @@ class PriceCriteriaParams:
     buy2_lookback_days: int = 60       # window for the deeper structural support level
     description: str = ""
 
+    # -- 2026-09-13 feedback: market-wide/volume/weekly/event confirmation --
+    # These gate *new entries* only (see sw2.price_criteria_model.MarketContext);
+    # they never touch buy_1/buy_2/target_price generation below, so a model's
+    # support levels stay comparable across time even as confirmation rules
+    # tighten or loosen.
+    min_volume_ratio: float = 1.0      # require Volume >= this x N-day avg (VOL_RATIO) to treat a touch as real buying interest
+    require_weekly_uptrend: bool = False  # if True, also block entries when weekly trend is merely "flat" (not just "down")
+
     def validate(self) -> None:
         if self.stop_loss_pct >= 0:
             raise ValueError(f"stop_loss_pct must be negative, got {self.stop_loss_pct}")
@@ -55,6 +63,8 @@ class PriceCriteriaParams:
             raise ValueError(f"reward_risk_ratio must be positive, got {self.reward_risk_ratio}")
         if self.buy2_lookback_days < 2:
             raise ValueError(f"buy2_lookback_days must be >= 2, got {self.buy2_lookback_days}")
+        if self.min_volume_ratio < 0:
+            raise ValueError(f"min_volume_ratio must be >= 0, got {self.min_volume_ratio}")
 
 
 @dataclass
@@ -161,6 +171,8 @@ def load_price_criteria_params(config_dir: Path) -> list[PriceCriteriaParams]:
             reward_risk_ratio=raw.get("reward_risk_ratio", 2.0),
             buy2_lookback_days=raw.get("buy2_lookback_days", 60),
             description=raw.get("description", ""),
+            min_volume_ratio=raw.get("min_volume_ratio", 1.0),
+            require_weekly_uptrend=raw.get("require_weekly_uptrend", False),
         )
         params.validate()
         params_list.append(params)
