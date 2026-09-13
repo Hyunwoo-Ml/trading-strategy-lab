@@ -361,6 +361,37 @@
     font-weight:600;
   }
 
+  /* ---------- Price-criteria section ---------- */
+  .criteria-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .criteria-tab{
+    font-family:var(--sans);
+    font-size:var(--fs-sm);
+    font-weight:600;
+    color:var(--text-secondary);
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    padding:6px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .criteria-tab:hover{ border-color:#2a3342; color:var(--text-primary); }
+  .criteria-tab.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .criteria-basis-row{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding-top:12px;
+    border-top:1px solid var(--border-soft);
+    font-size:var(--fs-xs);
+    color:var(--text-muted);
+  }
+
   /* ---------- SW2 section ---------- */
   .sw2-layout{
     display:grid;
@@ -541,12 +572,23 @@
     </div>
   </section>
 
+  <!-- ===================== PRICE CRITERIA (user-defined) ===================== -->
+  <section id="price-criteria-section">
+    <div class="section-head">
+      <div class="section-title"><span class="idx">02</span> 사용자 정의 가격기준 모델</div>
+    </div>
+    <div class="section-sub">사용자가 정한 손절%·리스크배수를 기술적 지지선(볼린저 하단·이동평균·최근 저점)에 적용해 종목별 1차/2차 매수가와 목표가를 매일 재계산합니다. 가격이 실제로 그 레벨에 닿을 때만 매매합니다.</div>
+    <div id="price-criteria-content">
+      <div class="state-box"><span class="spinner"></span>가격기준 데이터를 불러오는 중입니다…</div>
+    </div>
+  </section>
+
   <!-- ===================== SW2 ===================== -->
   <section id="sw2-section">
     <div class="section-head">
-      <div class="section-title"><span class="idx">02</span> 페이퍼 트레이딩 성과 비교 (SW2)</div>
+      <div class="section-title"><span class="idx">03</span> 페이퍼 트레이딩 성과 비교 (SW2)</div>
     </div>
-    <div class="section-sub">baseline · technical_only · conservative 세 모델의 일일 자산가치(equity) 추이와 수익률에 대한 쌍대(t-test) 통계 비교</div>
+    <div class="section-sub">baseline · technical_only · conservative · price_model_1 · price_model_2 다섯 모델의 일일 자산가치(equity) 추이와 수익률에 대한 쌍대(t-test) 통계 비교</div>
 
     <div class="sw2-layout">
       <div class="panel chart-panel">
@@ -602,8 +644,16 @@
   var MODELS = [
     { key:"baseline", label:"Baseline", color:"#22d3ee" },
     { key:"technical_only", label:"Technical Only", color:"#fbbf24" },
-    { key:"conservative", label:"Conservative", color:"#a78bfa" }
+    { key:"conservative", label:"Conservative", color:"#a78bfa" },
+    { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
+    { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
   ];
+
+  var PRICE_CRITERIA_MODELS = [
+    { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
+    { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
+  ];
+  var PRICE_CRITERIA_URL = function(m){ return BASE + "data/sw1/price_criteria/" + m + "/latest.csv"; };
 
   /* ---------------- helpers ---------------- */
 
@@ -761,6 +811,98 @@
         '<span class="news-soon">준비 중</span>' +
       '</div>' +
     '</div>';
+  }
+
+  /* ---------------- section 2: user-defined price-criteria models ---------------- */
+
+  function renderCriteriaCard(row){
+    var ticker = row.ticker || "?";
+    var close = parseNumOrNull(row.close);
+    var buy1 = parseNumOrNull(row.buy_1_price);
+    var buy2 = parseNumOrNull(row.buy_2_price);
+    var stopPct = parseNumOrNull(row.stop_loss_pct);
+    var target = parseNumOrNull(row.target_price);
+
+    return '' +
+    '<div class="m7-card">' +
+      '<div class="m7-card-top">' +
+        '<div>' +
+          '<div class="ticker-id">' + escapeHtml(ticker) + '</div>' +
+          '<div class="ticker-name">' + escapeHtml(TICKER_NAMES[ticker] || "") + '</div>' +
+        '</div>' +
+        '<div class="price-block">' +
+          '<div class="price">' + (close === null ? "—" : "$" + fmtNum(close, 2)) + '</div>' +
+          '<div class="price-sub">현재가 · ' + escapeHtml(row.date || "") + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="metric-grid">' +
+        '<div class="metric"><span class="metric-k">1차 매수가</span><span class="metric-v">' + (buy1 === null ? "—" : "$" + fmtNum(buy1, 2)) + '</span></div>' +
+        '<div class="metric"><span class="metric-k">2차 매수가</span><span class="metric-v">' + (buy2 === null ? "—" : "$" + fmtNum(buy2, 2)) + '</span></div>' +
+        '<div class="metric"><span class="metric-k">목표가</span><span class="metric-v pos">' + (target === null ? "—" : "$" + fmtNum(target, 2)) + '</span></div>' +
+        '<div class="metric"><span class="metric-k">손절선</span><span class="metric-v neg">' + (stopPct === null ? "—" : fmtPct(stopPct)) + '</span></div>' +
+      '</div>' +
+
+      '<div class="criteria-basis-row">' +
+        '<span>1차 근거: ' + escapeHtml(row.basis_buy_1 || "—") + '</span>' +
+        '<span>2차 근거: ' + escapeHtml(row.basis_buy_2 || "—") + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function loadPriceCriteriaSection(){
+    var contentEl = document.getElementById("price-criteria-content");
+
+    return Promise.all(PRICE_CRITERIA_MODELS.map(function(m){
+      return fetchText(PRICE_CRITERIA_URL(m.key)).then(function(text){
+        return { model: m, rows: parseCSV(text), error: null };
+      }).catch(function(err){
+        return { model: m, rows: [], error: err.message };
+      });
+    })).then(function(results){
+      var allFailed = results.every(function(r){ return r.error; });
+      if(allFailed){
+        contentEl.innerHTML = stateBox(
+          "가격기준 데이터를 아직 불러올 수 없습니다",
+          "GitHub Actions가 아직 한 번도 실행되지 않았거나 파일 경로가 준비되지 않았을 수 있습니다. 오류: " + results[0].error,
+          true
+        );
+        return;
+      }
+
+      var tabsHtml = results.map(function(r, i){
+        return '<button type="button" class="criteria-tab' + (i === 0 ? ' active' : '') + '" data-model="' + r.model.key + '">' + escapeHtml(r.model.label) + '</button>';
+      }).join("");
+
+      var panelsHtml = results.map(function(r, i){
+        var body;
+        if(r.error){
+          body = stateBox("이 모델의 데이터가 아직 없습니다", r.error, true);
+        } else if(r.rows.length === 0){
+          body = stateBox("가격기준 데이터가 비어 있습니다", "", false);
+        } else {
+          var byTicker = {};
+          r.rows.forEach(function(row){ byTicker[row.ticker] = row; });
+          var ordered = TICKER_ORDER.map(function(t){ return byTicker[t]; }).filter(Boolean);
+          r.rows.forEach(function(row){ if(TICKER_ORDER.indexOf(row.ticker) === -1) ordered.push(row); });
+          body = '<div class="m7-grid">' + ordered.map(renderCriteriaCard).join("") + '</div>';
+        }
+        return '<div class="criteria-panel" data-model="' + r.model.key + '"' + (i === 0 ? '' : ' hidden') + '>' + body + '</div>';
+      }).join("");
+
+      contentEl.innerHTML = '<div class="criteria-tabs">' + tabsHtml + '</div>' + panelsHtml;
+
+      var tabs = Array.prototype.slice.call(contentEl.querySelectorAll(".criteria-tab"));
+      var panels = Array.prototype.slice.call(contentEl.querySelectorAll(".criteria-panel"));
+      tabs.forEach(function(tab){
+        tab.addEventListener("click", function(){
+          tabs.forEach(function(t){ t.classList.remove("active"); });
+          tab.classList.add("active");
+          var key = tab.getAttribute("data-model");
+          panels.forEach(function(p){ p.hidden = p.getAttribute("data-model") !== key; });
+        });
+      });
+    });
   }
 
   function loadSignals(){
@@ -1030,6 +1172,8 @@
   /* ---------------- init ---------------- */
 
   loadSignals();
+
+  loadPriceCriteriaSection();
 
   loadEquitySection().then(function(equityResults){
     loadComparisonsSection(equityResults);
