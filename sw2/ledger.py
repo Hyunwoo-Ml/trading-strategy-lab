@@ -22,6 +22,7 @@ class Position:
     shares: float
     entry_price: float
     entry_date: str  # ISO date string
+    tranche_count: int = 1  # how many buy tranches have gone into this position
 
 
 @dataclass
@@ -60,8 +61,9 @@ class Portfolio:
             total_shares = existing.shares + shares
             existing.entry_price = (existing.entry_price * existing.shares + price * shares) / total_shares
             existing.shares = total_shares
+            existing.tranche_count += 1
         else:
-            self.positions[ticker] = Position(ticker=ticker, shares=shares, entry_price=price, entry_date=date)
+            self.positions[ticker] = Position(ticker=ticker, shares=shares, entry_price=price, entry_date=date, tranche_count=1)
         self.cash -= dollar_amount
         self.trades.append(
             Trade(date=date, ticker=ticker, action=action, shares=shares, price=price, cash_delta=-dollar_amount)
@@ -101,4 +103,3 @@ class Portfolio:
         df = df.sort_values("date").set_index("date")
         df["daily_return"] = df["equity"].pct_change()
         return df
-
