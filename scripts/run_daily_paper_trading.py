@@ -38,11 +38,13 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from sw1.calendar.events import is_event_blackout  # noqa: E402
 from sw1.criteria.generator import PriceCriteria, load_price_criteria_params  # noqa: E402
+from sw1.indicators.weekly import compute_weekly_trend  # noqa: E402
 from sw2.compare import compare_all_pairs  # noqa: E402
 from sw2.ledger import Portfolio, Position, Trade  # noqa: E402
 from sw2.models import TradingModel, default_registry  # noqa: E402
-from sw2.price_criteria_model import PriceCriteriaModel  # noqa: E402
+from sw2.price_criteria_model import MarketContext, PriceCriteriaModel  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 SIGNALS_PATH = DATA_DIR / "signals" / "latest.csv"
@@ -51,8 +53,69 @@ PRICE_CRITERIA_CONFIG_DIR = Path(__file__).resolve().parent.parent / "sw1" / "co
 PORTFOLIOS_DIR = DATA_DIR / "sw2" / "portfolios"
 EQUITY_DIR = DATA_DIR / "sw2" / "equity"
 COMPARISONS_DIR = DATA_DIR / "sw2" / "comparisons"
+INDICATORS_DIR = DATA_DIR / "indicators"
+MARKET_DIR = DATA_DIR / "market"
 
 TRANCHE_FRACTION = 0.05  # 5% of starting cash per buy tranche -- v1 fixed sizing
+
+
+def load_market_regime() -> str | None:
+    """Reads today's market regime written by collect_daily_data.py. Missing
+    file (e.g. an older data snapshot, or the fetch failed that day) simply
+    means no market-regime filter is applied -- same graceful-degradation
+    pattern as the rest of this pipeline (a bad ticker doesn't crash the
+    whole run, per the module docstring)."""
+    path = MARKET_DIR / "regime.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("regime")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def load_earnings_dates() -> dict[str, str | None]:
+    path = MARKET_DIR / "earnings_dates.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def build_market_context(ticker: str, run_date: str, market_regime: str | None, earnings_dates: dict[str, str | None]) -> MarketContext:
+    """Assembles the real-time confirmation context (sw2.price_criteria_model.
+    MarketContext) for one ticker/day: volume confirmation and weekly trend
+    come straight from that ticker's own indicator history
+    (data/indicators/{ticker}.csv, already collected daily); market regime
+    and earnings dates come from collect_daily_data.py's market/ outputs.
+    Any missing piece degrades to "no filter" rather than raising, so one
+    bad ticker's indicator file never takes down the whole daily run."""
+    volume_ratio: float | None = None
+    weekly_trend: str | None = None
+
+    indicators_path = INDICATORS_DIR / f"{ticker}.csv"
+    if indicators_path.exists():
+        try:
+            indicators_df = pd.read_csv(indicators_path, index_col=0, parse_dates=True)
+            last = indicators_df.iloc[-1]
+            vol_ratio_value = last.get("VOL_RATIO")
+            if vol_ratio_value is not None and pd.notna(vol_ratio_value):
+                volume_ratio = float(vol_ratio_value)
+            weekly_trend = compute_weekly_trend(indicators_df).trend
+        except Exception as exc:  # noqa: BLE001
+            print(f"[WARN] could not build market context for {ticker}: {exc}")
+
+    blackout = is_event_blackout(run_date, earnings_date=earnings_dates.get(ticker))
+
+    return MarketContext(
+        volume_ratio=volume_ratio,
+        weekly_trend=weekly_trend,
+        market_regime=market_regime,
+        event_blackout=blackout.is_blackout,
+        event_reasons=blackout.reasons,
+    )
 
 
 def portfolio_to_dict(p: Portfolio) -> dict:
@@ -128,12 +191,19 @@ def process_price_criteria_model_for_day(
     portfolio: Portfolio,
     criteria_df: pd.DataFrame,
     run_date: str,
+    market_regime: str | None,
+    earnings_dates: dict[str, str | None],
 ) -> None:
     """Same trade-application shape as process_model_for_day, but decisions
     come from SW1's exported price levels (sw1.criteria.generator) instead
     of an abstract score -- see sw2/price_criteria_model.py. A model that
     finds no ticker touching its levels today simply does nothing, by
-    design (per feedback: "매일 매매하는 게 아니라 기준이 닿아 있을 때만")."""
+    design (per feedback: "매일 매매하는 게 아니라 기준이 닿아 있을 때만").
+
+    2026-09-13: a MarketContext (volume/weekly-trend/market-regime/event
+    blackout) is built per ticker and passed into decide() so a price-level
+    touch only becomes a real buy_1/buy_2 when it's confirmed -- see
+    build_market_context() and sw2.price_criteria_model.MarketContext."""
     tranche_dollars = portfolio.starting_cash * TRANCHE_FRACTION
     prices: dict[str, float] = {}
 
@@ -162,12 +232,14 @@ def process_price_criteria_model_for_day(
         is_holding = existing_position is not None
         tranche_count = existing_position.tranche_count if existing_position else 0
         price_return = portfolio.price_return_from_entry(ticker, price)
+        market_context = build_market_context(ticker, run_date, market_regime, earnings_dates)
 
         signal = model.decide(
             criteria=criteria,
             is_holding=is_holding,
             tranche_count=tranche_count,
             price_return_from_entry=price_return,
+            market_context=market_context,
         )
 
         if signal.signal == "buy_1" and ticker not in portfolio.positions:
@@ -213,6 +285,9 @@ def main() -> int:
 
     registry = default_registry()
     returns_by_model: dict[str, pd.Series] = {}
+    market_regime = load_market_regime()
+    earnings_dates = load_earnings_dates()
+    print(f"[market] regime={market_regime or 'unknown (no filter applied)'}")
 
     # -- score-threshold models (sw1.scoring.integrate) -----------------
     for model in registry.all():
@@ -230,7 +305,9 @@ def main() -> int:
         criteria_df = pd.read_csv(criteria_path)
 
         portfolio = load_or_create_portfolio(model.name, PORTFOLIOS_DIR / f"{model.name}.json")
-        process_price_criteria_model_for_day(model, portfolio, criteria_df, run_date)
+        process_price_criteria_model_for_day(
+            model, portfolio, criteria_df, run_date, market_regime, earnings_dates
+        )
         _finalize_model_run(model.name, portfolio, returns_by_model)
 
     comparisons = compare_all_pairs(returns_by_model)
