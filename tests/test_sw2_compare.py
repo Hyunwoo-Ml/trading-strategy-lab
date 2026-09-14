@@ -27,6 +27,33 @@ def test_clearly_different_means_are_detected():
     assert result.significant_at_5pct
 
 
+def test_zero_variance_both_groups_gives_none_not_nan():
+    # both models made zero trades -- equity is flat every day, so daily
+    # returns are exactly 0.0 for both groups. Welch's t-test is a 0/0
+    # division here (undefined, not "no difference"), so this must come
+    # back as None, never a raw NaN (data/sw2/comparisons/latest.json is
+    # written from this and a bare `NaN` token is invalid JSON).
+    a = pd.Series([0.0, 0.0, 0.0])
+    b = pd.Series([0.0, 0.0, 0.0])
+    result = compare_daily_returns("no_trades_a", a, "no_trades_b", b)
+    assert result.t_statistic is None
+    assert result.p_value is None
+    assert result.significant_at_5pct is False
+
+
+def test_zero_variance_result_is_json_serializable_without_nan():
+    import json
+    from dataclasses import asdict
+
+    a = pd.Series([0.0, 0.0])
+    b = pd.Series([0.0, 0.0])
+    result = compare_daily_returns("a", a, "b", b)
+    encoded = json.dumps(asdict(result), allow_nan=False)
+    assert "NaN" not in encoded
+    assert json.loads(encoded)["t_statistic"] is None
+    assert json.loads(encoded)["p_value"] is None
+
+
 def test_compare_all_pairs_skips_pairs_without_enough_history():
     returns_by_model = {
         "a": pd.Series([0.01, 0.02, 0.03]),
@@ -37,4 +64,3 @@ def test_compare_all_pairs_skips_pairs_without_enough_history():
     pairs = {(r.model_a, r.model_b) for r in results}
     assert ("a", "c") in pairs
     assert not any("b" in pair for pair in pairs)
-
