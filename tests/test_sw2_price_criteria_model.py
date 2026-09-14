@@ -175,3 +175,79 @@ def test_take_profit_exit_ignores_market_context_entirely():
         criteria, is_holding=True, tranche_count=1, price_return_from_entry=0.10, market_context=ctx
     )
     assert signal.signal == "take_profit"
+
+
+# -- 2026-09-14 feedback: 뉴스/시황 데이터도 가격기준모델의 신규 진입에 반영 --
+
+
+def test_negative_news_below_model_threshold_blocks_buy1():
+    model = make_model(min_news_score=-0.3)
+    criteria = make_criteria(close=194.0, buy_1_price=195.0)
+    ctx = MarketContext(news_score=-0.5)
+    signal = model.decide(criteria, is_holding=False, tranche_count=0, price_return_from_entry=None, market_context=ctx)
+    assert signal.signal == "hold"
+    assert "뉴스" in signal.reasons[0]
+
+
+def test_negative_news_also_blocks_buy2_averaging_down():
+    model = make_model(min_news_score=-0.3)
+    criteria = make_criteria(close=179.0, buy_1_price=195.0, buy_2_price=180.0)
+    ctx = MarketContext(news_score=-0.5)
+    signal = model.decide(criteria, is_holding=True, tranche_count=1, price_return_from_entry=-0.02, market_context=ctx)
+    assert signal.signal == "hold"
+
+
+def test_news_at_or_above_model_threshold_allows_buy1():
+    model = make_model(min_news_score=-0.3)
+    criteria = make_criteria(close=194.0, buy_1_price=195.0)
+    ctx = MarketContext(news_score=-0.1)
+    signal = model.decide(criteria, is_holding=False, tranche_count=0, price_return_from_entry=None, market_context=ctx)
+    assert signal.signal == "buy_1"
+
+
+def test_positive_news_allows_buy1():
+    model = make_model(min_news_score=-0.3)
+    criteria = make_criteria(close=194.0, buy_1_price=195.0)
+    ctx = MarketContext(news_score=0.6)
+    signal = model.decide(criteria, is_holding=False, tranche_count=0, price_return_from_entry=None, market_context=ctx)
+    assert signal.signal == "buy_1"
+
+
+def test_news_gate_off_by_default_ignores_very_negative_news():
+    # min_news_score defaults to None -- a model that hasn't opted in must
+    # behave exactly as before this feature existed, even with very bad news.
+    model = make_model()  # no min_news_score set
+    criteria = make_criteria(close=194.0, buy_1_price=195.0)
+    ctx = MarketContext(news_score=-0.9)
+    signal = model.decide(criteria, is_holding=False, tranche_count=0, price_return_from_entry=None, market_context=ctx)
+    assert signal.signal == "buy_1"
+
+
+def test_no_news_score_in_context_does_not_block_even_with_threshold_set():
+    # min_news_score is set, but today's context has no news_score (None,
+    # e.g. no sw1/news/input/{TICKER}.txt for this ticker) -- must not block.
+    model = make_model(min_news_score=-0.3)
+    criteria = make_criteria(close=194.0, buy_1_price=195.0)
+    ctx = MarketContext(news_score=None)
+    signal = model.decide(criteria, is_holding=False, tranche_count=0, price_return_from_entry=None, market_context=ctx)
+    assert signal.signal == "buy_1"
+
+
+def test_stop_loss_exit_ignores_news_gate_entirely():
+    model = make_model(stop_loss_pct=-0.08, min_news_score=-0.3)
+    criteria = make_criteria(stop_loss_pct=-0.08)
+    ctx = MarketContext(news_score=-0.9)
+    signal = model.decide(
+        criteria, is_holding=True, tranche_count=1, price_return_from_entry=-0.10, market_context=ctx
+    )
+    assert signal.signal == "stop_loss"
+
+
+def test_take_profit_exit_ignores_news_gate_entirely():
+    model = make_model(min_news_score=-0.3)
+    criteria = make_criteria(close=230.0, target_price=225.0)
+    ctx = MarketContext(news_score=-0.9)
+    signal = model.decide(
+        criteria, is_holding=True, tranche_count=1, price_return_from_entry=0.10, market_context=ctx
+    )
+    assert signal.signal == "take_profit"
