@@ -148,6 +148,22 @@
   }
   .meta-row b{ color:var(--text-secondary); font-weight:600; }
 
+  .news-input-link{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:var(--fs-sm);
+    font-weight:600;
+    color:#0a0d14;
+    background:var(--accent);
+    padding:7px 14px;
+    border-radius:999px;
+    text-decoration:none;
+    white-space:nowrap;
+    transition:opacity .15s ease;
+  }
+  .news-input-link:hover{ opacity:0.85; }
+
   /* ---------- Section shell ---------- */
   section{ margin-bottom:52px; }
   .section-head{
@@ -558,6 +574,7 @@
       <span>⚙ <b>GitHub Actions</b>로 매 평일 자동 갱신</span>
       <span>💰 모델당 초기 자본 <b>$100,000</b> (paper trading)</span>
       <span>📡 정적 페이지 · 백엔드 없음</span>
+      <a class="news-input-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab/issues/new?template=news-input.yml" target="_blank" rel="noopener">📰 뉴스/시황 입력하기</a>
     </div>
   </header>
 
@@ -818,6 +835,19 @@
 
   /* ---------------- section 2: user-defined price-criteria models ---------------- */
 
+  function newsGateTag(newsScore, minNewsScore, newsBlocked){
+    if(minNewsScore === null){
+      return '<span class="tag none">게이트 미설정</span>';
+    }
+    if(newsScore === null){
+      return '<span class="tag none">뉴스 대기 중</span>';
+    }
+    if(newsBlocked){
+      return '<span class="tag dead">🔒 신규진입 보류 (뉴스)</span>';
+    }
+    return '<span class="tag golden">✓ 게이트 통과</span>';
+  }
+
   function renderCriteriaCard(row){
     var ticker = row.ticker || "?";
     var close = parseNumOrNull(row.close);
@@ -825,6 +855,9 @@
     var buy2 = parseNumOrNull(row.buy_2_price);
     var stopPct = parseNumOrNull(row.stop_loss_pct);
     var target = parseNumOrNull(row.target_price);
+    var newsScore = parseNumOrNull(row.news_score);
+    var minNewsScore = parseNumOrNull(row.min_news_score);
+    var newsBlocked = String(row.news_blocked).trim().toLowerCase() === "true";
 
     return '' +
     '<div class="m7-card">' +
@@ -849,6 +882,14 @@
       '<div class="criteria-basis-row">' +
         '<span>1차 근거: ' + escapeHtml(row.basis_buy_1 || "—") + '</span>' +
         '<span>2차 근거: ' + escapeHtml(row.basis_buy_2 || "—") + '</span>' +
+      '</div>' +
+
+      '<div class="card-footer-row">' +
+        '<span>뉴스 감성 점수' + (minNewsScore === null ? '' : ' (기준 ' + fmtNum(minNewsScore, 2) + ')') + '</span>' +
+        '<span>' +
+          (newsScore === null ? '' : '<span class="metric-v ' + quantClass(newsScore) + '" style="margin-right:8px;">' + (newsScore>=0?"+":"") + newsScore.toFixed(2) + '</span>') +
+          newsGateTag(newsScore, minNewsScore, newsBlocked) +
+        '</span>' +
       '</div>' +
     '</div>';
   }
