@@ -91,6 +91,21 @@ def test_portfolio_state_persists_across_runs(wired_script):
     assert "AAPL" in state["positions"]
 
 
+def test_conservative_tighter_stop_loss_buys_larger_tranche_than_baseline(wired_script):
+    # Task #22: risk-based sizing. conservative's stop_loss_pct (-0.05) is
+    # tighter than baseline's (-0.07), so for the same buy_1 signal it
+    # should commit MORE dollars (bigger tranche), not the same fixed
+    # amount -- see sw2.sizing.risk_based_tranche_dollars.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
+    assert wired_script.main() == 0
+
+    baseline_state = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    conservative_state = json.loads((wired_script.PORTFOLIOS_DIR / "conservative.json").read_text())
+    baseline_spent = baseline_state["starting_cash"] - baseline_state["cash"]
+    conservative_spent = conservative_state["starting_cash"] - conservative_state["cash"]
+    assert conservative_spent > baseline_spent
+
+
 def test_writes_equity_curve_csv_per_model(wired_script):
     write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
     wired_script.main()
@@ -180,6 +195,30 @@ def test_price_criteria_model_holds_when_price_above_buy1(wired_script):
     state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
     assert state["positions"] == {}
     assert state["trades"] == []
+
+
+def test_price_criteria_model_tighter_stop_loss_pct_buys_larger_tranche(wired_script):
+    # Task #22: process_price_criteria_model_for_day recomputes tranche size
+    # per row from that row's own criteria.stop_loss_pct (unlike the
+    # quant-score models, where it's fixed per model) -- two price-criteria
+    # models differing only in stop_loss_pct should buy different-sized
+    # tranches on the same buy_1 touch.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script, model_name="price_model_1", stop_loss_pct=-0.05)
+    write_price_criteria_config(wired_script, model_name="price_model_2", stop_loss_pct=-0.15)
+    write_price_criteria_latest(
+        wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0, stop_loss_pct=-0.05)]
+    )
+    write_price_criteria_latest(
+        wired_script, "price_model_2", [make_criteria_row(close=200.0, buy_1_price=210.0, stop_loss_pct=-0.15)]
+    )
+
+    assert wired_script.main() == 0
+    tight_state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    wide_state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_2.json").read_text())
+    tight_spent = tight_state["starting_cash"] - tight_state["cash"]
+    wide_spent = wide_state["starting_cash"] - wide_state["cash"]
+    assert tight_spent > wide_spent
 
 
 def test_price_criteria_model_participates_in_comparisons(wired_script):
