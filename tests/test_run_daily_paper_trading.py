@@ -298,3 +298,55 @@ def test_earnings_blackout_blocks_price_criteria_buy1(wired_script):
     assert wired_script.main() == 0
     state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
     assert state["positions"] == {}
+
+
+# -- 2026-09-14 feedback: sw1/news/input/{TICKER}.txt 시황이 가격기준모델의
+# 신규 진입에도 반영되는지 (min_news_score가 설정된 모델에 한해) --
+
+
+def test_negative_news_score_blocks_price_criteria_buy1_when_gate_configured(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": -0.6}])
+    write_price_criteria_config(wired_script, min_news_score=-0.3)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    # close (200) is below buy_1 (210) -- would normally trigger buy_1 --
+    # but today's strongly negative news_score should hold it back.
+    assert state["positions"] == {}
+    assert state["trades"] == []
+
+
+def test_mildly_negative_news_above_threshold_still_allows_buy1(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": -0.1}])
+    write_price_criteria_config(wired_script, min_news_score=-0.3)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert "AAPL" in state["positions"]
+
+
+def test_price_criteria_model_ignores_news_gate_by_default(wired_script):
+    # min_news_score not set in the config JSON -- must behave exactly as
+    # before this feature existed, even with a very negative news_score.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": -0.9}])
+    write_price_criteria_config(wired_script)  # no min_news_score override
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert "AAPL" in state["positions"]
+
+
+def test_missing_news_score_for_ticker_does_not_block_even_with_gate_configured(wired_script):
+    # No sw1/news/input/AAPL.txt this week -> news_score is None in
+    # signals -- a configured gate must not block on "no news", only on
+    # actually-negative news.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    write_price_criteria_config(wired_script, min_news_score=-0.3)
+    write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=200.0, buy_1_price=210.0)])
+
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
+    assert "AAPL" in state["positions"]
