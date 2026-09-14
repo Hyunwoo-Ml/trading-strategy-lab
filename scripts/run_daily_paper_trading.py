@@ -313,11 +313,18 @@ def main() -> int:
     comparisons = compare_all_pairs(returns_by_model)
     comparisons_path = COMPARISONS_DIR / "latest.json"
     comparisons_path.parent.mkdir(parents=True, exist_ok=True)
+    # allow_nan=False is deliberate: sw2.compare already turns an undefined
+    # (zero-variance) t-test into None/null rather than NaN, but this is a
+    # second line of defense -- a bare `NaN` token is invalid JSON and
+    # silently breaks the dashboard's JSON.parse, so if some future metric
+    # ever produces a real NaN this must fail the run loudly instead of
+    # writing broken JSON that the dashboard can't read.
     comparisons_path.write_text(
         json.dumps(
             {"run_date": run_date, "comparisons": [asdict(c) for c in comparisons]},
             ensure_ascii=False,
             indent=2,
+            allow_nan=False,
         ),
         encoding="utf-8",
     )
