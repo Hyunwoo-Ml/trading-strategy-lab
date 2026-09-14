@@ -82,28 +82,47 @@
   동작을 검증하는 테스트를 같은 커밋에 묶어서 푸시할 것 (또는 최소한 연속
   커밋 사이 간격을 최소화).
 
-## 남은 작업 (원래 5개 태스크 시퀀스 중 #22-25)
+### Task #22 — 포지션 사이징 개선 (완료, 2026-09-14)
+- 신규 `sw2/sizing.py`: `risk_based_tranche_dollars(starting_cash, stop_loss_pct,
+  risk_fraction=RISK_FRACTION, min_fraction=MIN_TRANCHE_FRACTION,
+  max_fraction=MAX_TRANCHE_FRACTION)`. `fraction = risk_fraction /
+  abs(stop_loss_pct)`, `[MIN_TRANCHE_FRACTION, MAX_TRANCHE_FRACTION]`로 클램프.
+  손절폭이 좁을수록(risk가 같다면) 더 큰 포지션, 넓을수록 더 작은 포지션 —
+  classic risk-based position sizing. `RISK_FRACTION = 0.004`로 튜닝해서
+  SW1 price-criteria 기본 손절폭(-8%)에서 옛 고정 5% 트랜치와 거의 동일한
+  값(5%)이 나오도록 맞춤 (연속성 유지). `MIN_TRANCHE_FRACTION=0.02`,
+  `MAX_TRANCHE_FRACTION=0.12`. `stop_loss_pct`가 0/누락이면 min/max 중간값으로
+  안전하게 폴백 (0분할 방지, graceful-degradation 패턴).
+- `scripts/run_daily_paper_trading.py`: 옛 `TRANCHE_FRACTION = 0.05` 상수 제거.
+  `process_model_for_day`는 모델당 고정인 `model.thresholds.stop_loss_pct`로
+  런 시작 시 1회만 트랜치 크기 계산 (기존과 동일한 구조 유지). 반면
+  `process_price_criteria_model_for_day`는 SW1이 티커/일자별로 내려주는
+  `criteria.stop_loss_pct`가 매번 다를 수 있어 매 row마다 재계산하도록 변경.
+- `tests/test_sw2_sizing.py` (신규): `risk_based_tranche_dollars` 단위 테스트
+  9개 — 전형적 케이스가 옛 고정값과 일치하는지, 좁은/넓은 손절 비교, 클램프
+  경계, 0/음수 부호 처리, custom risk_fraction/bounds, starting_cash 비례.
+- `tests/test_run_daily_paper_trading.py`: 통합 테스트 2개 추가 —
+  conservative(손절 -5%, baseline -7%보다 타이트)가 baseline보다 더 큰
+  달러 금액을 매수하는지 (`test_conservative_tighter_stop_loss_buys_larger_tranche_than_baseline`),
+  price-criteria 모델 2개가 stop_loss_pct만 다를 때 다른 트랜치 크기로
+  매수하는지 (`test_price_criteria_model_tighter_stop_loss_pct_buys_larger_tranche`).
+- 검증: 로컬 `python -m pytest -q` 164/164 통과. 4개 파일(`sw2/sizing.py`,
+  `scripts/run_daily_paper_trading.py`, `tests/test_sw2_sizing.py`,
+  `tests/test_run_daily_paper_trading.py`) 모두 GitHub에 커밋 후 raw fetch +
+  SHA-256으로 바이트 단위 검증 완료. 이번엔 Task #24 때와 달리 4개 커밋
+  전부 `tests` CI가 처음부터 끝까지 녹색 유지 (동작 변경 + 테스트를 각
+  파일 단위로 자연스럽게 나눠 커밋해서 중간 상태가 깨지지 않음).
+  `run-paper-trading` 워크플로 수동 실행(#6) 성공. 5개 모델 전부 이번
+  실행에서도 매수 신호가 없어(`trades: []`) 실거래 데이터로 사이징 값이
+  실제로 갈리는 것은 아직 못 봤지만, 단위 테스트가 공식 자체를 직접
+  검증하고 통합 테스트가 모델 간 상대적 크기 차이를 직접 확인했으므로
+  다음 매수 발생 시 자동으로 올바르게 반영됨.
+
+## 남은 작업 (원래 5개 태스크 시퀀스 중 #23-25)
 
 원래 태스크 정의(#21 이전)는 이전 세션 압축 과정에서 유실되어 한 줄 설명만
 남아있음. 아래는 그 한 줄 설명을 기반으로 코드베이스를 실제로 조사해서 도출한
 구체적 설계 메모.
-
-### Task #22 — 포지션 사이징 개선 (미시작)
-- 현재 상태: `scripts/run_daily_paper_trading.py`의 `TRANCHE_FRACTION = 0.05`
-  (시작 자본의 5% 고정, 모든 티커/모델에 동일 적용). `sw2/ledger.py`
-  모듈 docstring이 스스로 "intentionally simple... refine sizing rules once
-  there's real comparison data to react to"라고 명시.
-- 방향: 리스크 조정(변동성 기반, 예: ATR 또는 최근 수익률 표준편차로 포지션
-  크기 역가중) 또는 티커 가중(시가총액/유동성 등) 사이징으로 개선. 최소
-  변경으로는 "모델별 손절% 대비 리스크 예산 고정" 방식(예: 계좌의 X%를
-  손절폭으로 나눠 주식 수 결정 — classic risk-based position sizing)이 가장
-  간단하고 설명 가능함.
-- 영향 범위: `sw2/ledger.py`(Portfolio.buy 시그니처는 유지, tranche 계산 로직만
-  호출부에서 변경 가능) 또는 새 `sw2/sizing.py` 모듈 신설 후
-  `scripts/run_daily_paper_trading.py`의 `process_model_for_day` /
-  `process_price_criteria_model_for_day`에서 사용.
-- 테스트: `tests/test_sw2_ledger.py` 또는 신규 `tests/test_sw2_sizing.py`에
-  케이스 추가 (예: 손절폭이 클수록 매수 수량이 작아지는지).
 
 ### Task #23 — 백테스트/통계적 엄밀성 강화 (미시작, NaN 수정과는 별개)
 - 현재 상태: `sw2/compare.py`의 `compare_all_pairs`가 모델 쌍마다 독립적으로
@@ -134,8 +153,8 @@
 
 ## 다음 세션이 할 일
 
-1. 이 파일에서 "다음 미완료 항목"을 확인 (Task #24는 완료됨 — 다음은 #22
-   포지션 사이징 또는 #23 통계적 엄밀성부터 시작하면 됨. #25는 #23 이후 권장).
+1. 이 파일에서 "다음 미완료 항목"을 확인 (Task #22, #24는 완료됨 — 다음은
+   #23 통계적 엄밀성부터 시작하면 됨. #25는 #23 이후 권장).
 2. `/home/claude/project`에서 로컬로 구현 + `python -m pytest -q`로 검증.
 3. GitHub 웹 에디터 브라우저 자동화로 커밋 (base64 청크 방식 또는 CodeMirror
    surgical replace, 세션 요약에 기록된 기법 참고).
