@@ -86,14 +86,27 @@ def load_earnings_dates() -> dict[str, str | None]:
         return {}
 
 
-def build_market_context(ticker: str, run_date: str, market_regime: str | None, earnings_dates: dict[str, str | None]) -> MarketContext:
+def build_market_context(
+    ticker: str,
+    run_date: str,
+    market_regime: str | None,
+    earnings_dates: dict[str, str | None],
+    news_scores: dict[str, float | None] | None = None,
+) -> MarketContext:
     """Assembles the real-time confirmation context (sw2.price_criteria_model.
     MarketContext) for one ticker/day: volume confirmation and weekly trend
     come straight from that ticker's own indicator history
     (data/indicators/{ticker}.csv, already collected daily); market regime
     and earnings dates come from collect_daily_data.py's market/ outputs.
     Any missing piece degrades to "no filter" rather than raising, so one
-    bad ticker's indicator file never takes down the whole daily run."""
+    bad ticker's indicator file never takes down the whole daily run.
+
+    2026-09-14: `news_scores` (ticker -> news_score, straight from
+    data/signals/latest.csv -- the same per-ticker news_score the
+    score-threshold models already blend in) is optional and defaults to
+    None/empty so existing callers see no change; a ticker missing from it
+    simply gets news_score=None, same as "no news this week" everywhere
+    else in the pipeline."""
     volume_ratio: float | None = None
     weekly_trend: str | None = None
 
@@ -111,12 +124,15 @@ def build_market_context(ticker: str, run_date: str, market_regime: str | None, 
 
     blackout = is_event_blackout(run_date, earnings_date=earnings_dates.get(ticker))
 
+    news_score = (news_scores or {}).get(ticker)
+
     return MarketContext(
         volume_ratio=volume_ratio,
         weekly_trend=weekly_trend,
         market_regime=market_regime,
         event_blackout=blackout.is_blackout,
         event_reasons=blackout.reasons,
+        news_score=news_score,
     )
 
 
@@ -206,6 +222,7 @@ def process_price_criteria_model_for_day(
     run_date: str,
     market_regime: str | None,
     earnings_dates: dict[str, str | None],
+    news_scores: dict[str, float | None] | None = None,
 ) -> None:
     """Same trade-application shape as process_model_for_day, but decisions
     come from SW1's exported price levels (sw1.criteria.generator) instead
@@ -222,6 +239,12 @@ def process_price_criteria_model_for_day(
     stop_loss_pct comes from SW1's per-ticker/day price criteria
     (criteria.stop_loss_pct), not a fixed per-model constant -- so the
     risk-based tranche size is recomputed per row instead of once per run.
+
+    2026-09-14 (news gate): `news_scores` (ticker -> news_score) is passed
+    straight through to build_market_context() so a model with
+    PriceCriteriaParams.min_news_score set can also hold back a new entry
+    on bad news -- see sw2.price_criteria_model.PriceCriteriaModel.
+    Optional/defaults to None so existing callers/tests are unaffected.
     """
     prices: dict[str, float] = {}
 
@@ -250,7 +273,7 @@ def process_price_criteria_model_for_day(
         is_holding = existing_position is not None
         tranche_count = existing_position.tranche_count if existing_position else 0
         price_return = portfolio.price_return_from_entry(ticker, price)
-        market_context = build_market_context(ticker, run_date, market_regime, earnings_dates)
+        market_context = build_market_context(ticker, run_date, market_regime, earnings_dates, news_scores)
         tranche_dollars = risk_based_tranche_dollars(portfolio.starting_cash, criteria.stop_loss_pct)
 
         signal = model.decide(
@@ -306,6 +329,14 @@ def main() -> int:
     returns_by_model: dict[str, pd.Series] = {}
     market_regime = load_market_regime()
     earnings_dates = load_earnings_dates()
+    # Same per-ticker news_score the score-threshold models already blend
+    # into their integrated score (see process_model_for_day below) --
+    # reused here so a price-criteria model can opt into a news gate too
+    # (PriceCriteriaParams.min_news_score, see sw2/price_criteria_model.py).
+    news_scores: dict[str, float | None] = {
+        row["ticker"]: (None if pd.isna(row.get("news_score")) else float(row["news_score"]))
+        for _, row in signals_df.iterrows()
+    }
     print(f"[market] regime={market_regime or 'unknown (no filter applied)'}")
 
     # -- score-threshold models (sw1.scoring.integrate) -----------------
@@ -325,7 +356,7 @@ def main() -> int:
 
         portfolio = load_or_create_portfolio(model.name, PORTFOLIOS_DIR / f"{model.name}.json")
         process_price_criteria_model_for_day(
-            model, portfolio, criteria_df, run_date, market_regime, earnings_dates
+            model, portfolio, criteria_df, run_date, market_regime, earnings_dates, news_scores
         )
         _finalize_model_run(model.name, portfolio, returns_by_model)
 
