@@ -48,6 +48,40 @@
   latest.json`이 `null` 로 정상 직렬화됨을 raw fetch로 확인. 라이브 대시보드의
   "모델 간 통계적 유의성 비교" 표가 에러 상태 없이 `—`로 정상 렌더링됨을 확인.
 
+### Task #24 — 거래비용 모델링 (완료, 2026-09-14)
+- `sw2/ledger.py`: `Portfolio`에 `transaction_cost_pct: float = 0.001` (10bps,
+  커미션+슬리피지 스탠드인) 필드 추가. `buy()`는 `dollar_amount`는 그대로 전액
+  현금에서 차감하되, 실제로 주식으로 전환되는 금액은
+  `dollar_amount * (1 - transaction_cost_pct)`로 줄어듦 (나머지는 수수료).
+  `sell_all()`은 `shares * price * (1 - transaction_cost_pct)`만 현금으로
+  돌아옴. `Trade`에 `fee: float = 0.0` 필드 추가해 거래별 수수료 기록 (투명성
+  + 대시보드/리포트에서 나중에 활용 가능).
+- `scripts/run_daily_paper_trading.py`: `portfolio_to_dict`/`portfolio_from_dict`
+  가 `transaction_cost_pct`를 라운드트립하도록 수정. 기존에 저장된 포트폴리오
+  JSON(이 필드가 없음)은 `Portfolio` 클래스 기본값(0.001)으로 안전하게
+  폴백 (raise 하지 않음, 파이프라인 전체의 graceful-degradation 패턴과 동일).
+- `tests/test_sw2_ledger.py`: 기존 산술 테스트는 `transaction_cost_pct=0.0`을
+  명시적으로 지정해 라운드 넘버 유지, 신규 테스트 5개 추가 (수수료가 매수
+  주식 수를 줄이는지, 매도 순수익을 줄이는지, cost_pct=0이면 기존 동작과
+  동일한지, 기본값이 0이 아닌지, 매수+매도 왕복이 수수료만큼 정확히
+  손실나는지).
+- 검증: 로컬 `python -m pytest -q` 152/152 통과 (기존 147 + 신규 5). 3개
+  파일 모두 GitHub에 커밋 후 raw fetch + SHA-256으로 바이트 단위 검증 완료.
+  `run-paper-trading` 워크플로 수동 실행(#5) 성공 확인, 5개 모델 전부의
+  `data/sw2/portfolios/{model}.json`에 `transaction_cost_pct: 0.001`이 정상
+  저장됨을 raw fetch로 확인. 이번 실행에서는 5개 모델 모두 실제 매수 신호가
+  없어 트레이드가 0건이었으므로 (baseline 등 모든 모델 `cash: 100000,
+  trades: []`) 실제 `Trade.fee` 값이 채워지는 것은 아직 라이브 데이터로는
+  못 봤지만, 단위 테스트가 수수료 계산 로직 자체를 직접 검증하고 있고
+  직렬화 라운드트립도 확인했으므로 다음에 실제 매수가 발생하면 자동으로
+  올바르게 반영됨.
+- 참고: 이 작업의 커밋 3개 중 앞의 2개(ledger.py, run_daily_paper_trading.py)
+  는 test_sw2_ledger.py가 아직 구버전이라 GitHub Actions CI가 일시적으로
+  빨간불이었음 (구버전 테스트가 `transaction_cost_pct` 기본값 변경으로 깨짐)
+  — 마지막 커밋(테스트 갱신) 이후 CI 정상화됨. 다음부터는 동작 변경과 그
+  동작을 검증하는 테스트를 같은 커밋에 묶어서 푸시할 것 (또는 최소한 연속
+  커밋 사이 간격을 최소화).
+
 ## 남은 작업 (원래 5개 태스크 시퀀스 중 #22-25)
 
 원래 태스크 정의(#21 이전)는 이전 세션 압축 과정에서 유실되어 한 줄 설명만
@@ -88,19 +122,6 @@
 - 테스트: `tests/test_sw2_compare.py`에 다중비교 보정, 효과크기 계산 케이스
   추가.
 
-### Task #24 — 거래비용 모델링 (미시작)
-- 현재 상태: `sw2/ledger.py`의 `Portfolio.buy()` / `sell_all()`에 수수료/슬리피지
-  모델링이 전혀 없음 (전액 그대로 체결).
-- 방향: 간단한 고정 비율 수수료(예: 0.1%) + 선택적 슬리피지(예: 0.05%)를
-  buy/sell 양쪽에 적용. 상수로 시작해서 모델별로 다르게 설정 가능하도록
-  `TradingModel` 또는 `Portfolio`에 필드 추가 고려.
-- 영향 범위: `sw2/ledger.py` (Portfolio.buy, sell_all에 비용 차감 로직 추가),
-  기존 저장된 포트폴리오 JSON과의 하위 호환 확인 (Trade dataclass에 필드
-  추가 시 `portfolio_from_dict`/`Trade(**t)` 역직렬화 깨지지 않게 주의 —
-  기존 데이터엔 새 필드가 없으므로 optional/default 값 필요).
-- 테스트: `tests/test_sw2_ledger.py`에 수수료 차감 후 cash 잔액 검증 케이스
-  추가.
-
 ### Task #25 — 거버넌스 기준 (미시작, 범위 미확정)
 - 현재 상태: 모델을 "승격"하거나 "폐기"하는 기준을 정의하는 코드가 전혀 없음.
 - 방향(제안): 최소 샘플 크기(예: n>=20 거래일) + 유의수준(p<0.05, Task #23의
@@ -113,8 +134,8 @@
 
 ## 다음 세션이 할 일
 
-1. 이 파일에서 "다음 미완료 항목"을 확인 (현재는 Task #22부터 시작하면 됨,
-   순서상 #24 거래비용이 가장 독립적이라 먼저 처리해도 무방).
+1. 이 파일에서 "다음 미완료 항목"을 확인 (Task #24는 완료됨 — 다음은 #22
+   포지션 사이징 또는 #23 통계적 엄밀성부터 시작하면 됨. #25는 #23 이후 권장).
 2. `/home/claude/project`에서 로컬로 구현 + `python -m pytest -q`로 검증.
 3. GitHub 웹 에디터 브라우저 자동화로 커밋 (base64 청크 방식 또는 CodeMirror
    surgical replace, 세션 요약에 기록된 기법 참고).
