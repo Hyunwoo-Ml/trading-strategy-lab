@@ -18,6 +18,17 @@ preservation always takes priority over waiting for a cleaner setup) and
 they never change SW1's underlying buy_1_price/buy_2_price/target_price
 levels. Every field on MarketContext defaults to None/False so existing
 callers that don't pass one behave exactly as before.
+
+2026-09-14 update: MarketContext also carries the ticker's manually-input
+news sentiment (sw1/news/input/{TICKER}.txt -> sw1.news.scorer ->
+data/signals/latest.csv's news_score column, same score the quant/news
+score-threshold models already use). A model opts in by setting
+PriceCriteriaParams.min_news_score; if today's news_score for that ticker
+is below it, a would-be new entry is held back exactly like the other
+confirmation gates -- SW1's exported buy_1/buy_2/target_price levels are
+never touched, only whether a *new* entry happens today. min_news_score
+defaults to None (gate off), so a model whose config JSON doesn't set it
+behaves exactly as before this feature existed.
 """
 from __future__ import annotations
 
@@ -38,6 +49,7 @@ class MarketContext:
     market_regime: str | None = None        # "risk_on" | "risk_off" (sw1.market.regime.compute_market_regime)
     event_blackout: bool = False            # sw1.calendar.events.is_event_blackout(...).is_blackout
     event_reasons: list[str] = field(default_factory=list)
+    news_score: float | None = None         # today's ticker news sentiment, [-1, 1] (sw1.news.scorer via data/signals/latest.csv)
 
 
 @dataclass
@@ -70,6 +82,15 @@ class PriceCriteriaModel:
             return (
                 f"거래량 부족 (평균 대비 {ctx.volume_ratio:.2f}배 < 기준 "
                 f"{self.params.min_volume_ratio:.2f}배) -- 실제 매수세 확인 안 됨"
+            )
+        if (
+            self.params.min_news_score is not None
+            and ctx.news_score is not None
+            and ctx.news_score < self.params.min_news_score
+        ):
+            return (
+                f"뉴스 감성점수 부정적 (news_score {ctx.news_score:.2f} < 기준 "
+                f"{self.params.min_news_score:.2f}) -- 시황 악재로 신규 진입 보류"
             )
         return None
 
