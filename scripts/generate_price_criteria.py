@@ -13,6 +13,16 @@ sw1.criteria.generator and writes:
 
 scripts/run_daily_paper_trading.py reads the `latest.csv` files to decide
 whether any ticker actually touched a model's price levels today.
+
+2026-09-14 (dashboard visibility): each row also carries that ticker's
+current news_score (straight from data/signals/latest.csv, same value the
+score-threshold models and the price-criteria news gate already use), the
+model's own min_news_score threshold, and a news_blocked flag computed the
+same way sw2.price_criteria_model.PriceCriteriaModel._entry_block_reason
+does -- purely for display (the dashboard can now show, per ticker, whether
+today's news would currently hold back a *new* entry). This file never
+decides trades itself; scripts/run_daily_paper_trading.py's own call into
+PriceCriteriaModel.decide() remains the single source of truth for that.
 """
 from __future__ import annotations
 
@@ -31,6 +41,27 @@ DATA_DIR = PROJECT_ROOT / "data"
 INDICATORS_DIR = DATA_DIR / "indicators"
 PRICE_CRITERIA_DIR = DATA_DIR / "sw1" / "price_criteria"
 CONFIG_DIR = PROJECT_ROOT / "sw1" / "config" / "price_criteria_models"
+SIGNALS_PATH = DATA_DIR / "signals" / "latest.csv"
+
+
+def load_news_scores() -> dict[str, float | None]:
+    """Same per-ticker news_score the score-threshold models and SW2's price-
+    criteria news gate use (data/signals/latest.csv, written by
+    scripts/collect_daily_data.py). Missing file/column simply means no
+    news_score is available yet for any ticker -- degrades gracefully like
+    the rest of this pipeline."""
+    if not SIGNALS_PATH.exists():
+        return {}
+    try:
+        signals_df = pd.read_csv(SIGNALS_PATH)
+    except Exception:  # noqa: BLE001
+        return {}
+    if "news_score" not in signals_df.columns:
+        return {}
+    return {
+        row["ticker"]: (None if pd.isna(row.get("news_score")) else float(row["news_score"]))
+        for _, row in signals_df.iterrows()
+    }
 
 
 def main() -> int:
@@ -38,6 +69,8 @@ def main() -> int:
     if not params_list:
         print(f"[WARN] no model configs found under {CONFIG_DIR} -- nothing to generate")
         return 0
+
+    news_scores = load_news_scores()
 
     total_written = 0
     for params in params_list:
@@ -55,6 +88,13 @@ def main() -> int:
                 print(f"[WARN] could not generate criteria for {ticker}/{params.model_name}: {exc}")
                 continue
 
+            news_score = news_scores.get(ticker)
+            news_blocked = (
+                params.min_news_score is not None
+                and news_score is not None
+                and news_score < params.min_news_score
+            )
+
             rows.append(
                 {
                     "model_name": criteria.model_name,
@@ -68,6 +108,9 @@ def main() -> int:
                     "basis_buy_1": criteria.basis.get("buy_1", ""),
                     "basis_buy_2": criteria.basis.get("buy_2", ""),
                     "basis_target": criteria.basis.get("target", ""),
+                    "news_score": news_score,
+                    "min_news_score": params.min_news_score,
+                    "news_blocked": news_blocked,
                 }
             )
 
