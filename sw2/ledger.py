@@ -8,6 +8,19 @@ tranche, clipped to available cash) -- good enough to get the whole loop
 (signal -> trade -> equity -> daily return -> statistical comparison)
 working end-to-end. Refine sizing rules once there's real comparison data
 to react to.
+
+Transaction costs: every buy/sell notional is charged `transaction_cost_pct`
+(default 0.1% = 10bps, a stand-in for combined commission + slippage on a
+typical US equities online broker). This is 100% simulated paper-trading
+bookkeeping -- no real money ever moves. A buy spends exactly
+`dollar_amount` of cash as before, but only `dollar_amount * (1 -
+transaction_cost_pct)` actually converts into shares -- the rest is the fee,
+recorded on the Trade for transparency. A sell credits
+`shares * price * (1 - transaction_cost_pct)` back to cash. Existing
+persisted portfolios (data/sw2/portfolios/*.json) predate this field and
+have no `transaction_cost_pct` key -- they simply pick up the class default
+when reloaded, and old Trade records deserialize with `fee=0.0` since that
+field also defaults.
 """
 from __future__ import annotations
 
@@ -33,6 +46,7 @@ class Trade:
     shares: float
     price: float
     cash_delta: float
+    fee: float = 0.0  # transaction cost charged on this trade's notional (commission + slippage stand-in)
 
 
 @dataclass
@@ -41,6 +55,7 @@ class Portfolio:
 
     model_name: str
     starting_cash: float = 100_000.0
+    transaction_cost_pct: float = 0.001  # 10bps combined commission+slippage, applied to buy/sell notional
     cash: float = field(init=False)
     positions: dict[str, Position] = field(default_factory=dict)
     trades: list[Trade] = field(default_factory=list)
@@ -55,7 +70,8 @@ class Portfolio:
             dollar_amount = self.cash  # don't go negative -- clip to available cash
         if dollar_amount <= 0 or price <= 0:
             return
-        shares = dollar_amount / price
+        fee = dollar_amount * self.transaction_cost_pct
+        shares = (dollar_amount - fee) / price
         existing = self.positions.get(ticker)
         if existing:
             total_shares = existing.shares + shares
@@ -66,17 +82,19 @@ class Portfolio:
             self.positions[ticker] = Position(ticker=ticker, shares=shares, entry_price=price, entry_date=date, tranche_count=1)
         self.cash -= dollar_amount
         self.trades.append(
-            Trade(date=date, ticker=ticker, action=action, shares=shares, price=price, cash_delta=-dollar_amount)
+            Trade(date=date, ticker=ticker, action=action, shares=shares, price=price, cash_delta=-dollar_amount, fee=fee)
         )
 
     def sell_all(self, date: str, ticker: str, price: float, action: str) -> None:
         position = self.positions.pop(ticker, None)
         if position is None or price <= 0:
             return
-        proceeds = position.shares * price
-        self.cash += proceeds
+        gross_proceeds = position.shares * price
+        fee = gross_proceeds * self.transaction_cost_pct
+        net_proceeds = gross_proceeds - fee
+        self.cash += net_proceeds
         self.trades.append(
-            Trade(date=date, ticker=ticker, action=action, shares=-position.shares, price=price, cash_delta=proceeds)
+            Trade(date=date, ticker=ticker, action=action, shares=-position.shares, price=price, cash_delta=net_proceeds, fee=fee)
         )
 
     # -- valuation -----------------------------------------------------
