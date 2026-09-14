@@ -1,6 +1,7 @@
 {
   "model_name": "conservative",
   "starting_cash": 100000.0,
+  "transaction_cost_pct": 0.001,
   "cash": 100000.0,
   "positions": {},
   "trades": [],
@@ -15,6 +16,10 @@
     },
     {
       "date": "2026-09-13",
+      "equity": 100000.0
+    },
+    {
+      "date": "2026-09-14",
       "equity": 100000.0
     },
     {
