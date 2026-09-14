@@ -10,9 +10,10 @@ this:
      -- or starts a fresh one with $100,000 paper cash if this is its first run.
   2. Reads today's signals from data/signals/latest.csv (SW1's output) and
      runs each ticker through the model's decide() to get a trade signal.
-  3. Applies a simple, fixed-size position rule (see TRANCHE_FRACTION below)
-     to the portfolio: buy_1 opens a position, buy_2 adds a second tranche,
-     stop_loss/take_profit close it out, hold/caution do nothing.
+  3. Applies a risk-based position rule (sw2.sizing.risk_based_tranche_dollars,
+     see Task #22) to the portfolio: buy_1 opens a position, buy_2 adds a
+     second tranche, stop_loss/take_profit close it out, hold/caution do
+     nothing.
   4. Marks the portfolio to market at today's close prices and appends to
      its equity curve.
   5. Persists the updated portfolio state and equity curve back to data/,
@@ -20,11 +21,14 @@ this:
      model that has 2+ days of daily-return history and writes that to
      data/sw2/comparisons/latest.json.
 
-Position sizing is intentionally simple for v1 -- a fixed dollar tranche,
-not risk-adjusted or ticker-weighted. This is meant to get the whole
-signal -> trade -> equity -> statistical-comparison loop running daily and
-producing real comparison data; refine sizing once there's history to
-react to.
+Position sizing (Task #22, 2026-09-14): each buy tranche's dollar amount
+comes from sw2.sizing.risk_based_tranche_dollars, which sizes the tranche
+so a stop-loss trigger loses roughly a fixed fraction of starting cash
+regardless of how tight or wide that model/ticker's stop is, clamped to a
+sane [min, max] fraction of starting cash. This replaced the old v1 fixed
+5%-of-starting-cash tranche (TRANCHE_FRACTION) now that the signal ->
+trade -> equity -> statistical-comparison loop has real history to size
+against.
 """
 from __future__ import annotations
 
@@ -45,6 +49,7 @@ from sw2.compare import compare_all_pairs  # noqa: E402
 from sw2.ledger import Portfolio, Position, Trade  # noqa: E402
 from sw2.models import TradingModel, default_registry  # noqa: E402
 from sw2.price_criteria_model import MarketContext, PriceCriteriaModel  # noqa: E402
+from sw2.sizing import risk_based_tranche_dollars  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 SIGNALS_PATH = DATA_DIR / "signals" / "latest.csv"
@@ -55,9 +60,6 @@ EQUITY_DIR = DATA_DIR / "sw2" / "equity"
 COMPARISONS_DIR = DATA_DIR / "sw2" / "comparisons"
 INDICATORS_DIR = DATA_DIR / "indicators"
 MARKET_DIR = DATA_DIR / "market"
-
-TRANCHE_FRACTION = 0.05  # 5% of starting cash per buy tranche -- v1 fixed sizing
-
 
 def load_market_regime() -> str | None:
     """Reads today's market regime written by collect_daily_data.py. Missing
@@ -158,7 +160,10 @@ def save_portfolio(p: Portfolio, path: Path) -> None:
 
 
 def process_model_for_day(model: TradingModel, portfolio: Portfolio, signals_df: pd.DataFrame, run_date: str) -> None:
-    tranche_dollars = portfolio.starting_cash * TRANCHE_FRACTION
+    # model.thresholds.stop_loss_pct is fixed per model (not per ticker/day),
+    # so the risk-based tranche size can be computed once for this whole run
+    # -- see sw2.sizing and Task #22.
+    tranche_dollars = risk_based_tranche_dollars(portfolio.starting_cash, model.thresholds.stop_loss_pct)
     prices: dict[str, float] = {}
 
     for _, row in signals_df.iterrows():
@@ -211,8 +216,13 @@ def process_price_criteria_model_for_day(
     2026-09-13: a MarketContext (volume/weekly-trend/market-regime/event
     blackout) is built per ticker and passed into decide() so a price-level
     touch only becomes a real buy_1/buy_2 when it's confirmed -- see
-    build_market_context() and sw2.price_criteria_model.MarketContext."""
-    tranche_dollars = portfolio.starting_cash * TRANCHE_FRACTION
+    build_market_context() and sw2.price_criteria_model.MarketContext.
+
+    2026-09-14 (Task #22): unlike process_model_for_day, this model's
+    stop_loss_pct comes from SW1's per-ticker/day price criteria
+    (criteria.stop_loss_pct), not a fixed per-model constant -- so the
+    risk-based tranche size is recomputed per row instead of once per run.
+    """
     prices: dict[str, float] = {}
 
     for _, row in criteria_df.iterrows():
@@ -241,6 +251,7 @@ def process_price_criteria_model_for_day(
         tranche_count = existing_position.tranche_count if existing_position else 0
         price_return = portfolio.price_return_from_entry(ticker, price)
         market_context = build_market_context(ticker, run_date, market_regime, earnings_dates)
+        tranche_dollars = risk_based_tranche_dollars(portfolio.starting_cash, criteria.stop_loss_pct)
 
         signal = model.decide(
             criteria=criteria,
