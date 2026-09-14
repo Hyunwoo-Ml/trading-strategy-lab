@@ -20,14 +20,14 @@ class ComparisonResult:
     model_b: str
     mean_daily_return_a: float
     mean_daily_return_b: float
-    t_statistic: float
-    p_value: float
+    t_statistic: float | None
+    p_value: float | None
     n_a: int
     n_b: int
 
     @property
     def significant_at_5pct(self) -> bool:
-        return self.p_value < 0.05
+        return self.p_value is not None and self.p_value < 0.05
 
 
 def compare_daily_returns(
@@ -38,21 +38,33 @@ def compare_daily_returns(
 ) -> ComparisonResult:
     """Welch's t-test (unequal variance) on two models' daily-return
     series -- doesn't assume equal variance since different rule sets
-    can easily end up with very different volatility."""
+    can easily end up with very different volatility.
+
+    Early in a model's life (or for any model that simply hasn't traded
+    yet) its daily returns are all exactly 0.0 -- zero variance. Welch's
+    t-statistic is then a 0/0 division and scipy returns nan/nan. That is
+    a genuinely undefined test outcome, not "no difference detected", so
+    it's reported as t_statistic=None/p_value=None rather than a raw NaN.
+    This also matters for the JSON this feeds (data/sw2/comparisons/
+    latest.json): Python's json module happily writes a bare `NaN`
+    token, which is invalid JSON and breaks the dashboard's JSON.parse
+    -- None serializes as `null`, which every JSON parser accepts."""
     a = returns_a.dropna().to_numpy()
     b = returns_b.dropna().to_numpy()
     if len(a) < 2 or len(b) < 2:
         raise ValueError("need at least 2 daily-return observations per model to compare")
 
     t_stat, p_value = stats.ttest_ind(a, b, equal_var=False)
+    t_stat_out = None if np.isnan(t_stat) else float(t_stat)
+    p_value_out = None if np.isnan(p_value) else float(p_value)
 
     return ComparisonResult(
         model_a=model_a_name,
         model_b=model_b_name,
         mean_daily_return_a=float(np.mean(a)),
         mean_daily_return_b=float(np.mean(b)),
-        t_statistic=float(t_stat),
-        p_value=float(p_value),
+        t_statistic=t_stat_out,
+        p_value=p_value_out,
         n_a=len(a),
         n_b=len(b),
     )
@@ -75,4 +87,3 @@ def compare_all_pairs(returns_by_model: dict[str, pd.Series]) -> list[Comparison
             except ValueError:
                 continue
     return results
-
