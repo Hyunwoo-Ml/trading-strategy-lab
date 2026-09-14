@@ -122,6 +122,7 @@ def portfolio_to_dict(p: Portfolio) -> dict:
     return {
         "model_name": p.model_name,
         "starting_cash": p.starting_cash,
+        "transaction_cost_pct": p.transaction_cost_pct,
         "cash": p.cash,
         "positions": {ticker: asdict(pos) for ticker, pos in p.positions.items()},
         "trades": [asdict(t) for t in p.trades],
@@ -130,7 +131,14 @@ def portfolio_to_dict(p: Portfolio) -> dict:
 
 
 def portfolio_from_dict(d: dict) -> Portfolio:
-    p = Portfolio(model_name=d["model_name"], starting_cash=d["starting_cash"])
+    # transaction_cost_pct is missing on portfolios saved before that field
+    # existed -- fall back to the Portfolio class default (see sw2/ledger.py)
+    # rather than raising, same graceful-degradation pattern as the rest of
+    # this pipeline.
+    kwargs = {"model_name": d["model_name"], "starting_cash": d["starting_cash"]}
+    if "transaction_cost_pct" in d:
+        kwargs["transaction_cost_pct"] = d["transaction_cost_pct"]
+    p = Portfolio(**kwargs)
     p.cash = d["cash"]
     p.positions = {ticker: Position(**pos) for ticker, pos in d["positions"].items()}
     p.trades = [Trade(**t) for t in d["trades"]]
