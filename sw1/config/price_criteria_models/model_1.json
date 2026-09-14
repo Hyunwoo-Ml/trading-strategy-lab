@@ -1,7 +1,8 @@
 {
   "model_name": "price_model_1",
-  "description": "볼린저 하단(20일)/50일 이동평균 중 더 얕은 지지선을 1차 매수가로, 60일 최저가와 볼린저 하단 중 더 깊은 지지선을 2차 매수가로 삼는다. 목표가는 손절%와 reward_risk_ratio로 역산한다 (target = 1차매수가 + risk*ratio).",
+  "description": "볼린저 하단(20일)/50일 이동평균 중 더 얕은 지지선을 1차 매수가로, 60일 최저가와 볼린저 하단 중 더 깊은 지지선을 2차 매수가로 삼는다. 목표가는 손절%와 reward_risk_ratio로 역산한다 (target = 1차매수가 + risk*ratio). 2026-09-14: 뉴스 감성점수가 -0.35보다 낮으면(꽤 부정적인 시황) 신규 진입을 보류한다.",
   "stop_loss_pct": -0.08,
   "reward_risk_ratio": 2.0,
-  "buy2_lookback_days": 60
+  "buy2_lookback_days": 60,
+  "min_news_score": -0.35
 }
