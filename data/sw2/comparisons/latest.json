@@ -8,8 +8,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 5
+      "n_a": 6,
+      "n_b": 6,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "baseline",
@@ -18,8 +22,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 5
+      "n_a": 6,
+      "n_b": 6,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "baseline",
@@ -28,8 +36,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 4
+      "n_a": 6,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "baseline",
@@ -38,8 +50,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 4
+      "n_a": 6,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "technical_only",
@@ -48,8 +64,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 5
+      "n_a": 6,
+      "n_b": 6,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "technical_only",
@@ -58,8 +78,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 4
+      "n_a": 6,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "technical_only",
@@ -68,8 +92,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 4
+      "n_a": 6,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "conservative",
@@ -78,8 +106,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 4
+      "n_a": 6,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "conservative",
@@ -88,8 +120,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 5,
-      "n_b": 4
+      "n_a": 6,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     },
     {
       "model_a": "price_model_1",
@@ -98,8 +134,12 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 4,
-      "n_b": 4
+      "n_a": 5,
+      "n_b": 5,
+      "cohens_d": null,
+      "p_value_adjusted": null,
+      "autocorrelation_warning_a": null,
+      "autocorrelation_warning_b": null
     }
   ]
 }
