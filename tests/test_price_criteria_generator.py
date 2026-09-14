@@ -137,3 +137,48 @@ def test_load_price_criteria_params_reads_new_confirmation_fields(tmp_path):
     [params] = load_price_criteria_params(config_dir)
     assert params.min_volume_ratio == 1.3
     assert params.require_weekly_uptrend is True
+
+
+# -- 2026-09-14 feedback: 가격기준모델에도 뉴스/시황 데이터 반영 --
+
+
+def test_min_news_score_defaults_to_none():
+    params = PriceCriteriaParams(model_name="m")
+    assert params.min_news_score is None
+
+
+def test_min_news_score_out_of_range_rejected():
+    params = PriceCriteriaParams(model_name="bad", min_news_score=-1.5)
+    with pytest.raises(ValueError, match="min_news_score"):
+        params.validate()
+
+    params = PriceCriteriaParams(model_name="bad", min_news_score=1.5)
+    with pytest.raises(ValueError, match="min_news_score"):
+        params.validate()
+
+
+def test_min_news_score_in_range_is_accepted():
+    params = PriceCriteriaParams(model_name="ok", min_news_score=-0.3)
+    params.validate()  # should not raise
+
+
+def test_load_price_criteria_params_reads_min_news_score(tmp_path):
+    config_dir = tmp_path / "price_criteria_models"
+    config_dir.mkdir()
+    (config_dir / "model_1.json").write_text(
+        json.dumps({"model_name": "model_1", "min_news_score": -0.35}),
+        encoding="utf-8",
+    )
+    [params] = load_price_criteria_params(config_dir)
+    assert params.min_news_score == -0.35
+
+
+def test_load_price_criteria_params_min_news_score_defaults_to_none_when_absent(tmp_path):
+    config_dir = tmp_path / "price_criteria_models"
+    config_dir.mkdir()
+    (config_dir / "model_1.json").write_text(
+        json.dumps({"model_name": "model_1"}),
+        encoding="utf-8",
+    )
+    [params] = load_price_criteria_params(config_dir)
+    assert params.min_news_score is None
