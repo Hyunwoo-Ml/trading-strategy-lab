@@ -1,7 +1,13 @@
+import numpy as np
 import pandas as pd
 import pytest
 
-from sw2.compare import adjust_for_multiple_comparisons, compare_all_pairs, compare_daily_returns
+from sw2.compare import (
+    adjust_for_multiple_comparisons,
+    block_bootstrap_pvalue,
+    compare_all_pairs,
+    compare_daily_returns,
+)
 
 
 def test_raises_with_fewer_than_two_observations():
@@ -187,3 +193,80 @@ def test_compare_all_pairs_correction_method_none_skips_adjustment():
     }
     results = compare_all_pairs(returns_by_model, correction_method=None)
     assert all(r.p_value_adjusted is None for r in results)
+
+
+# ---------------------------------------------------------------------------
+# Follow-up (2026-09-14): block-bootstrap p-value, robust to autocorrelation
+# ---------------------------------------------------------------------------
+
+
+def test_block_bootstrap_pvalue_none_with_too_few_observations():
+    # Below 4 observations there isn't enough data for a block of any
+    # meaningful length -- None, not a guess.
+    a = np.array([0.1, 0.2, 0.3])
+    b = np.array([0.1, 0.2, 0.3, 0.4])
+    assert block_bootstrap_pvalue(a, b) is None
+
+
+def test_block_bootstrap_pvalue_low_for_clearly_different_means():
+    rng = np.random.default_rng(1)
+    a = 0.05 + rng.normal(0, 0.005, size=30)
+    b = -0.05 + rng.normal(0, 0.005, size=30)
+    p = block_bootstrap_pvalue(a, b, n_resamples=500, random_state=123)
+    assert p is not None
+    assert p < 0.05
+
+
+def test_block_bootstrap_pvalue_high_when_no_true_difference():
+    # Two independent draws from the *same* distribution -- the block
+    # bootstrap should not manufacture a spuriously low p-value.
+    a = np.random.default_rng(2).normal(0, 0.01, size=30)
+    b = np.random.default_rng(3).normal(0, 0.01, size=30)
+    p = block_bootstrap_pvalue(a, b, n_resamples=500, random_state=123)
+    assert p is not None
+    assert p > 0.05
+
+
+def test_block_bootstrap_pvalue_reproducible_with_fixed_seed():
+    a = 0.05 + np.random.default_rng(1).normal(0, 0.005, size=30)
+    b = -0.05 + np.random.default_rng(4).normal(0, 0.005, size=30)
+    p1 = block_bootstrap_pvalue(a, b, n_resamples=300, random_state=7)
+    p2 = block_bootstrap_pvalue(a, b, n_resamples=300, random_state=7)
+    assert p1 == p2
+
+
+def test_block_bootstrap_pvalue_is_one_for_identical_zero_variance_series():
+    # Both series flat at 0.0 (no trades yet): observed difference is
+    # exactly 0, and every resample under the null is also exactly 0 --
+    # the bootstrap correctly reports "no evidence of a difference"
+    # (p=1.0) rather than raising or returning NaN.
+    z = np.zeros(6)
+    assert block_bootstrap_pvalue(z, z, n_resamples=200, random_state=1) == 1.0
+
+
+def test_compare_daily_returns_includes_reproducible_block_bootstrap_p_value():
+    a = pd.Series(0.05 + np.random.default_rng(1).normal(0, 0.005, size=30))
+    b = pd.Series(-0.05 + np.random.default_rng(4).normal(0, 0.005, size=30))
+    r1 = compare_daily_returns("a", a, "b", b, bootstrap_resamples=300)
+    r2 = compare_daily_returns("a", a, "b", b, bootstrap_resamples=300)
+    assert r1.p_value_block_bootstrap is not None
+    assert r1.p_value_block_bootstrap < 0.05
+    # bootstrap_random_state defaults to a fixed seed, so re-running the
+    # comparison against the same data (e.g. a manual pipeline re-run)
+    # must reproduce the same p-value rather than a fresh random one.
+    assert r1.p_value_block_bootstrap == r2.p_value_block_bootstrap
+
+
+def test_compare_daily_returns_p_value_block_bootstrap_none_for_short_series():
+    a = pd.Series([0.01, 0.02])
+    b = pd.Series([0.03, 0.04])
+    result = compare_daily_returns("a", a, "b", b)
+    assert result.p_value_block_bootstrap is None
+
+
+def test_adjust_for_multiple_comparisons_leaves_block_bootstrap_p_value_untouched():
+    a = pd.Series([0.05, 0.06, 0.055, 0.052, 0.058] * 5)
+    b = pd.Series([-0.05, -0.06, -0.055, -0.052, -0.058] * 5)
+    result = compare_daily_returns("a", a, "b", b)
+    (adjusted,) = adjust_for_multiple_comparisons([result])
+    assert adjusted.p_value_block_bootstrap == result.p_value_block_bootstrap
