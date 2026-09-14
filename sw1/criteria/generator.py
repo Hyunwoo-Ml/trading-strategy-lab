@@ -56,11 +56,22 @@ class PriceCriteriaParams:
     min_volume_ratio: float = 1.0      # require Volume >= this x N-day avg (VOL_RATIO) to treat a touch as real buying interest
     require_weekly_uptrend: bool = False  # if True, also block entries when weekly trend is merely "flat" (not just "down")
 
+    # -- 2026-09-14 feedback: 사용자가 수기 입력한 시황/뉴스(sw1/news/input/
+    # {TICKER}.txt)도 이 가격기준모델의 진입 판단에 반영되어야 한다는 요청.
+    # min_volume_ratio/require_weekly_uptrend와 같은 자리(신규 진입 게이트)에
+    # 놓는다 -- 이미 보유 중인 포지션의 buy_1/buy_2/target_price 자체는 절대
+    # 건드리지 않고, "오늘 새로 진입할지"만 이 값으로 보류시킨다. None(기본값)
+    # 이면 이 게이트는 완전히 꺼진 상태 -- 기존 모델(min_news_score를 아직
+    # 설정 안 한 설정 파일)은 이 필드가 생기기 전과 정확히 동일하게 동작한다.
+    min_news_score: float | None = None  # 오늘 해당 티커의 news_score가 이 값보다 낮으면 신규 진입(buy_1/buy_2) 보류
+
     def validate(self) -> None:
         if self.stop_loss_pct >= 0:
             raise ValueError(f"stop_loss_pct must be negative, got {self.stop_loss_pct}")
         if self.reward_risk_ratio <= 0:
             raise ValueError(f"reward_risk_ratio must be positive, got {self.reward_risk_ratio}")
+        if self.min_news_score is not None and not (-1.0 <= self.min_news_score <= 1.0):
+            raise ValueError(f"min_news_score must be in [-1, 1] or None, got {self.min_news_score}")
         if self.buy2_lookback_days < 2:
             raise ValueError(f"buy2_lookback_days must be >= 2, got {self.buy2_lookback_days}")
         if self.min_volume_ratio < 0:
@@ -173,6 +184,7 @@ def load_price_criteria_params(config_dir: Path) -> list[PriceCriteriaParams]:
             description=raw.get("description", ""),
             min_volume_ratio=raw.get("min_volume_ratio", 1.0),
             require_weekly_uptrend=raw.get("require_weekly_uptrend", False),
+            min_news_score=raw.get("min_news_score"),
         )
         params.validate()
         params_list.append(params)
