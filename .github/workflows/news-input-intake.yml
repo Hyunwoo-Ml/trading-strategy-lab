@@ -1,0 +1,97 @@
+name: news-input-intake
+
+# Lets anyone submit the "📰 뉴스/시황 입력" issue form (see
+# .github/ISSUE_TEMPLATE/news-input.yml) from the dashboard without asking
+# Claude or touching git directly: this workflow parses the submitted
+# ticker + commentary, overwrites sw1/news/input/{TICKER}.txt, commits it,
+# and closes the issue with a confirmation comment. The next scheduled
+# collect-daily-data run scores it (sw1/news/scorer.py) exactly as if the
+# file had been hand-edited and committed.
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  intake:
+    if: contains(github.event.issue.labels.*.name, 'news-input')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse issue form fields
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.issue.body || "";
+            const ALLOWED_TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"];
+
+            function extractField(label) {
+              const re = new RegExp("### " + label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + "\\s*\\n\\n([\\s\\S]*?)(\\n### |$)");
+              const m = body.match(re);
+              return m ? m[1].trim() : "";
+            }
+
+            const ticker = extractField("종목 (티커)");
+            const commentary = extractField("뉴스/시황 코멘터리");
+
+            if (!ALLOWED_TICKERS.includes(ticker)) {
+              core.setFailed(`인식할 수 없는 티커입니다: "${ticker}" -- 이슈 폼(dropdown)을 통해 제출했는지 확인해 주세요.`);
+              return;
+            }
+            if (!commentary) {
+              core.setFailed("코멘터리 내용이 비어 있습니다.");
+              return;
+            }
+
+            const fs = require("fs");
+            fs.mkdirSync("sw1/news/input", { recursive: true });
+            fs.writeFileSync(`sw1/news/input/${ticker}.txt`, commentary + "\n", "utf-8");
+
+            core.setOutput("ticker", ticker);
+
+      - name: Commit and push
+        if: steps.parse.outputs.ticker != ''
+        run: |
+          git config user.name "news-input-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "sw1/news/input/${{ steps.parse.outputs.ticker }}.txt"
+          git diff --staged --quiet && echo "no changes" && exit 0
+          git commit -m "뉴스 입력: ${{ steps.parse.outputs.ticker }} (이슈 #${{ github.event.issue.number }})"
+          git push
+
+      - name: Comment and close the issue
+        if: steps.parse.outputs.ticker != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ticker = "${{ steps.parse.outputs.ticker }}";
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ **${ticker}** 뉴스 입력이 \`sw1/news/input/${ticker}.txt\` 에 반영되었습니다.\n\n다음 자동 실행(평일 미국 장마감 후) 때 Anthropic API로 감성점수가 채점되어, 통합점수 모델과 가격기준모델 뉴스 게이트에 함께 반영됩니다.`,
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: "closed",
+            });
+
+      - name: Comment on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "⚠️ 자동 반영에 실패했습니다. 이슈 폼(종목 드롭다운 + 코멘터리)을 통해 제출했는지 확인 후 다시 시도해 주세요. 문제가 계속되면 이 이슈를 열어두면 확인하겠습니다.",
+            });
