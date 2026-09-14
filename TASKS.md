@@ -118,45 +118,111 @@
   검증하고 통합 테스트가 모델 간 상대적 크기 차이를 직접 확인했으므로
   다음 매수 발생 시 자동으로 올바르게 반영됨.
 
-## 남은 작업 (원래 5개 태스크 시퀀스 중 #23-25)
+### Task #23 — 백테스트/통계적 엄밀성 강화 (완료, 2026-09-14)
+- `sw2/compare.py`: `ComparisonResult`에 `cohens_d`, `p_value_adjusted`,
+  `autocorrelation_warning_a`, `autocorrelation_warning_b` 필드 추가 (모두
+  기본값 `None` — 하위 호환 유지, `data/sw2/comparisons/latest.json`을 읽는
+  기존 소비자는 영향 없음). `_cohens_d(a, b)`: pooled 표준편차 공식, pooled
+  분산이 0 이하면 `None`. `_autocorrelation_warning(series, min_obs=10)`:
+  Ljung-Box 검정(`statsmodels.stats.diagnostic.acorr_ljungbox`, lag=
+  `max(1, min(5, n//2))`), 관측치가 `min_obs` 미만이면 `None`, `p<0.05`면
+  `True`. 신규 공개 함수 `adjust_for_multiple_comparisons(results,
+  method="benjamini-hochberg")` — Bonferroni(`min(p*m, 1.0)`) 또는
+  Benjamini-Hochberg FDR(`scipy.stats.false_discovery_control`) 사후보정,
+  `dataclasses.replace`로 원본 `ComparisonResult`는 불변 유지. `compare_all_
+  pairs(returns_by_model, correction_method="benjamini-hochberg")`가 기본적으로
+  보정을 자동 적용 (`correction_method=None`으로 끌 수 있음).
+- `tests/test_sw2_compare.py`: Cohen's d 부호 반전(비교 순서 바꾸면 부호도
+  반전) 및 분산 0일 때 `None` 케이스, 자기상관 3케이스(관측치 부족 시 `None`,
+  뚜렷한 추세는 `True`, 무작위 노이즈는 `False` — `numpy.random.default_rng(42)`
+  로 생성한 고정 노이즈 배열 사용), 다중비교 보정 6케이스(BH가 p-value
+  순서를 유지하며 보정하는지, Bonferroni가 개수만큼 곱하는지, `None`
+  p-value는 보정 후에도 `None`으로 남는지, 알 수 없는 method는
+  `ValueError`, `compare_all_pairs`가 기본적으로 보정을 적용/`None`이면
+  건너뛰는지) 추가.
+- `docs/index.html`: `significanceBadge(p)` → `significanceBadge(pAdjusted,
+  pRaw)`로 변경 — FDR 보정된 p-value가 있으면 우선 사용("✓ 유의함 (FDR
+  보정)"/"유의하지 않음 (FDR 보정)"), 없으면 raw p-value로 폴백("✓ 유의함
+  (보정 전)"), 둘 다 없으면 "—". 신규 `effectSizeText(d)`: Cohen's d를
+  소수점 3자리 + 한국어 크기 등급(매우 작음/작음/중간/큼, 임계값
+  0.2/0.5/0.8)으로 표시. 신규 `autocorrelationNote(c)`: 자기상관 경고가
+  있으면 "⚠ 자기상관" 툴팁 뱃지 추가. 표 헤더에 "p-value (FDR 보정)",
+  "효과크기 (Cohen's d)" 컬럼 추가. 45KB 파일 중 실제 변경분(~2.5KB, 5개
+  함수/약 90줄)만 CodeMirror에서 anchor 기반 surgical replace로 커밋
+  (전체 51청크 대신, 추출한 old_block의 해시를 교체 직전에 검증하고
+  교체 후 전체 문서 해시를 최종 기대값과 대조하는 방식으로 51청크 전체
+  푸시와 동일한 신뢰도를 훨씬 적은 작업으로 확보).
+- 검증: 로컬 `python -m pytest -q` 174/174 통과 (기존 164 + 신규 10). 3개
+  파일 모두 GitHub에 커밋 후 raw fetch + SHA-256으로 바이트 단위 검증
+  완료. `tests` CI 3커밋 전부(#78 `sw2/compare.py`, #79
+  `tests/test_sw2_compare.py`, #80 `docs/index.html`) "completed
+  successfully" 확인. 이 작업 도중 브라우저 자동화 도구의 세이프티
+  분류기가 ~6분간 일시적으로 응답 불가 상태였는데, 재시도 대신 도구
+  자체 안내(다른 작업 계속하다 나중에 재시도)를 따라 `send_later`로
+  15분 뒤 자동 재개를 예약해두고 그 사이 Task #25를 로컬에서 구현/테스트
+  하는 식으로 시간을 활용함 (도구 자체는 이후 정상 복구되어 문제 없이
+  재개됨).
 
-원래 태스크 정의(#21 이전)는 이전 세션 압축 과정에서 유실되어 한 줄 설명만
-남아있음. 아래는 그 한 줄 설명을 기반으로 코드베이스를 실제로 조사해서 도출한
-구체적 설계 메모.
-
-### Task #23 — 백테스트/통계적 엄밀성 강화 (미시작, NaN 수정과는 별개)
-- 현재 상태: `sw2/compare.py`의 `compare_all_pairs`가 모델 쌍마다 독립적으로
-  Welch's t-test 1회씩 수행. 다중비교 보정 없음, 효과크기(effect size) 없음,
-  일별 수익률의 자기상관(autocorrelation) 미고려 (t-test의 i.i.d. 가정 위반
-  가능성).
-- 방향:
-  1. 다중비교 보정: Bonferroni 또는 Benjamini-Hochberg(FDR)를 `compare_all_pairs`
-     결과에 사후 적용하는 함수 추가 (예: `adjust_for_multiple_comparisons`).
-  2. 효과크기: Cohen's d를 `ComparisonResult`에 필드로 추가.
-  3. 자기상관: 최소한 경고/메모 수준으로 처리 (예: Ljung-Box 검정으로 자기상관
-     탐지 후 유의성 해석에 caveat 추가), 여유가 되면 block bootstrap으로 대체.
-- 영향 범위: `sw2/compare.py` (ComparisonResult 필드 추가는 하위 호환 깨짐 —
-  `data/sw2/comparisons/latest.json`을 읽는 `docs/index.html`도 같이 업데이트
-  필요).
-- 테스트: `tests/test_sw2_compare.py`에 다중비교 보정, 효과크기 계산 케이스
-  추가.
-
-### Task #25 — 거버넌스 기준 (미시작, 범위 미확정)
-- 현재 상태: 모델을 "승격"하거나 "폐기"하는 기준을 정의하는 코드가 전혀 없음.
-- 방향(제안): 최소 샘플 크기(예: n>=20 거래일) + 유의수준(p<0.05, Task #23의
-  다중비교 보정 반영) + 연속 우위 일수 등을 조합한 규칙을 `sw2/governance.py`
-  (신규)에 함수로 정의. 예: `evaluate_promotion(comparison: ComparisonResult) ->
-  GovernanceVerdict` 같은 API.
-- 이 작업은 Task #23(통계 보정)이 먼저 끝나야 유의성 기준을 제대로 정의할 수
-  있으므로, 순서상 #23 이후에 진행하는 것을 권장.
-- 테스트: 신규 `tests/test_sw2_governance.py`.
+### Task #25 — 거버넌스 기준 (완료, 2026-09-14)
+- 신규 `sw2/governance.py`: `evaluate_promotion(comparison: ComparisonResult,
+  returns_a: pd.Series | None = None, returns_b: pd.Series | None = None, *,
+  min_n=GOVERNANCE_MIN_N(20), alpha=GOVERNANCE_ALPHA(0.05),
+  min_consecutive_advantage_days=GOVERNANCE_MIN_CONSECUTIVE_ADVANTAGE_DAYS(5))
+  -> GovernanceVerdict`. 세 가지 기준을 결합, 하나라도 불충분하면 보수적으로
+  "hold" 또는 "insufficient_data"로 수렴(부분 신호만으로는 승격하지 않음):
+  (1) 최소 샘플 크기 — 양쪽 모델 모두 `n >= min_n` 미만이면 즉시
+  "insufficient_data". (2) 유의성 — Task #23의 `p_value_adjusted`(다중비교
+  보정값)를 우선 사용하고, 없으면 raw `p_value`로 폴백하되 "보정값 없음"
+  caveat를 `reasons`에 기록. `p_used`가 `None`(양쪽 분산 0으로 t-test 자체가
+  정의 안 됨)이거나 `alpha` 이상이면 "hold". 그 다음 `mean_daily_return_a`가
+  `mean_daily_return_b`를 넘지 않으면 "hold" (통계적으로 유의해도 방향이
+  안 맞으면 승격 안 함). (3) 일별 수익률 시계열이 함께 주어지면
+  `consecutive_advantage_days()`로 현재 연속 우위 일수를 계산해
+  `min_consecutive_advantage_days` 미만이면 "hold" — 과거에 쌓아둔 우위가
+  최근에 역전된 경우를 평균/t-test만으로는 못 잡아내는 것을 보완 (시계열이
+  없으면 이 체크는 건너뛰고 실패로 취급하지 않음). 자기상관 경고
+  (`autocorrelation_warning_a/b`)는 "promote" 여부와 무관하게 항상 caveat로
+  `reasons`에 기록. `GovernanceVerdict`는 `verdict`
+  ("promote"/"hold"/"insufficient_data"), `reasons: list[str]`(판단 근거 전부
+  누적 — 단순 yes/no가 아니라 감사 가능하도록), `consecutive_advantage_days_a`
+  를 담음.
+- 신규 `tests/test_sw2_governance.py`: `evaluate_promotion` 11케이스
+  (샘플 크기 부족 → insufficient_data, 비유의 → hold, p-value undefined →
+  hold, model_a가 평균 우위 아님 → hold, 스트릭 데이터 없이 나머지 기준만
+  충족 → promote, 보정값이 raw보다 우선 적용되는지, 보정값 없을 때 raw로
+  폴백하며 caveat 기록되는지, 자기상관 경고가 promote여도 caveat로
+  남는지, 스트릭 부족 → hold / 충분 → promote, 커스텀 임계값 반영) +
+  `consecutive_advantage_days` 5케이스(연속 승리 카운트, 가장 최근 날이
+  패배면 0으로 리셋, NaN 만나면 중단, 길이 다른 두 시리즈는 뒤에서부터
+  비교, 빈 시리즈면 0).
+- 검증: 로컬 `python -m pytest -q` 190/190 통과 (기존 174 + 신규 16). 2개
+  파일 모두 GitHub "new file" 플로우(브라우저 자동화로 새 파일 생성 URL
+  이동 → base64 청크 페이스트+해시 검증 → CodeMirror에 삽입 → 전체 문서
+  해시 재검증 → 커밋)로 커밋 후 raw fetch + SHA-256으로 바이트 단위 검증
+  완료. `tests` CI 2커밋 전부(#81 `sw2/governance.py`, #82
+  `tests/test_sw2_governance.py`) "completed successfully" 확인.
 
 ## 다음 세션이 할 일
 
-1. 이 파일에서 "다음 미완료 항목"을 확인 (Task #22, #24는 완료됨 — 다음은
-   #23 통계적 엄밀성부터 시작하면 됨. #25는 #23 이후 권장).
-2. `/home/claude/project`에서 로컬로 구현 + `python -m pytest -q`로 검증.
-3. GitHub 웹 에디터 브라우저 자동화로 커밋 (base64 청크 방식 또는 CodeMirror
-   surgical replace, 세션 요약에 기록된 기법 참고).
-4. raw.githubusercontent.com + SHA-256으로 바이트 단위 검증.
-5. 이 TASKS.md를 갱신해서 "완료된 작업"으로 옮기고 다시 커밋.
+원래 태스크 시퀀스(#13, NaN 수정, #22, #24, #23, #25)가 모두 완료됨 — 이
+파일에 명시적으로 남아있는 미완료 태스크는 없음.
+
+1. 사용자로부터 새 지시가 없다면, `run-paper-trading` 워크플로를 한 번 더
+   수동 실행해서 (Task #22, #24 때와 동일한 패턴) Task #23/#25가 실제 라이브
+   데이터 흐름에서도 정상 동작하는지 확인. 특히 `data/sw2/comparisons/
+   latest.json`에 `cohens_d`, `p_value_adjusted`,
+   `autocorrelation_warning_a/b` 필드가 채워지는지, 라이브 대시보드가 에러
+   없이 새 컬럼(FDR 보정 p-value, 효과크기)을 렌더링하는지 raw fetch +
+   스크린샷으로 확인. (`sw2/governance.py`의 `evaluate_promotion`은 아직
+   일일 파이프라인 어디에서도 자동 호출되지 않음 — 현재는 라이브러리
+   함수로만 존재. 대시보드나 일일 스크립트에 실제로 연결할지는 사용자
+   지시 없이 임의로 결정하지 말 것.)
+2. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나(예:
+   자기상관 처리를 block bootstrap으로 고도화, governance 판정 결과를
+   대시보드에 노출), 사용자의 새 지시를 기다릴 것.
+3. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
+   `/home/claude/project`에서 로컬 구현 → `python -m pytest -q` 검증 →
+   GitHub 웹 에디터 브라우저 자동화로 커밋(base64 청크 + 청크별 해시
+   검증, 또는 CodeMirror anchor 기반 surgical replace) →
+   raw.githubusercontent.com + SHA-256으로 바이트 단위 검증 → `tests` CI
+   워크플로 상태 확인 → 이 TASKS.md 갱신.
