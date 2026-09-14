@@ -1,24 +1,44 @@
 {
-  "run_date": "2026-09-13",
+  "run_date": "2026-09-14",
   "comparisons": [
     {
       "model_a": "baseline",
       "model_b": "technical_only",
       "mean_daily_return_a": 0.0,
       "mean_daily_return_b": 0.0,
-      "t_statistic": NaN,
-      "p_value": NaN,
-      "n_a": 2,
-      "n_b": 2
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 3
     },
     {
       "model_a": "baseline",
       "model_b": "conservative",
       "mean_daily_return_a": 0.0,
       "mean_daily_return_b": 0.0,
-      "t_statistic": NaN,
-      "p_value": NaN,
-      "n_a": 2,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 3
+    },
+    {
+      "model_a": "baseline",
+      "model_b": "price_model_1",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 2
+    },
+    {
+      "model_a": "baseline",
+      "model_b": "price_model_2",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
       "n_b": 2
     },
     {
@@ -26,8 +46,58 @@
       "model_b": "conservative",
       "mean_daily_return_a": 0.0,
       "mean_daily_return_b": 0.0,
-      "t_statistic": NaN,
-      "p_value": NaN,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 3
+    },
+    {
+      "model_a": "technical_only",
+      "model_b": "price_model_1",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 2
+    },
+    {
+      "model_a": "technical_only",
+      "model_b": "price_model_2",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 2
+    },
+    {
+      "model_a": "conservative",
+      "model_b": "price_model_1",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 2
+    },
+    {
+      "model_a": "conservative",
+      "model_b": "price_model_2",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
+      "n_a": 3,
+      "n_b": 2
+    },
+    {
+      "model_a": "price_model_1",
+      "model_b": "price_model_2",
+      "mean_daily_return_a": 0.0,
+      "mean_daily_return_b": 0.0,
+      "t_statistic": null,
+      "p_value": null,
       "n_a": 2,
       "n_b": 2
     }
