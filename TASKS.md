@@ -248,24 +248,112 @@
   이미 일일 스케줄 실행분으로 검증이 끝난 상태라 판단해 `run-paper-trading`
   워크플로를 별도로 다시 수동 실행하지는 않음.
 
+### 가격기준모델 뉴스 게이트 마무리 + 대시보드 뉴스 노출 + 뉴스 입력 폼 (완료, 2026-09-14)
+- 사용자 요청 5가지 중 "나중에" 항목(KIS 실거래 연동)을 제외한 나머지를 처리:
+  1. **가격기준모델 뉴스 게이트 확장 배치 완료 확인**: 이전 세션에서 로컬
+     구현까지만 되어 있던 9개 파일(`sw1/config/price_criteria_models/model_1.json`,
+     `model_2.json`, `README.md`, `sw1/criteria/generator.py`(`min_news_score`
+     필드), `sw2/price_criteria_model.py`(`MarketContext.news_score` +
+     `_entry_block_reason` 게이트), `scripts/run_daily_paper_trading.py`,
+     3개 테스트 파일)를 브라우저 자동화로 전부 GitHub에 커밋 완료. 이 중
+     `tests/test_run_daily_paper_trading.py`는 "9/9 완료"로 착각하고 실제로는
+     커밋되지 않은 채 넘어갔던 것을 이번 세션 시작 시 raw fetch로 재검증하다
+     발견(기대 해시 불일치, 15156바이트짜리 구버전이 live였음) — 재푸시로
+     바로잡음. **교훈: "완료"라고 스스로 판단한 파일도 다음 세션 시작 시
+     반드시 raw fetch/API로 실제 바이트 일치를 재확인할 것.**
+  2. **대시보드에 뉴스 반영 매매기준 노출** (`docs/index.html` +
+     `scripts/generate_price_criteria.py`): 기존에는 가격기준모델의
+     `min_news_score` 게이트가 SW2 실거래 판단에는 반영되지만 대시보드에는
+     전혀 보이지 않았음(수치 자체가 CSV에 없었음). `generate_price_criteria.py`
+     에 `load_news_scores()`(data/signals/latest.csv에서 읽음, 없거나
+     컬럼 없으면 빈 dict로 우아하게 폴백)를 추가해 `latest.csv`/`history.csv`에
+     `news_score`, `min_news_score`, `news_blocked` 3개 컬럼을 새로 기록(단,
+     실제 거래 판단 로직은 여전히 `run_daily_paper_trading.py`의
+     `PriceCriteriaModel.decide()`가 유일한 source of truth — 이 파일은 표시
+     전용). `docs/index.html`의 `renderCriteriaCard()`에 `newsGateTag()`
+     함수를 추가해 종목별 카드 하단에 뉴스 감성점수 + "✓ 게이트 통과" /
+     "🔒 신규진입 보류 (뉴스)" / "게이트 미설정" / "뉴스 대기 중" 태그를 표시.
+  3. **Claude에게 묻지 않고 대시보드에서 뉴스/시황 입력**: GitHub Issue Form
+     (`.github/ISSUE_TEMPLATE/news-input.yml` — 티커 드롭다운 + 코멘터리
+     textarea)과 이를 자동 처리하는 GitHub Actions 워크플로
+     (`.github/workflows/news-input-intake.yml` — `issues: [opened, edited]`
+     트리거, `actions/github-script@v7`로 폼 본문 파싱 → `sw1/news/input/
+     {TICKER}.txt` 덮어쓰기 → 커밋 → 완료 댓글 + 이슈 자동 닫기, 실패 시
+     안내 댓글)로 구현. 대시보드 헤더에 "📰 뉴스/시황 입력하기" 버튼
+     (`.news-input-link`)을 추가해 이슈 폼으로 바로 연결. 사람이 확인/커밋할
+     필요 없이 폼 제출만으로 끝나는 구조 — "복잡하면 가이드만" 요청이었지만
+     실제로는 기능으로 구현 가능하다고 판단해 기능으로 제공.
+  4. **SW1/SW2 대시보드 분리**: 조사 결과 백엔드(주기적/수동 실행 분리)는
+     이미 되어 있었음 — `collect-daily-data.yml`(cron 평일 22:00 UTC)과
+     `run-paper-trading.yml`(cron 평일 22:30 UTC, 30분 뒤)이 이미 별도
+     워크플로이고 둘 다 `workflow_dispatch: {}`로 수동 실행도 가능. 따라서
+     남은 범위는 대시보드 UI 분리뿐이라고 사용자에게 설명하고 진행 동의 받음
+     — **이 UI 분리 작업 자체는 이번 세션에서 아직 시작 안 함, 다음 세션
+     과제로 이월.**
+  5. **모델 파라미터 개수에 대한 객관적 평가**: 채팅으로 답변 완료(파일 변경
+     없음) — 현재 파라미터 + 기술적 지표 + 뉴스 스크립트만으로는 수익률을
+     "보장"할 수 있는 모델은 만들 수 없다는 점을 명확히 했고, 파라미터
+     개수를 늘리는 것보다 종목별 오버라이드, 변동성 조정 손절, 히스토리컬
+     백테스트 확장 등이 더 유효한 방향이라고 조언.
+- `tests/test_generate_price_criteria.py`에 `news_score`/`min_news_score`/
+  `news_blocked` 관련 신규 테스트 4개 추가(뉴스 없음 → null, 임계값 미만 →
+  차단 표시, 게이트 미설정 모델은 나쁜 뉴스에도 차단 안 함, signals에 없는
+  티커는 null이지만 차단 안 함).
+- 검증: 로컬 `python -m pytest -q` 219/219 통과. 총 10개 파일(재푸시 1개
+  포함)을 브라우저 자동화로 커밋 — `docs/index.html`(47171바이트)은 한 번에
+  넣기엔 너무 커서 원문을 8개 청크로 쪼개 CodeMirror에 순차 삽입 후 전체
+  문서 SHA-256으로 최종 일치 확인하는 방식을 새로 사용(기존 anchor 기반
+  surgical replace보다 안전 — 전체 재검증 가능). 신규 파일 2개
+  (`.github/ISSUE_TEMPLATE/news-input.yml`,
+  `.github/workflows/news-input-intake.yml`)는 기존 "edit existing file"
+  플로우 대신 `.../new/{branch}?filename={path}` URL로 새 파일 생성 플로우를
+  이번 세션 처음 사용 — 정상 동작 확인(브레드크럼에 경로가 올바르게 반영되고,
+  GitHub이 `.github/ISSUE_TEMPLATE/*.yml`을 issue-template으로 자동 인식하는
+  것도 확인). `news-input.yml` 첫 삽입 시도에서 내용을 파일에서 다시 읽지
+  않고 기억으로 타이핑했다가 해시 불일치 발생(한국어 단어 철자 오류) — 반드시
+  로컬 파일에서 `json.dumps`로 재추출한 리터럴만 사용할 것이라는 기존 규칙을
+  재확인. 모든 파일 GitHub Contents API(`size`/`sha`)로 최종 검증 —
+  raw.githubusercontent.com CDN은 캐시 지연이 있어(같은 세션 내 커밋 직후
+  404/구버전 반환) 즉시 검증이 필요할 때는 API `contents` 엔드포인트가 더
+  신뢰도 높음. `tests` CI 커밋 전부(#91~#100, 재푸시분 #97, 신규파일 #100,
+  #101 포함) "completed successfully" 확인.
+
 ## 다음 세션이 할 일
 
 원래 태스크 시퀀스(#13, NaN 수정, #22, #24, #23, #25)와 그 뒤 self-directed
-follow-up(block bootstrap p-value)까지 모두 완료됨 — 이 파일에 명시적으로
-남아있는 미완료 태스크는 없음.
+follow-up(block bootstrap p-value), 그리고 이번 세션의 뉴스 게이트 마무리 +
+대시보드 뉴스 노출 + 뉴스 입력 폼까지 모두 완료됨.
 
-1. `sw2/governance.py`의 `evaluate_promotion`은 여전히 일일 파이프라인이나
+1. **SW1/SW2 대시보드 분리** (사용자 요청, 진행 동의 받음, 아직 미착수):
+   현재 `docs/index.html` 하나에 M7 신호(SW1 일부) + 가격기준모델(SW1) +
+   SW2 페이퍼트레이딩 성과가 전부 한 페이지에 있음. 사용자는 SW1과 SW2를
+   별도 대시보드 페이지로 분리하고, SW2 페이지에서 SW1 데이터를 원할 때 또는
+   설정한 주기로 불러올 수 있길 원함. 백엔드는 이미 분리되어 있으므로(각각
+   독립 workflow + workflow_dispatch) 이번 작업은 프론트엔드 전용: 예를 들어
+   `docs/index.html`을 SW1 전용으로, `docs/sw2.html`(신규)을 SW2 전용으로
+   나누고 상호 링크를 추가하는 방향 검토. "SW2에서 원할 때 SW1 데이터를
+   불러온다"는 부분은 정적 페이지 특성상 이미 매일 자동 갱신되는
+   `data/sw1/price_criteria/*/latest.csv`를 SW2 페이지에서도 fetch하는
+   정도로 충분할지, 아니면 명시적 "새로고침" 버튼이 필요할지는 사용자에게
+   확인하거나 합리적으로 판단해서 진행.
+2. **KIS 실계좌(모의투자) API 연동** — 사용자가 명시적으로 "나중에 하자"고
+   보류함. 사용자가 다시 요청하기 전까지 시작하지 말 것. KIS API 키는
+   채팅에 직접 붙여넣지 말고 GitHub Encrypted Secrets로 등록하도록 안내할 것
+   (이미 이전에 안내함).
+3. `sw2/governance.py`의 `evaluate_promotion`은 여전히 일일 파이프라인이나
    대시보드 어디에서도 자동 호출되지 않음 — 라이브러리 함수로만 존재.
    대시보드에 승격/보류 판정을 노출할지, 일일 스크립트에 실제로 연결할지는
    여전히 사용자 지시 없이 임의로 결정하지 말 것 (제품/정책 결정이라 판단).
-2. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나
-   (예: 5개 모델 전부 며칠째 실거래가 0건인 원인을 조사해볼지, block
-   bootstrap의 기본 block_size 규칙을 실제 데이터로 점검해볼지 등),
+4. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나,
    사용자의 새 지시를 기다릴 것.
-3. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
-   `/home/claude/project`에서 로컬 구현 → `python -m pytest -q` 검증 →
-   GitHub 웹 에디터 브라우저 자동화로 커밋(base64 청크 + 청크별 해시
-   검증, 또는 CodeMirror anchor 기반 surgical replace) →
-   raw.githubusercontent.com + (가능하면 SHA-256, 브라우저 세이프티
-   분류기가 막으면 전체 문자열 완전일치 비교로 대체) 바이트 단위 검증 →
-   `tests` CI 워크플로 상태 확인 → 이 TASKS.md 갱신.
+5. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
+   `/tmp/repo_sync`(또는 그때그때의 로컬 클론 경로)에서 로컬 구현 →
+   `python -m pytest -q` 검증 → GitHub 웹 에디터 브라우저 자동화로 커밋
+   (기존 파일은 `/edit/main/{path}`, 신규 파일은 `/new/main?filename={path}`,
+   대용량 파일은 청크 분할 삽입) → **항상 파일에서 다시 읽어(`json.dumps`)
+   리터럴을 재생성 — 기억으로 타이핑하지 말 것** → 삽입 직후 CodeMirror
+   문서 해시 재검증 → 커밋 → GitHub Contents API(`size`/`sha`)로 최종 검증
+   (raw.githubusercontent.com은 캐시 지연 있음) → `tests` CI 워크플로 상태
+   확인(진행 중이면 완료까지 대기) → 이 TASKS.md 갱신. 그리고 세션 시작 시
+   "완료"로 기록된 파일도 최소 1개는 raw fetch/API로 재검증해 실제로
+   커밋되었는지 다시 확인할 것.
