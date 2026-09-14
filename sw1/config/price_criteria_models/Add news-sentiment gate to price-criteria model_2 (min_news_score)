@@ -1,0 +1,8 @@
+{
+  "model_name": "price_model_2",
+  "description": "model_1보다 손절선을 타이트하게 잡고(-5%) 목표 리스크배수를 더 높인(x3) 공격적인 가격기준 모델. 매수1/2가 산출 로직은 model_1과 동일하고 손절%/reward_risk_ratio만 다르다. 2026-09-14: 손절을 타이트하게 잡는 철학과 맞춰 뉴스 감성점수 게이트도 model_1보다 예민하게 -0.20으로 설정 -- 다소 부정적인 시황만 있어도 신규 진입을 보류한다.",
+  "stop_loss_pct": -0.05,
+  "reward_risk_ratio": 3.0,
+  "buy2_lookback_days": 60,
+  "min_news_score": -0.20
+}
