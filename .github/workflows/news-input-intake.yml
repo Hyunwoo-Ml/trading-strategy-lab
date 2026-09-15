@@ -3,10 +3,14 @@ name: news-input-intake
 # Lets anyone submit the "📰 뉴스/시황 입력" issue form (see
 # .github/ISSUE_TEMPLATE/news-input.yml) from the dashboard without asking
 # Claude or touching git directly: this workflow parses the submitted
-# ticker + commentary, overwrites sw1/news/input/{TICKER}.txt, commits it,
-# and closes the issue with a confirmation comment. The next scheduled
-# collect-daily-data run scores it (sw1/news/scorer.py) exactly as if the
-# file had been hand-edited and committed.
+# ticker (or "전체 시장 (종목무관)") + commentary and APPENDS one
+# {date, text} line to the matching JSONL log --
+# sw1/news/input/{TICKER}.jsonl for a specific ticker, or
+# sw1/news/input/market/GENERAL.jsonl for market-wide commentary -- commits
+# it, and closes the issue with a confirmation comment. The next scheduled
+# collect-daily-data run scores it (sw1/news/scorer.py, via
+# sw1/news/log.py's recent-window filter) exactly as if the log line had
+# been hand-appended and committed.
 
 on:
   issues:
@@ -23,13 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parse issue form fields
+      - name: Parse issue form fields and append log line
         id: parse
         uses: actions/github-script@v7
         with:
           script: |
             const body = context.payload.issue.body || "";
             const ALLOWED_TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"];
+            const GENERAL_OPTION = "전체 시장 (종목무관)";
 
             function extractField(label) {
               const re = new RegExp("### " + label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + "\\s*\\n\\n([\\s\\S]*?)(\\n### |$)");
@@ -37,11 +42,11 @@ jobs:
               return m ? m[1].trim() : "";
             }
 
-            const ticker = extractField("종목 (티커)");
+            const selected = extractField("종목 (티커)");
             const commentary = extractField("뉴스/시황 코멘터리");
 
-            if (!ALLOWED_TICKERS.includes(ticker)) {
-              core.setFailed(`인식할 수 없는 티커입니다: "${ticker}" -- 이슈 폼(dropdown)을 통해 제출했는지 확인해 주세요.`);
+            if (!ALLOWED_TICKERS.includes(selected) && selected !== GENERAL_OPTION) {
+              core.setFailed(`인식할 수 없는 선택입니다: "${selected}" -- 이슈 폼(dropdown)을 통해 제출했는지 확인해 주세요.`);
               return;
             }
             if (!commentary) {
@@ -49,33 +54,43 @@ jobs:
               return;
             }
 
-            const fs = require("fs");
-            fs.mkdirSync("sw1/news/input", { recursive: true });
-            fs.writeFileSync(`sw1/news/input/${ticker}.txt`, commentary + "\n", "utf-8");
+            const isGeneral = selected === GENERAL_OPTION;
+            const logPath = isGeneral
+              ? "sw1/news/input/market/GENERAL.jsonl"
+              : `sw1/news/input/${selected}.jsonl`;
+            const today = new Date().toISOString().slice(0, 10);
+            const line = JSON.stringify({ date: today, text: commentary }) + "\n";
 
-            core.setOutput("ticker", ticker);
+            const fs = require("fs");
+            const path = require("path");
+            fs.mkdirSync(path.dirname(logPath), { recursive: true });
+            fs.appendFileSync(logPath, line, "utf-8");
+
+            core.setOutput("log_path", logPath);
+            core.setOutput("label", isGeneral ? "전체 시장 (종목무관)" : selected);
 
       - name: Commit and push
-        if: steps.parse.outputs.ticker != ''
+        if: steps.parse.outputs.log_path != ''
         run: |
           git config user.name "news-input-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "sw1/news/input/${{ steps.parse.outputs.ticker }}.txt"
+          git add "${{ steps.parse.outputs.log_path }}"
           git diff --staged --quiet && echo "no changes" && exit 0
-          git commit -m "뉴스 입력: ${{ steps.parse.outputs.ticker }} (이슈 #${{ github.event.issue.number }})"
+          git commit -m "뉴스 입력: ${{ steps.parse.outputs.label }} (이슈 #${{ github.event.issue.number }})"
           git push
 
       - name: Comment and close the issue
-        if: steps.parse.outputs.ticker != ''
+        if: steps.parse.outputs.log_path != ''
         uses: actions/github-script@v7
         with:
           script: |
-            const ticker = "${{ steps.parse.outputs.ticker }}";
+            const label = "${{ steps.parse.outputs.label }}";
+            const logPath = "${{ steps.parse.outputs.log_path }}";
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `✅ **${ticker}** 뉴스 입력이 \`sw1/news/input/${ticker}.txt\` 에 반영되었습니다.\n\n다음 자동 실행(평일 미국 장마감 후) 때 Anthropic API로 감성점수가 채점되어, 통합점수 모델과 가격기준모델 뉴스 게이트에 함께 반영됩니다.`,
+              body: `✅ **${label}** 뉴스 입력이 \`${logPath}\` 에 누적 반영되었습니다.\n\n다음 자동 실행(평일 미국 장마감 후) 때 최근 기간 내 누적 내용을 함께 보고 Anthropic API로 감성점수가 채점되어, 통합점수 모델과 가격기준모델 뉴스 게이트에 함께 반영됩니다. 종목무관 시황인 경우, 어떤 종목과 관련 있는지는 채점 시 AI가 직접 판단합니다.`,
             });
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -93,5 +108,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: "⚠️ 자동 반영에 실패했습니다. 이슈 폼(종목 드롭다운 + 코멘터리)을 통해 제출했는지 확인 후 다시 시도해 주세요. 문제가 계속되면 이 이슈를 열어두면 확인하겠습니다.",
+              body: "⚠️ 자동 반영에 실패했습니다. 이슈 폼(종목/전체 시장 드롭다운 + 코멘터리)을 통해 제출했는지 확인 후 다시 시도해 주세요. 문제가 계속되면 이 이슈를 열어두면 확인하겠습니다.",
             });
