@@ -1,0 +1,35 @@
+name: walkforward-validation
+
+# On-demand only -- this re-validates the SW1 quant scoring formula's
+# stability across ~2 years of history (see sw1/validation/walkforward.py
+# and scripts/run_walkforward_validation.py), which doesn't change day to
+# day the way live signals do, so there's no reason to run it on the daily
+# schedule like collect-daily-data.yml. Re-run manually after changing
+# sw1/scoring/integrate.py's weights, or periodically to sanity-check drift.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run walk-forward validation (SW1 quant score, ~2y history)
+        run: python scripts/run_walkforward_validation.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/walkforward/
+          git diff --staged --quiet && echo "no changes" && exit 0
+          git commit -m "chore: walk-forward validation run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
