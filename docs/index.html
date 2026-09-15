@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trading Strategy Lab — AI 퀀트 신호 &amp; 페이퍼 트레이딩 대시보드</title>
+<title>Trading Strategy Lab — SW1 AI 퀀트 신호 대시보드</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b0f17'/%3E%3Cpath d='M20 65 L40 45 L55 58 L80 28' stroke='%2322d3ee' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#0a0d14;
@@ -582,17 +581,17 @@
           <svg viewBox="0 0 24 24" fill="none"><path d="M3 16 L9 10 L13 14 L21 5" stroke="#0a0d14" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <div>
-          <div class="brand-name">Trading Strategy Lab<span class="mono-tag">M7 · QUANT</span></div>
+          <div class="brand-name">Trading Strategy Lab<span class="mono-tag">SW1 · QUANT SIGNALS</span></div>
         </div>
       </div>
       <div class="status-pill"><span class="status-dot"></span><span id="last-updated">데이터 불러오는 중…</span></div>
     </div>
-    <div class="desc">기술적 지표(RSI · MACD · Bollinger Bands · 이동평균 교차)와 뉴스 감성 점수를 결합한 퀀트 신호로 NASDAQ 대형 기술주 7종목을 평가하고, 서로 다른 매매 규칙 모델의 장기 페이퍼 트레이딩 성과를 통계적으로 비교합니다.</div>
+    <div class="desc">기술적 지표(RSI · MACD · Bollinger Bands · 이동평균 교차)와 뉴스 감성 점수를 결합한 퀀트 신호로 NASDAQ 대형 기술주 7종목을 평가하고, 종목별 사용자 정의 매수/목표가 기준을 매일 재계산합니다.</div>
     <div class="meta-row">
       <span>⚙ <b>GitHub Actions</b>로 매 평일 자동 갱신</span>
-      <span>💰 모델당 초기 자본 <b>$100,000</b> (paper trading)</span>
       <span>📡 정적 페이지 · 백엔드 없음</span>
       <a class="news-input-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab/issues/new?template=news-input.yml" target="_blank" rel="noopener">📰 뉴스/시황 입력하기</a>
+      <a class="news-input-link" href="sw2.html">📊 SW2 페이퍼 트레이딩 성과 보기 →</a>
     </div>
   </header>
 
@@ -618,38 +617,10 @@
     </div>
   </section>
 
-  <!-- ===================== SW2 ===================== -->
-  <section id="sw2-section">
-    <div class="section-head">
-      <div class="section-title"><span class="idx">03</span> 페이퍼 트레이딩 성과 비교 (SW2)</div>
-    </div>
-    <div class="section-sub">baseline · technical_only · conservative · price_model_1 · price_model_2 다섯 모델의 일일 자산가치(equity) 추이와 수익률에 대한 쌍대(t-test) 통계 비교</div>
-
-    <div class="sw2-layout">
-      <div class="panel chart-panel">
-        <div class="chart-head">
-          <div class="panel-title">모델별 Equity Curve</div>
-          <div class="legend-row" id="chart-legend"></div>
-        </div>
-        <div id="equity-content">
-          <div class="chart-wrap"><div class="state-box" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span class="spinner"></span>Equity 데이터를 불러오는 중입니다…</div></div>
-        </div>
-        <div id="model-summary-row" class="model-summary-row"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title" style="margin-bottom:14px;">모델 간 통계적 유의성 비교 (t-test)</div>
-        <div id="comparisons-content">
-          <div class="state-box"><span class="spinner"></span>비교 데이터를 불러오는 중입니다…</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ===================== Walk-forward validation ===================== -->
   <section id="walkforward-section">
     <div class="section-head">
-      <div class="section-title"><span class="idx">04</span> Walk-forward 검증 (SW1 퀀트 스코어)</div>
+      <div class="section-title"><span class="idx">03</span> Walk-forward 검증 (SW1 퀀트 스코어)</div>
     </div>
     <div class="section-sub">기술 지표 기반 Quant Score(sw1/scoring/integrate.py, 고정 가중치 수식)가 특정 구간에만 우연히 맞았던 게 아니라 여러 독립된 구간에서 꾸준히 순방향 수익률과 상관관계를 보이는지 확인하는 과최적화 방지 검증입니다. 약 2년치 과거 시세를 6개월 롤링 윈도우로 나눠 구간별 Spearman IC(정보계수)를 계산합니다. 뉴스 감성 점수는 과거 시황 아카이브가 없어 이 백테스트에 포함되지 않습니다 — GitHub Actions에서 수동 실행(workflow_dispatch)해야 갱신됩니다.</div>
     <div id="walkforward-content">
@@ -673,8 +644,6 @@
 
   var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/";
   var SIGNALS_URL = BASE + "data/signals/latest.csv";
-  var EQUITY_URL = function(m){ return BASE + "data/sw2/equity/" + m + ".csv"; };
-  var COMPARISONS_URL = BASE + "data/sw2/comparisons/latest.json";
   var WALKFORWARD_URL = BASE + "data/walkforward/results.json";
 
   var TICKER_NAMES = {
@@ -687,14 +656,6 @@
     TSLA: "Tesla Inc."
   };
   var TICKER_ORDER = ["AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA"];
-
-  var MODELS = [
-    { key:"baseline", label:"Baseline", color:"#22d3ee" },
-    { key:"technical_only", label:"Technical Only", color:"#fbbf24" },
-    { key:"conservative", label:"Conservative", color:"#a78bfa" },
-    { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
-    { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
-  ];
 
   var PRICE_CRITERIA_MODELS = [
     { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
@@ -1024,261 +985,6 @@
     });
   }
 
-  /* ---------------- section 2: SW2 equity + comparisons ---------------- */
-
-  function loadEquityForModel(model){
-    return fetchText(EQUITY_URL(model.key)).then(function(text){
-      var rows = parseCSV(text).map(function(r){
-        return {
-          date: r.date,
-          equity: parseNumOrNull(r.equity),
-          daily_return: parseNumOrNull(r.daily_return)
-        };
-      }).filter(function(r){ return r.equity !== null; });
-      return { model: model, rows: rows, error: null };
-    }).catch(function(err){
-      return { model: model, rows: [], error: err.message };
-    });
-  }
-
-  function renderEquityChart(results){
-    var allDates = [];
-    results.forEach(function(r){
-      r.rows.forEach(function(row){
-        if(allDates.indexOf(row.date) === -1) allDates.push(row.date);
-      });
-    });
-    allDates.sort();
-
-    var haveAnyData = results.some(function(r){ return r.rows.length > 0; });
-
-    // legend
-    var legendHtml = MODELS.map(function(m){
-      return '<span class="legend-item"><span class="legend-dot" style="background:' + m.color + ';"></span>' + m.label + '</span>';
-    }).join("");
-    document.getElementById("chart-legend").innerHTML = legendHtml;
-
-    var contentEl = document.getElementById("equity-content");
-    var allFailed = results.every(function(r){ return r.error; });
-
-    if(allFailed){
-      contentEl.innerHTML = stateBox(
-        "Equity 데이터를 불러올 수 없습니다",
-        "세 모델 파일 요청이 모두 실패했습니다 (data/sw2/equity/*.csv 경로를 확인해 주세요). 첫 예: " + results[0].error,
-        true
-      );
-      document.getElementById("model-summary-row").innerHTML = "";
-      return;
-    }
-
-    if(!haveAnyData){
-      contentEl.innerHTML = stateBox(
-        "Equity 데이터가 아직 없습니다",
-        "SW2 첫 실행 이후 데이터가 쌓이면 차트가 표시됩니다.",
-        false
-      );
-      document.getElementById("model-summary-row").innerHTML = "";
-      return;
-    }
-
-    var maxPoints = allDates.length;
-    var lowDataNotice = maxPoints < 3
-      ? '<div style="font-size:var(--fs-sm);color:var(--text-muted);padding:0 6px 10px;">📈 데이터 축적 초기 단계입니다 (현재 ' + maxPoints + '일치). 평일마다 자동으로 포인트가 추가됩니다.</div>'
-      : '';
-
-    contentEl.innerHTML = lowDataNotice + '<div class="chart-wrap"><canvas id="equity-canvas"></canvas></div>';
-
-    var ctx = document.getElementById("equity-canvas").getContext("2d");
-    var datasets = results.map(function(r){
-      var byDate = {};
-      r.rows.forEach(function(row){ byDate[row.date] = row.equity; });
-      var data = allDates.map(function(d){ return byDate.hasOwnProperty(d) ? byDate[d] : null; });
-      return {
-        label: r.model.label,
-        data: data,
-        borderColor: r.model.color,
-        backgroundColor: r.model.color,
-        pointBackgroundColor: r.model.color,
-        pointRadius: maxPoints <= 3 ? 5 : 2.5,
-        pointHoverRadius: 6,
-        borderWidth: 2.25,
-        tension: maxPoints <= 3 ? 0 : 0.25,
-        spanGaps: true
-      };
-    });
-
-    new Chart(ctx, {
-      type: "line",
-      data: { labels: allDates, datasets: datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "#11151d",
-            borderColor: "#1f2632",
-            borderWidth: 1,
-            titleColor: "#e8ebf1",
-            bodyColor: "#c3cad9",
-            padding: 10,
-            callbacks: {
-              label: function(item){
-                var v = item.parsed.y;
-                return item.dataset.label + ": " + (v===null||v===undefined ? "—" : "$" + Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: "#161c27", drawTicks:false },
-            ticks: { color: "#6b7688", font: { family:"monospace", size:10 }, maxRotation:0, autoSkip:true }
-          },
-          y: {
-            grid: { color: "#161c27", drawTicks:false },
-            ticks: {
-              color: "#6b7688",
-              font: { family:"monospace", size:10 },
-              callback: function(v){ return "$" + Number(v).toLocaleString("en-US"); }
-            }
-          }
-        }
-      }
-    });
-
-    // per-model summary cards
-    var summaryHtml = results.map(function(r){
-      if(r.rows.length === 0){
-        return '<div class="model-summary"><div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + r.model.label + '</div><div class="eq">—</div><div class="ret" style="color:var(--text-muted);">데이터 없음</div></div>';
-      }
-      var last = r.rows[r.rows.length - 1];
-      var first = r.rows[0];
-      var totalRet = (first.equity && first.equity !== 0) ? (last.equity - first.equity) / first.equity : null;
-      var retCls = totalRet === null ? "" : (totalRet >= 0 ? "pos" : "neg");
-      var retColorVar = totalRet === null ? "var(--text-muted)" : (totalRet >= 0 ? "var(--green)" : "var(--red)");
-      return '<div class="model-summary">' +
-        '<div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + r.model.label + '</div>' +
-        '<div class="eq">' + fmtUSD(last.equity) + '</div>' +
-        '<div class="ret" style="color:' + retColorVar + ';">' + (totalRet === null ? "누적 수익률 계산 불가" : fmtPct(totalRet) + " 누적") + ' · ' + r.rows.length + '일치</div>' +
-      '</div>';
-    }).join("");
-    document.getElementById("model-summary-row").innerHTML = summaryHtml;
-  }
-
-  function loadEquitySection(){
-    return Promise.all(MODELS.map(loadEquityForModel)).then(function(results){
-      try{
-        renderEquityChart(results);
-      }catch(e){
-        document.getElementById("equity-content").innerHTML = stateBox("차트를 그리는 중 오류가 발생했습니다", e.message, true);
-      }
-      return results;
-    });
-  }
-
-  function significanceBadge(pAdjusted, pRaw){
-    // Task #23: prefer the multiple-comparison-corrected (FDR) p-value when
-    // it's available -- raw per-pair p-values overstate significance once
-    // several pairs are being compared together, which is exactly this
-    // table's situation. Falls back to the raw p-value (labeled as such)
-    // only for older data / correction_method=None.
-    var hasAdjusted = pAdjusted !== null && pAdjusted !== undefined && !isNaN(pAdjusted);
-    if(hasAdjusted){
-      return pAdjusted < 0.05
-        ? '<span class="sig-badge yes">✓ 유의함 (FDR 보정)</span>'
-        : '<span class="sig-badge no">유의하지 않음 (FDR 보정)</span>';
-    }
-    var hasRaw = pRaw !== null && pRaw !== undefined && !isNaN(pRaw);
-    if(!hasRaw){
-      return '<span class="sig-badge no">—</span>';
-    }
-    return pRaw < 0.05
-      ? '<span class="sig-badge yes">✓ 유의함 (보정 전)</span>'
-      : '<span class="sig-badge no">유의하지 않음</span>';
-  }
-
-  function effectSizeText(d){
-    if(d === null || d === undefined || isNaN(d)) return "—";
-    var abs = Math.abs(d);
-    // Cohen's conventional thresholds for |d|.
-    var mag = abs < 0.2 ? "매우 작음" : abs < 0.5 ? "작음" : abs < 0.8 ? "중간" : "큼";
-    return Number(d).toFixed(3) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(' + mag + ')</span>';
-  }
-
-  function autocorrelationNote(c){
-    // Task #23: Ljung-Box flagged serial correlation in at least one of
-    // the two return series -- the t-test/effect-size i.i.d. assumption
-    // may not hold, so surface it as a caveat rather than silently
-    // trusting the p-value.
-    if(c.autocorrelation_warning_a || c.autocorrelation_warning_b){
-      return ' <span class="sig-badge no" title="일별 수익률에서 유의한 자기상관이 감지되었습니다 (Ljung-Box). t-test와 p-value가 가정하는 독립성이 흔들릴 수 있으니 참고용으로 해석하세요.">⚠ 자기상관</span>';
-    }
-    return '';
-  }
-
-  function modelLabel(key){
-    var m = MODELS.filter(function(m){ return m.key === key; })[0];
-    return m ? m.label : key;
-  }
-
-  function loadComparisonsSection(equityResults){
-    var minPoints = equityResults ? Math.min.apply(null, equityResults.map(function(r){ return r.rows.length; })) : 0;
-
-    return fetchJSON(COMPARISONS_URL).then(function(data){
-      var comparisons = (data && Array.isArray(data.comparisons)) ? data.comparisons : [];
-      var el = document.getElementById("comparisons-content");
-
-      if(comparisons.length === 0){
-        var currentDays = isFinite(minPoints) ? minPoints : 0;
-        el.innerHTML = stateBox(
-          "아직 통계적으로 유의미한 비교가 불가능합니다",
-          "일일 수익률 비교에는 모델당 최소 2일치 데이터가 필요합니다 (현재 " + currentDays + "일치). 평일마다 자동 실행되는 SW2 결과가 쌓이면 이 영역에 t-test 비교 결과가 표시됩니다.",
-          false
-        );
-        return;
-      }
-
-      var rowsHtml = comparisons.map(function(c){
-        var sig = significanceBadge(c.p_value_adjusted, c.p_value);
-        var pVal = c.p_value;
-        var hasP = pVal !== null && pVal !== undefined && !isNaN(pVal);
-        var pCls = hasP ? (pVal < 0.05 ? "yes" : "no") : "no";
-        var pText = hasP ? '<span class="stat-pvalue ' + pCls + '">' + Number(pVal).toFixed(4) + '</span>' : "—";
-        var pAdjVal = c.p_value_adjusted;
-        var hasPAdj = pAdjVal !== null && pAdjVal !== undefined && !isNaN(pAdjVal);
-        var pAdjCls = hasPAdj ? (pAdjVal < 0.05 ? "yes" : "no") : "no";
-        var pAdjText = hasPAdj ? '<span class="stat-pvalue ' + pAdjCls + '">' + Number(pAdjVal).toFixed(4) + '</span>' : "—";
-        return '<tr>' +
-          '<td>' + escapeHtml(modelLabel(c.model_a)) + ' <span style="color:var(--text-muted);">vs</span> ' + escapeHtml(modelLabel(c.model_b)) + autocorrelationNote(c) + '</td>' +
-          '<td>' + fmtPct(c.mean_daily_return_a, 3) + '</td>' +
-          '<td>' + fmtPct(c.mean_daily_return_b, 3) + '</td>' +
-          '<td>' + (c.t_statistic === null || c.t_statistic === undefined ? "—" : Number(c.t_statistic).toFixed(3)) + '</td>' +
-          '<td>' + pText + '</td>' +
-          '<td>' + pAdjText + '</td>' +
-          '<td>' + effectSizeText(c.cohens_d) + '</td>' +
-          '<td>' + (c.n_a !== undefined ? c.n_a : "—") + ' / ' + (c.n_b !== undefined ? c.n_b : "—") + '</td>' +
-          '<td>' + sig + '</td>' +
-        '</tr>';
-      }).join("");
-
-      el.innerHTML =
-        '<div class="table-scroll"><table class="stats-table">' +
-          '<thead><tr>' +
-            '<th>모델 비교</th><th>평균 수익률 A</th><th>평균 수익률 B</th><th>t-statistic</th><th>p-value</th><th>p-value (FDR 보정)</th><th>효과크기 (Cohen\'s d)</th><th>n (A/B)</th><th>유의성</th>' +
-          '</tr></thead>' +
-          '<tbody>' + rowsHtml + '</tbody>' +
-        '</table></div>';
-    }).catch(function(err){
-      document.getElementById("comparisons-content").innerHTML = stateBox(
-        "비교 데이터를 불러올 수 없습니다",
-        "data/sw2/comparisons/latest.json 을 확인해 주세요 (" + err.message + ")",
-        true
-      );
-    });
-  }
-
   function icBadge(pctPositive){
     if(pctPositive === null || pctPositive === undefined || isNaN(pctPositive)){
       return '<span class="sig-badge no">—</span>';
@@ -1350,10 +1056,6 @@
   loadSignals();
 
   loadPriceCriteriaSection();
-
-  loadEquitySection().then(function(equityResults){
-    loadComparisonsSection(equityResults);
-  });
 
   loadWalkforwardSection();
 
