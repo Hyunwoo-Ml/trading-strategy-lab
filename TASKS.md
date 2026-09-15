@@ -318,95 +318,110 @@
   신뢰도 높음. `tests` CI 커밋 전부(#91~#100, 재푸시분 #97, 신규파일 #100,
   #101 포함) "completed successfully" 확인.
 
-### Task #31~34 — 뉴스 입력 개편: 전체 시장 시황 채널 + 종목별 누적 로그 (완료, 2026-09-15)
+### Task #35: Walk-forward(롤링 윈도우) 검증 — SW1 퀀트 스코어링
 
-- 배경: 사용자 요청 — 종목별 뉴스 입력 외에, 특정 종목과 무관한 전체 시장
-  시황(예: 트럼프의 트위터 발언 등)을 입력할 수 있는 채널이 필요함. 동시에
-  기존 "주간 덮어쓰기 .txt" 방식에서 "계속 누적되는 로그" 방식으로 전환.
-- 설계는 `AskUserQuestion`으로 2라운드 확인 후 진행 (사용자의 "앞으로 많이
-  물어보고 진행해줘" 지침 반영): (1) 모델이 직접 일반 시황의 종목 관련성을
-  판단(코드 사전 필터링 없음), 종목별 코멘터리는 누적 방식, (2) 기존 이슈
-  폼에 옵션 추가, (3) 세션 시작 시 1회만 방향 점검, (4) 로드맵 문서 신규
-  작성.
-- `sw1/news/log.py` (신규): JSONL 로그 읽기/추가/윈도우 필터
-  (`NEWS_WINDOW_DAYS=14`, 경계값 포함).
-- `sw1/news/scorer.py`: 프롬프트가 `[종목별 코멘터리]` + `[전체 시장 시황]`
-  두 블록을 받고, 모델이 직접 관련성 판단 후 통합 스코어링. `entries_hash()`
-  가 기존 `text_hash()` 대체 (종목+일반 양쪽 윈도우 뷰 해시 — 오래된 항목이
-  윈도우 밖으로 밀려나도 재채점 트리거).
-- `scripts/collect_daily_data.py`: `_collect_news_scores()`가 종목별 로그 +
-  공용 `market/GENERAL.jsonl`을 각각 윈도우 필터링 후 스코어링 함수에 전달.
-- `.github/ISSUE_TEMPLATE/news-input.yml`: 드롭다운에 "전체 시장
-  (종목무관)" 옵션 추가.
-- `.github/workflows/news-input-intake.yml`: 덮어쓰기 → JSONL append 방식
-  전환, 일반 시황 선택 시 `market/GENERAL.jsonl`에 기록.
-- `sw1/news/input/README.md`: 신규 로그 레이아웃/입력 플로우 문서화.
-- 테스트: `tests/test_news_log.py`(신규), `tests/test_news_scorer.py`,
-  `tests/test_collect_daily_data.py` 갱신 — 뉴스 관련 테스트 45/45 통과.
-- 로컬 전체 suite: 233 passed / 7 failed. 실패 7개는 이번 변경과 무관 —
-  `tests/test_run_daily_paper_trading.py`가 "오늘은 블랙아웃 없음"을
-  하드코딩한 상태에서, `sw1/calendar/events.py`의 실제
-  `FOMC_ANNOUNCEMENT_DATES_2026`(2026-09-16 포함)와 오늘 실제 날짜
-  (2026-09-15, window_days=1)가 겹쳐서 발생 — 파이프라인이 실제 FOMC 발표
-  하루 전 가격기준 신규 진입을 올바르게 차단하는 "의도된 정상 동작"이고,
-  버그 아님. `git stash`/`git stash pop`으로 이번 변경과 무관하게 이미
-  존재하던 충돌임을 확인. 2026-09-17 이후 저절로 사라질 예정이라 별도 수정
-  안 함.
-- 검증: 9개 파일 모두 브라우저 자동화로 커밋 + GitHub Contents API
-  size/sha로 바이트 단위 재검증 완료. (`.github/workflows/news-input-intake.yml`
-  첫 삽입 시도에서 기억으로 일부 재구성하다 해시 불일치 1회 발생 — 이후
-  항상 로컬 파일을 `python json.dumps()`로 재추출한 리터럴만 사용하는
-  방식으로 전환, 이후 전부 1회 삽입에 해시 일치.)
-
-### 중간점검 + 로드맵 문서화 (완료, 2026-09-15)
-- 세션 트랜스크립트에서 최초 로드맵 Artifact(Week 1-7 계획)를 재발굴,
-  실제 저장소 상태와 대조해 `ROADMAP.md`(신규, 저장소 루트) 작성 + 기존
-  로드맵 Artifact도 "진행현황" 섹션 추가해 갱신.
-- 핵심 결론: 캘린더상으로는 Week 1이지만, 기능적으로는 Week 7 막바지에
-  근접 (SW1/SW2 핵심 기능 대부분 완료, KIS API만 사용자 요청으로 보류,
-  walk-forward 검증만 미착수).
-- 계획과 달라진 점(모두 정상 동작, 사용자에게 확인 필요 항목으로 플래그):
-  저장소 Public(원래 Private 계획), Supabase 대신 GitHub Actions가 직접
-  git에 결과 커밋, Cowork 예약 작업 대신 GitHub Actions cron, 토스증권 API
-  미신청(yfinance로 충분).
+- **배경**: 이전 세션에서 다음 우선순위로 지정됨("뉴스 작업 다음으로 바로
+  착수"). 세션 시작 전 `AskUserQuestion`으로 설계 방향 4가지 확인:
+  데이터 소스는 하이브리드(yfinance 과거 시세 + 저장된 signals 히스토리),
+  검증 대상은 SW1 지표/뉴스 스코어링 로직(추천안 채택), 방식은 롤링 윈도우
+  (추천안 채택), 결과는 저장소 커밋 + 대시보드 노출(추천안 채택).
+- **범위 조정(문서화된 판단)**: "SW1 지표/뉴스 스코어링 로직"이 명목상
+  검증 대상이었지만, 뉴스 감성 점수를 재현할 과거 시황 아카이브가 존재하지
+  않음(`sw1/news/log.py`는 현재/실시간 입력만 기록) — 따라서 실제 백테스트는
+  `sw1/scoring/integrate.py`의 **고정 가중치 기술적 지표 수식
+  (`compute_quant_score`)만** 검증 대상으로 좁힘. 이 제외는 모듈
+  docstring·스크립트 docstring·대시보드 section-sub 텍스트 세 곳에 명시적으로
+  문서화. 뉴스/통합 점수 검증은 향후 라이브 페이퍼트레이딩 히스토리
+  (`data/signals` 누적분, `news_score` 포함)가 충분히 쌓이면 진행하는
+  것으로 다음 세션 과제에 명시.
+- **"Walk-forward" 개념 재정의**: `compute_quant_score`는 학습 가능한
+  파라미터가 없는 고정 가중치 휴리스틱이므로 전통적 train/test 분할이
+  적용되지 않음 — 대신 **롤링 윈도우 안정성 검증**으로 구현: 약 2년치
+  yfinance 과거 시세를 180일 윈도우·30일 스텝으로 굴려가며, 각 윈도우
+  독립적으로 스코어와 5거래일 순방향 수익률 간 Spearman 순위상관(IC,
+  information coefficient)을 계산. 여러 독립 구간에서 IC 부호가 꾸준히
+  양수면 실제 신호, 구간마다 부호가 뒤섞이거나 평균 IC가 0에 가까우면
+  과최적화/노이즈로 해석.
+- **신규 파일 7개** (전부 GitHub Contents API `size`/`sha`로 바이트 단위
+  검증 완료):
+  - `sw1/validation/__init__.py` — 모듈 docstring만(99바이트, GitHub
+    `/new/main?filename=` 플로우가 트레일링 개행을 자동 추가하는 것으로
+    확인된 유일한 사례 — 98바이트로 작성했으나 99바이트로 커밋됨, 내용은
+    바이트 단위로 일치, 무해함).
+  - `sw1/validation/walkforward.py`(7550바이트) — 순수 로직 모듈:
+    `compute_forward_returns`, `make_rolling_windows`, `window_ic`,
+    `WindowResult`, `run_walkforward`, `summarize_walkforward`.
+  - `tests/test_walkforward.py`(6712바이트, 18개 테스트) — 모든 함수의
+    엣지 케이스(빈 입력, 관측치 부족, NaN, 상수 시계열, 경계 윈도우 클리핑
+    등) 커버.
+  - `scripts/run_walkforward_validation.py`(6073바이트) — GitHub Actions
+    전용 실행 스크립트. M7 7종목 순회, 종목별 실패해도 나머지는 계속
+    진행(graceful degradation), `data/walkforward/results.json`에
+    `run_ts`/`config`/`overall`(풀링 집계)/`tickers`(종목별)/`failures`
+    기록.
+  - `tests/test_run_walkforward_validation.py`(4088바이트, 5개 테스트) —
+    합성 OHLCV로 `fetch_ohlcv` 모킹, 전종목 성공/일부 실패/전체 실패/풀링
+    집계 정확성 검증.
+  - `.github/workflows/walkforward-validation.yml`(1309바이트) —
+    `workflow_dispatch`만(일별 스케줄 없음 — 고정 가중치 수식은 매일 바뀌지
+    않으므로 수식 변경 후 또는 주기적 드리프트 점검 시 수동 실행).
+  - `docs/index.html` 수정(52505바이트 전체) — "04 Walk-forward 검증(SW1
+    퀀트 스코어)" 섹션 신규 추가(요약 카드 3개: 전체 풀링 평균 IC, 양(+)
+    구간 비율, 검증된 구간 수 + 종목별 상세 테이블). 이 파일은 50KB를
+    넘어 단일 삽입이 `Read` 툴 컨텍스트 제한에 걸려, 기존에 확립된 청크
+    분할 삽입 패턴(8000자씩 7개 청크를 CodeMirror에 순차 append, 마지막
+    청크에서 전체 문서 SHA-256을 계산해 사전 계산한 목표 해시와 비교
+    검증)을 재사용.
+- **검증**: 로컬 `python -m pytest -q` 256 passed / 7 failed — 7개 실패는
+  전부 기존에 알려진 `test_run_daily_paper_trading.py`의 FOMC 블랙아웃
+  윈도우 충돌(오늘 날짜 2026-09-15가 2026-09-16 FOMC 발표일의 블랙아웃
+  구간에 포함되어 발생하는, `sw1/calendar/events.py`에 하드코딩된 날짜로
+  인한 기존 이슈 — 이번 세션 작업과 무관, 이전 세션에서도 동일하게 확인됨)와
+  완전히 동일. 신규 테스트 23개(18+5) 전부 통과, 기존 테스트 회귀 없음.
+  커밋 후 GitHub Actions `tests` 워크플로에서도 동일하게 7 failed / 256
+  passed 확인(CI 로그 직접 확인해 실패 목록이 로컬과 정확히 일치함을
+  재검증) — `pages build and deployment`는 성공.
+- 대시보드는 아직 `data/walkforward/results.json`이 존재하지 않아 "아직
+  검증 결과가 없습니다" 빈 상태로 표시됨 — `walkforward-validation.yml`이
+  `workflow_dispatch`뿐이라 최초 1회는 수동 트리거가 필요(다음 세션 또는
+  사용자가 GitHub Actions 탭에서 직접 실행 가능).
 
 ## 다음 세션이 할 일
 
-원래 태스크 시퀀스 + self-directed follow-up + 뉴스 게이트/대시보드/입력폼
-+ 이번 세션의 뉴스 입력 개편(종목무관 시황 채널, 누적 로그 전환)까지 모두
-완료됨. 사용자가 명시적으로 확인한 다음 우선순위는 **walk-forward
-검증**임 ("뉴스 작업 다음으로 바로 착수" — `AskUserQuestion` 라운드 2에서
-확인).
+원래 태스크 시퀀스(#13, NaN 수정, #22, #24, #23, #25)와 그 뒤 self-directed
+follow-up(block bootstrap p-value), 이전 세션의 뉴스 게이트 마무리 +
+대시보드 뉴스 노출 + 뉴스 입력 폼, 그리고 이번 세션의 **Task #35
+walk-forward(롤링 윈도우) 검증**까지 모두 완료됨.
 
-1. **Walk-forward 검증** (다음 최우선 순위, 사용자 명시적 확인됨): SW2의
-   원래 완료 기준 중 아직 미충족 항목 — "과최적화 방지를 위한 walk-forward
-   검증 최소 1회 실행". 아직 설계 시작 전. 세션 시작 시 방향을 1회 점검하는
-   것으로 충분하다는 사용자 지침(위 참고)에 따라, 이 작업을 시작하기 전
-   설계 관련 핵심 질문(예: 어떤 기간을 in-sample/out-of-sample로 나눌지,
-   어떤 모델/파라미터를 검증 대상으로 할지, 결과를 어디에/어떻게 기록할지)
-   을 한 번에 묻고 확인받은 뒤 진행할 것.
-2. **SW1/SW2 대시보드 분리** (사용자 요청, 진행 동의 받음, 아직 미착수):
+0. **`walkforward-validation.yml` 최초 1회 수동 트리거**: 커밋은 완료됐지만
+   `workflow_dispatch`뿐이라 아직 한 번도 실행되지 않음 —
+   `data/walkforward/results.json`이 없어 대시보드 04번 섹션이 빈 상태로
+   표시 중. GitHub Actions 탭에서 `walkforward-validation` 워크플로를 수동
+   실행해 실제 검증 결과(IC 값들)로 채울 것. 다음 세션이 자동으로 해도 되고,
+   사용자가 직접 실행해도 됨.
+1. **SW1/SW2 대시보드 분리** (사용자 요청, 진행 동의 받음, 아직 미착수):
    현재 `docs/index.html` 하나에 M7 신호(SW1 일부) + 가격기준모델(SW1) +
    SW2 페이퍼트레이딩 성과가 전부 한 페이지에 있음. 사용자는 SW1과 SW2를
    별도 대시보드 페이지로 분리하고, SW2 페이지에서 SW1 데이터를 원할 때 또는
-   설정한 주기로 불러올 수 있길 원함. walk-forward 작업 이후 순서로 진행.
-3. **KIS 실계좌(모의투자) API 연동** — 사용자가 명시적으로 "나중에 하자"고
+   설정한 주기로 불러올 수 있길 원함. 백엔드는 이미 분리되어 있으므로(각각
+   독립 workflow + workflow_dispatch) 이번 작업은 프론트엔드 전용: 예를 들어
+   `docs/index.html`을 SW1 전용으로, `docs/sw2.html`(신규)을 SW2 전용으로
+   나누고 상호 링크를 추가하는 방향 검토. "SW2에서 원할 때 SW1 데이터를
+   불러온다"는 부분은 정적 페이지 특성상 이미 매일 자동 갱신되는
+   `data/sw1/price_criteria/*/latest.csv`를 SW2 페이지에서도 fetch하는
+   정도로 충분할지, 아니면 명시적 "새로고침" 버튼이 필요할지는 사용자에게
+   확인하거나 합리적으로 판단해서 진행.
+2. **KIS 실계좌(모의투자) API 연동** — 사용자가 명시적으로 "나중에 하자"고
    보류함. 사용자가 다시 요청하기 전까지 시작하지 말 것. KIS API 키는
    채팅에 직접 붙여넣지 말고 GitHub Encrypted Secrets로 등록하도록 안내할 것
    (이미 이전에 안내함).
-4. `sw2/governance.py`의 `evaluate_promotion`은 여전히 일일 파이프라인이나
+3. `sw2/governance.py`의 `evaluate_promotion`은 여전히 일일 파이프라인이나
    대시보드 어디에서도 자동 호출되지 않음 — 라이브러리 함수로만 존재.
    대시보드에 승격/보류 판정을 노출할지, 일일 스크립트에 실제로 연결할지는
    여전히 사용자 지시 없이 임의로 결정하지 말 것 (제품/정책 결정이라 판단).
-5. **작업 스타일 변경**: 사용자가 "앞으로 작업 진행할 때 최대한 많은 질문을
-   하면서 방향을 예리하게 잡은 후 진행해달라"고 명시적으로 요청함
-   (2026-09-15). 큰 설계 결정이 필요한 작업을 시작할 때는
-   `AskUserQuestion`으로 방향을 확인한 뒤 구현에 들어갈 것. 다만 세션당 매
-   스텝마다 묻지는 말고, 세션 시작/새 기능 착수 시점에 한 번씩 점검하는
-   것으로 충분하다는 사용자 확인 있음.
-6. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나,
+4. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나,
    사용자의 새 지시를 기다릴 것.
-7. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
+5. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
    `/tmp/repo_sync`(또는 그때그때의 로컬 클론 경로)에서 로컬 구현 →
    `python -m pytest -q` 검증 → GitHub 웹 에디터 브라우저 자동화로 커밋
    (기존 파일은 `/edit/main/{path}`, 신규 파일은 `/new/main?filename={path}`,
