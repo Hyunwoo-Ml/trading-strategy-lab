@@ -37,7 +37,7 @@ jobs:
             const GENERAL_OPTION = "전체 시장 (종목무관)";
 
             function extractField(label) {
-              const re = new RegExp("### " + label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + "\\s*\\n\\n([\\s\\S]*?)(\\n### |$)");
+              const re = new RegExp("### " + label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\n\\n([\\s\\S]*?)(\\n### |$)");
               const m = body.match(re);
               return m ? m[1].trim() : "";
             }
