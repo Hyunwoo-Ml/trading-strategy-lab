@@ -10,11 +10,16 @@ For each M7 ticker this:
   2. Computes technical indicators via sw1.indicators.technical
   3. Computes a quant-only score via sw1.scoring.integrate.compute_quant_score
   4. Looks up that ticker's news_score (sw1/news/scorer.py), if any --
-     2026-09-13: ANTHROPIC_API_KEY is now registered, so a ticker with a
-     weekly commentary file under sw1/news/input/{TICKER}.txt gets a real
-     news_score; a ticker with no input file (or no key, or a scoring
-     error) simply gets news_score=None, same as before -- this must
-     never fail the whole daily run over the news side of the score.
+     2026-09-15: news input moved from a single weekly-overwrite .txt file
+     per ticker to an append-only per-ticker log
+     (sw1/news/input/{TICKER}.jsonl) plus one shared ticker-agnostic log
+     (sw1/news/input/market/GENERAL.jsonl) for market-wide commentary. Both
+     are filtered to a recent window (sw1.news.log.filter_recent_entries)
+     before scoring, and the LLM itself judges which general-market
+     entries are relevant to a given ticker. A ticker with nothing in
+     window (or no key, or a scoring error) simply gets news_score=None --
+     this must never fail the whole daily run over the news side of the
+     score.
 
 Output layout (all under data/, gitignored patterns updated to allow these):
   data/ohlcv/{TICKER}.csv        -- full daily OHLCV history (overwritten each run)
@@ -28,8 +33,8 @@ Output layout (all under data/, gitignored patterns updated to allow these):
   data/market/regime.json        -- today's market regime read (risk_on/risk_off + why)
   data/market/earnings_dates.json -- best-effort next-earnings date per M7 ticker
                                       (sw1.calendar.events), for SW2's event blackout
-  data/news/cache.json           -- per-ticker {text_hash, news_score, items} so an
-                                     unchanged weekly paste isn't re-billed every weekday
+  data/news/cache.json           -- per-ticker {entries_hash, news_score, items} so an
+                                     unchanged windowed view isn't re-billed every weekday
 """
 from __future__ import annotations
 
@@ -46,6 +51,7 @@ from sw1.calendar.events import fetch_next_earnings_date  # noqa: E402
 from sw1.data.yahoo import M7_TICKERS, fetch_m7_snapshot, fetch_ohlcv  # noqa: E402
 from sw1.indicators.technical import compute_all_technical_indicators  # noqa: E402
 from sw1.market.regime import MARKET_INDEX_TICKER, compute_market_regime  # noqa: E402
+from sw1.news.log import filter_recent_entries, read_log  # noqa: E402
 from sw1.news.scorer import AnthropicKeyMissing, score_ticker_if_changed  # noqa: E402
 from sw1.scoring.integrate import compute_quant_score  # noqa: E402
 
@@ -55,6 +61,7 @@ INDICATORS_DIR = DATA_DIR / "indicators"
 SIGNALS_DIR = DATA_DIR / "signals"
 MARKET_DIR = DATA_DIR / "market"
 NEWS_INPUT_DIR = Path(__file__).resolve().parent.parent / "sw1" / "news" / "input"
+NEWS_GENERAL_LOG_PATH = NEWS_INPUT_DIR / "market" / "GENERAL.jsonl"
 NEWS_CACHE_PATH = DATA_DIR / "news" / "cache.json"
 
 
@@ -106,18 +113,21 @@ def _collect_earnings_dates() -> None:
 
 
 def _collect_news_scores() -> dict[str, float | None]:
-    """Reads each M7 ticker's manually-pasted weekly commentary from
-    sw1/news/input/{TICKER}.txt (see that directory's README), scores it
-    via sw1.news.scorer.score_ticker_if_changed (which reuses the cached
-    score when the text hasn't changed since the last run, so a
-    once-a-week paste doesn't re-bill the Anthropic API every weekday),
-    and returns {ticker: news_score_or_None}.
+    """Reads each M7 ticker's accumulated commentary log
+    (sw1/news/input/{TICKER}.jsonl) plus the shared ticker-agnostic
+    market-wide log (sw1/news/input/market/GENERAL.jsonl), filters both to
+    the recent window (sw1.news.log.filter_recent_entries), scores via
+    sw1.news.scorer.score_ticker_if_changed (which reuses the cached score
+    when the windowed view hasn't changed since the last run), and returns
+    {ticker: news_score_or_None}.
 
-    A ticker with no input file, an empty/whitespace-only input, a
-    missing ANTHROPIC_API_KEY, or any scoring error all resolve to None
-    for that ticker -- this must never fail the whole daily run over the
-    news side of the score (same graceful-degradation contract as
-    _collect_market_regime/_collect_earnings_dates above)."""
+    A ticker with nothing in window (own log empty AND no relevant-looking
+    general entries -- the model itself decides relevance, so this
+    function doesn't try to pre-filter), a missing ANTHROPIC_API_KEY, or
+    any scoring error all resolve to None for that ticker -- this must
+    never fail the whole daily run over the news side of the score (same
+    graceful-degradation contract as _collect_market_regime/
+    _collect_earnings_dates above)."""
     cache: dict[str, dict] = {}
     if NEWS_CACHE_PATH.exists():
         try:
@@ -126,23 +136,23 @@ def _collect_news_scores() -> dict[str, float | None]:
             print(f"[WARN] could not read news cache, starting fresh: {exc}")
             cache = {}
 
+    today = datetime.now(timezone.utc).date()
+    general_entries = filter_recent_entries(read_log(NEWS_GENERAL_LOG_PATH), as_of=today)
+
     news_scores: dict[str, float | None] = {}
     for ticker in M7_TICKERS:
-        input_path = NEWS_INPUT_DIR / f"{ticker}.txt"
-        if not input_path.exists():
-            news_scores[ticker] = None
-            continue
+        ticker_log_path = NEWS_INPUT_DIR / f"{ticker}.jsonl"
+        ticker_entries = filter_recent_entries(read_log(ticker_log_path), as_of=today)
         try:
-            weekly_text = input_path.read_text(encoding="utf-8")
             entry, freshly_scored = score_ticker_if_changed(
-                ticker, weekly_text, cached_entry=cache.get(ticker)
+                ticker, ticker_entries, general_entries, cached_entry=cache.get(ticker)
             )
             if entry is None:
                 news_scores[ticker] = None
                 continue
             cache[ticker] = entry
             news_scores[ticker] = entry["news_score"]
-            status = "scored fresh" if freshly_scored else "reused cached score (input unchanged)"
+            status = "scored fresh" if freshly_scored else "reused cached score (window unchanged)"
             print(f"[news] {ticker} {status}: {entry['news_score']:.2f}")
         except AnthropicKeyMissing:
             print(f"[news] {ticker}: ANTHROPIC_API_KEY not set, skipping news score")
