@@ -480,6 +480,24 @@
     margin-top:3px;
   }
 
+  .summary-card{
+    background:var(--bg-elevated);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+  }
+  .summary-label{
+    font-size:var(--fs-sm);
+    color:var(--text-secondary);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .summary-value{
+    font-family:var(--mono);
+    font-size:var(--fs-lg);
+    font-weight:700;
+  }
+
   table.stats-table{
     width:100%;
     border-collapse:collapse;
@@ -628,6 +646,17 @@
     </div>
   </section>
 
+  <!-- ===================== Walk-forward validation ===================== -->
+  <section id="walkforward-section">
+    <div class="section-head">
+      <div class="section-title"><span class="idx">04</span> Walk-forward 검증 (SW1 퀀트 스코어)</div>
+    </div>
+    <div class="section-sub">기술 지표 기반 Quant Score(sw1/scoring/integrate.py, 고정 가중치 수식)가 특정 구간에만 우연히 맞았던 게 아니라 여러 독립된 구간에서 꾸준히 순방향 수익률과 상관관계를 보이는지 확인하는 과최적화 방지 검증입니다. 약 2년치 과거 시세를 6개월 롤링 윈도우로 나눠 구간별 Spearman IC(정보계수)를 계산합니다. 뉴스 감성 점수는 과거 시황 아카이브가 없어 이 백테스트에 포함되지 않습니다 — GitHub Actions에서 수동 실행(workflow_dispatch)해야 갱신됩니다.</div>
+    <div id="walkforward-content">
+      <div class="state-box"><span class="spinner"></span>Walk-forward 검증 데이터를 불러오는 중입니다…</div>
+    </div>
+  </section>
+
   <footer>
     <a class="repo-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab" target="_blank" rel="noopener">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -646,6 +675,7 @@
   var SIGNALS_URL = BASE + "data/signals/latest.csv";
   var EQUITY_URL = function(m){ return BASE + "data/sw2/equity/" + m + ".csv"; };
   var COMPARISONS_URL = BASE + "data/sw2/comparisons/latest.json";
+  var WALKFORWARD_URL = BASE + "data/walkforward/results.json";
 
   var TICKER_NAMES = {
     AAPL: "Apple Inc.",
@@ -1249,6 +1279,72 @@
     });
   }
 
+  function icBadge(pctPositive){
+    if(pctPositive === null || pctPositive === undefined || isNaN(pctPositive)){
+      return '<span class="sig-badge no">—</span>';
+    }
+    if(pctPositive >= 0.6){
+      return '<span class="sig-badge yes">양(+) 우세 ' + Math.round(pctPositive*100) + '%</span>';
+    }
+    return '<span class="sig-badge no">혼재/약함 ' + Math.round(pctPositive*100) + '%</span>';
+  }
+
+  function loadWalkforwardSection(){
+    return fetchJSON(WALKFORWARD_URL).then(function(data){
+      var el = document.getElementById("walkforward-content");
+      var overall = data.overall || {};
+      var tickers = data.tickers || {};
+      var tickerKeys = Object.keys(tickers);
+
+      if(tickerKeys.length === 0){
+        el.innerHTML = stateBox(
+          "아직 검증 결과가 없습니다",
+          "GitHub Actions의 walkforward-validation 워크플로를 수동 실행(workflow_dispatch)하면 이 영역이 채워집니다.",
+          false
+        );
+        return;
+      }
+
+      var cfg = data.config || {};
+      var runTs = data.run_ts ? new Date(data.run_ts).toLocaleString("ko-KR") : "—";
+
+      var summaryHtml =
+        '<div class="model-summary-row" style="margin-bottom:16px;">' +
+          '<div class="summary-card"><div class="summary-label">전체 풀링 평균 IC</div><div class="summary-value">' + fmtNum(overall.mean_ic, 3) + '</div></div>' +
+          '<div class="summary-card"><div class="summary-label">양(+) 구간 비율</div><div class="summary-value">' + (overall.pct_positive !== null && overall.pct_positive !== undefined ? Math.round(overall.pct_positive*100) + '%' : '—') + '</div></div>' +
+          '<div class="summary-card"><div class="summary-label">검증된 구간 수</div><div class="summary-value">' + overall.n_windows_scored + ' / ' + overall.n_windows_total + '</div></div>' +
+        '</div>';
+
+      var rowsHtml = tickerKeys.map(function(ticker){
+        var s = tickers[ticker].summary || {};
+        return '<tr>' +
+          '<td>' + escapeHtml(ticker) + ' <span style="color:var(--text-muted);">' + escapeHtml(TICKER_NAMES[ticker] || "") + '</span></td>' +
+          '<td>' + fmtNum(s.mean_ic, 3) + '</td>' +
+          '<td>' + fmtNum(s.median_ic, 3) + '</td>' +
+          '<td>' + fmtNum(s.best_ic, 3) + '</td>' +
+          '<td>' + fmtNum(s.worst_ic, 3) + '</td>' +
+          '<td>' + (s.n_windows_scored !== undefined ? s.n_windows_scored : "—") + ' / ' + (s.n_windows_total !== undefined ? s.n_windows_total : "—") + '</td>' +
+          '<td>' + icBadge(s.pct_positive) + '</td>' +
+        '</tr>';
+      }).join("");
+
+      el.innerHTML = summaryHtml +
+        '<div class="table-scroll"><table class="stats-table">' +
+          '<thead><tr>' +
+            '<th>종목</th><th>평균 IC</th><th>중앙값 IC</th><th>최고 IC</th><th>최저 IC</th><th>검증 구간</th><th>안정성</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rowsHtml + '</tbody>' +
+        '</table></div>' +
+        '<div class="foot-note" style="margin-top:12px;">마지막 실행: ' + escapeHtml(runTs) + ' · 순방향 수익률 horizon ' + escapeHtml(String(cfg.horizon_days || "—")) + '거래일 · 윈도우 ' + escapeHtml(String(cfg.window_days || "—")) + '일 / 스텝 ' + escapeHtml(String(cfg.step_days || "—")) + '일 · IC(정보계수) = 스코어와 순방향 수익률의 Spearman 순위상관, 값이 클수록(0에서 멀수록) 예측력이 강함을 뜻합니다.</div>';
+    }).catch(function(err){
+      document.getElementById("walkforward-content").innerHTML = stateBox(
+        "Walk-forward 검증 데이터를 불러올 수 없습니다",
+        "data/walkforward/results.json 을 확인해 주세요 (" + err.message + ")",
+        true
+      );
+    });
+  }
+
   /* ---------------- init ---------------- */
 
   loadSignals();
@@ -1258,6 +1354,8 @@
   loadEquitySection().then(function(equityResults){
     loadComparisonsSection(equityResults);
   });
+
+  loadWalkforwardSection();
 
 })();
 </script>
