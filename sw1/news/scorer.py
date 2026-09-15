@@ -144,14 +144,32 @@ def build_news_scoring_prompt(
 관련 이벤트가 없으면 빈 배열 []을 반환하세요."""
 
 
+def _strip_code_fence(raw_text: str) -> str:
+    """Strips a surrounding ```/```json ... ``` markdown code fence, if
+    present. The prompt asks for JSON-only, but the model sometimes wraps
+    its array in a fenced code block anyway (observed in production: every
+    real scoring call was failing json.loads() over this before the fix).
+    Text with no fence is returned unchanged."""
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = text[3:]
+        if text.lstrip().startswith("json"):
+            text = text.lstrip()[4:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+    return text
+
+
 def parse_news_scoring_response(raw_text: str, ticker: str) -> NewsScoreResult:
     """Parses the LLM's JSON array response into a NewsScoreResult with a
     weighted-average news_score. Unknown categories fall back to '기타'.
     An unrecognized/missing source falls back to 'ticker' (the more
     conservative assumption -- treat it as directly about this ticker
     rather than silently dropping the item)."""
+    text = _strip_code_fence(raw_text)
     try:
-        parsed = json.loads(raw_text)
+        parsed = json.loads(text)
     except json.JSONDecodeError as exc:
         raise ValueError(f"news scorer response wasn't valid JSON: {exc}\nraw: {raw_text!r}") from exc
 
