@@ -393,37 +393,91 @@
   `read_console_messages`로 재확인: "04 Walk-forward 검증" 섹션이 요약
   카드 3개 + 종목별 테이블로 정상 렌더링, 콘솔 에러 없음.
 
+### SW1/SW2 대시보드 분리 (완료, 2026-09-15)
+
+- **배경**: TASKS.md에 "다음 세션이 할 일" 1번으로 기록되어 있던, 사용자가
+  이전 세션에서 이미 진행 동의한 프론트엔드 전용 작업. 백엔드(각 SW1/SW2
+  workflow)는 이미 독립적이었으므로 순수 UI 리팩터링.
+- **구조 분석**: 기존 단일 `docs/index.html`(52505바이트)은 4개 섹션
+  (01 M7 시그널, 02 가격기준모델, 03 SW2 페이퍼트레이딩 성과, 04
+  Walk-forward 검증)과 그 JS(공통 helper + 섹션별 렌더 함수 + 공용 init
+  블록)를 한 파일에 담고 있었음. 01/02/04는 SW1 산출물, 03만 SW2.
+- **구현**: 원본 `docs/index.html`을 로컬에서 Python 스크립트로 라인
+  단위 슬라이싱(기억 재입력이 아니라 실제 파일 내용을 그대로 절단/재조립 —
+  기존 확립된 "리터럴은 항상 파일에서 재생성" 원칙을 HTML/JS 조립에도
+  적용)해 두 파일로 분리:
+  - `docs/index.html`(SW1 전용, 38902바이트) — 섹션 01/02/03(Walk-forward,
+    04→03으로 재번호), SW2 관련 변수(`EQUITY_URL`/`COMPARISONS_URL`/
+    `MODELS`)와 함수(`loadEquitySection`/`renderEquityChart`/
+    `loadComparisonsSection`/`significanceBadge`/`effectSizeText`/
+    `autocorrelationNote`/`modelLabel`) 전부 제거, Chart.js `<script>`
+    태그도 제거(이 페이지에서 차트 미사용). 헤더 meta-row에
+    `sw2.html`로 가는 링크(`📊 SW2 페이퍼 트레이딩 성과 보기 →`) 추가.
+  - `docs/sw2.html`(SW2 전용, 신규, 33549바이트) — 섹션 01 = 기존 03
+    그대로(Equity Curve 차트 + 모델 요약 카드 + t-test 비교 테이블),
+    SW1 관련 변수(`SIGNALS_URL`/`WALKFORWARD_URL`/`TICKER_NAMES`/
+    `TICKER_ORDER`/`PRICE_CRITERIA_MODELS`/`PRICE_CRITERIA_URL`)와 함수
+    (`loadSignals`/`loadPriceCriteriaSection`/`buildM7Card`/
+    `renderCriteriaCard`/`icBadge`/`loadWalkforwardSection` 등) 전부
+    제거. 헤더에 `index.html`로 돌아가는 링크(`← SW1 퀀트 시그널 보기`)
+    추가. 공통 helper(`fmtNum`/`fmtUSD`/`fmtPct`/`parseNumOrNull`/
+    `escapeHtml`/`parseCSV`/`fetchText`/`fetchJSON`/`stateBox`)와 CSS
+    `<style>` 블록은 두 페이지 모두에 그대로(바이트 동일하게) 유지 —
+    미사용 CSS 클래스가 약간 남더라도 유지보수 단순성과 "분리 과정에서
+    실수로 스타일 깨짐" 리스크 최소화를 우선.
+  - **"SW2가 SW1 데이터를 불러올지" 설계 판단(독립 결정)**: SW2 페이지는
+    SW1 데이터를 폴링/fetch하지 않는 것으로 결정. SW2의 5개 모델
+    equity/비교 결과 자체가 이미 SW1 신호를 반영한 매매 시뮬레이션
+    결과물이라 SW2 페이지에서 SW1 원본 지표를 별도로 보여줄 실익이
+    작고, 두 페이지 모두 정적 파일을 `cache:"no-store"`로 매번 새로
+    fetch하므로 "새로고침 버튼"도 불필요(페이지 새로고침 = 최신
+    데이터). 대신 상호 명확한 텍스트 링크로 이동만 제공.
+  - 커밋은 기존 확립된 브라우저 자동화 청크 삽입 패턴 재사용:
+    `docs/index.html`은 `/edit/main/docs/index.html` 경로로 5개 청크,
+    `docs/sw2.html`은 신규 파일이라 `/new/main?filename=docs/sw2.html`
+    경로로 5개 청크(파일명 필드가 URL에서 자동으로 `sw2.html`, 상위
+    경로 `docs`로 채워짐을 확인). 두 파일 모두 마지막 청크의 SHA-256
+    해시가 로컬에서 사전 계산한 목표 해시와 정확히 일치 확인 후 커밋,
+    GitHub Contents API로 `size` 바이트까지 재검증
+    (`index.html` sha `75375b40...`, `sw2.html` sha `83ae837c...`).
+- **검증**: 두 파일 모두 `node --check`로 추출한 `<script>` JS 구문
+  검증 통과. grep으로 교차 오염 여부 확인(`index.html`에 `EQUITY_URL`/
+  `MODELS`/`loadEquitySection` 등 SW2 전용 식별자 없음, `sw2.html`에
+  `SIGNALS_URL`/`TICKER_NAMES`/`loadSignals` 등 SW1 전용 식별자 없음),
+  HTML 태그(`html`/`head`/`body`/`script`/`section`) open/close 개수
+  일치 확인. 라이브 배포 후 두 페이지 모두 `get_page_text` +
+  `read_console_messages`로 재확인:
+  `https://hyunwoo-ml.github.io/trading-strategy-lab/`(SW1)은 M7
+  시그널 7종목 카드, 가격기준모델 탭, Walk-forward 검증 테이블까지
+  전부 실제 데이터로 정상 렌더링, 콘솔 에러 없음.
+  `https://hyunwoo-ml.github.io/trading-strategy-lab/sw2.html`(SW2)은
+  Equity Curve 범례/모델 요약 카드/t-test 비교 테이블까지 정상
+  렌더링, 콘솔 에러 없음(현재 데이터가 적어 수익률/유의성이 전부
+  0%/—로 표시되는 것은 분리 전과 동일한 기존 상태 — 데이터가 더
+  쌓여야 의미 있는 값이 나옴, 이번 리팩터링과 무관).
+  이 작업은 프론트엔드 전용이라 `pytest` 대상 코드는 변경 없음(스킵).
+
 ## 다음 세션이 할 일
 
 원래 태스크 시퀀스(#13, NaN 수정, #22, #24, #23, #25)와 그 뒤 self-directed
 follow-up(block bootstrap p-value), 이전 세션의 뉴스 게이트 마무리 +
-대시보드 뉴스 노출 + 뉴스 입력 폼, 그리고 이번 세션의 **Task #35
+대시보드 뉴스 노출 + 뉴스 입력 폼, 이번 세션의 **Task #35
 walk-forward(롤링 윈도우) 검증**(최초 실행까지 완료, 대시보드에 실제
-데이터 표시 중)까지 모두 완료됨.
+데이터 표시 중), 그리고 **SW1/SW2 대시보드 분리**(`docs/index.html` =
+SW1 전용, `docs/sw2.html` = SW2 전용, 상호 링크 추가, 라이브 확인까지
+완료)까지 모두 완료됨.
 
-1. **SW1/SW2 대시보드 분리** (사용자 요청, 진행 동의 받음, 아직 미착수):
-   현재 `docs/index.html` 하나에 M7 신호(SW1 일부) + 가격기준모델(SW1) +
-   SW2 페이퍼트레이딩 성과가 전부 한 페이지에 있음. 사용자는 SW1과 SW2를
-   별도 대시보드 페이지로 분리하고, SW2 페이지에서 SW1 데이터를 원할 때 또는
-   설정한 주기로 불러올 수 있길 원함. 백엔드는 이미 분리되어 있으므로(각각
-   독립 workflow + workflow_dispatch) 이번 작업은 프론트엔드 전용: 예를 들어
-   `docs/index.html`을 SW1 전용으로, `docs/sw2.html`(신규)을 SW2 전용으로
-   나누고 상호 링크를 추가하는 방향 검토. "SW2에서 원할 때 SW1 데이터를
-   불러온다"는 부분은 정적 페이지 특성상 이미 매일 자동 갱신되는
-   `data/sw1/price_criteria/*/latest.csv`를 SW2 페이지에서도 fetch하는
-   정도로 충분할지, 아니면 명시적 "새로고침" 버튼이 필요할지는 사용자에게
-   확인하거나 합리적으로 판단해서 진행.
-2. **KIS 실계좌(모의투자) API 연동** — 사용자가 명시적으로 "나중에 하자"고
+1. **KIS 실계좌(모의투자) API 연동** — 사용자가 명시적으로 "나중에 하자"고
    보류함. 사용자가 다시 요청하기 전까지 시작하지 말 것. KIS API 키는
    채팅에 직접 붙여넣지 말고 GitHub Encrypted Secrets로 등록하도록 안내할 것
    (이미 이전에 안내함).
-3. `sw2/governance.py`의 `evaluate_promotion`은 여전히 일일 파이프라인이나
+2. `sw2/governance.py`의 `evaluate_promotion`은 여전히 일일 파이프라인이나
    대시보드 어디에서도 자동 호출되지 않음 — 라이브러리 함수로만 존재.
    대시보드에 승격/보류 판정을 노출할지, 일일 스크립트에 실제로 연결할지는
    여전히 사용자 지시 없이 임의로 결정하지 말 것 (제품/정책 결정이라 판단).
-4. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나,
+3. 그 외에는 코드베이스에서 스스로 다음 개선 여지를 찾아 제안하거나,
    사용자의 새 지시를 기다릴 것.
-5. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
+4. 새 작업을 시작할 때는 이 세션에서 확립된 순서를 그대로 따를 것:
    `/tmp/repo_sync`(또는 그때그때의 로컬 클론 경로)에서 로컬 구현 →
    `python -m pytest -q` 검증 → GitHub 웹 에디터 브라우저 자동화로 커밋
    (기존 파일은 `/edit/main/{path}`, 신규 파일은 `/new/main?filename={path}`,
