@@ -488,3 +488,59 @@ SW1 전용, `docs/sw2.html` = SW2 전용, 상호 링크 추가, 라이브 확인
    확인(진행 중이면 완료까지 대기) → 이 TASKS.md 갱신. 그리고 세션 시작 시
    "완료"로 기록된 파일도 최소 1개는 raw fetch/API로 재검증해 실제로
    커밋되었는지 다시 확인할 것.
+
+---
+
+## 2026-09-15 세션: 뉴스 입력 파이프라인 버그 진단 및 수정
+
+사용자 확인 요청 2건에 대한 조사 및 수정.
+
+**1) SW1/SW2 대시보드 분할 확인** — 이전 세션에서 이미 완료된 대로
+`docs/index.html`(SW1: M7 퀀트 시그널 + 가격기준 모델 + walk-forward 검증)과
+`docs/sw2.html`(SW2: 페이퍼 트레이딩 성과)로 분리되어 있고, 두 페이지가
+서로 링크되어 있음을 재확인. 사용자가 원했던 "각기 다른 대시보드" 방향과
+일치.
+
+**2) 뉴스 입력이 M7 퀀트 시그널에 반영되지 않는 문제** — 실제 버그 2건을
+발견하고 수정:
+
+- **버그 A (라벨 미존재로 인한 워크플로 전체 스킵)**: 이슈 폼
+  (`news-input.yml`)의 front matter에 `labels: ["news-input"]`이 선언돼
+  있어도, 해당 라벨이 저장소에 실제로 존재하지 않으면 GitHub이 라벨을
+  자동 부착하지 않고도 에러 없이 이슈를 생성함. `news-input-intake.yml`의
+  `if: contains(github.event.issue.labels.*.name, 'news-input')` 조건이
+  계속 false로 평가되어, 지금까지 제출된 뉴스 4건(#1 NVDA, #2 GOOGL, #3
+  AAPL, #4 시장 전체)이 전부 조용히 스킵됨. → 저장소에 `news-input` 라벨을
+  생성하고 기존 이슈 4건에 소급 부착.
+
+- **버그 B (정규식 이스케이프 오류로 필드 파싱 실패)**:
+  `news-input-intake.yml`의 `extractField()` 함수가 라벨 문자열의 정규식
+  특수문자를 이스케이프하는 정규식 자체에 백슬래시가 한 겹 더 들어가
+  깨져 있어서, `"종목 (티커)"`처럼 괄호가 포함된 필드 라벨의 괄호를
+  이스케이프하지 못함 → 이슈 본문 파싱이 매번 실패 → 매번
+  `"인식할 수 없는 선택입니다: """` 에러로 실패. `.github/workflows/news-input-intake.yml`
+  커밋으로 수정.
+
+  라벨 부착 + 정규식 수정 후 이슈 4건을 재트리거(제목 편집으로 `edited`
+  이벤트 재발생)하여 전부 성공 확인: `sw1/news/input/{NVDA,GOOGL,AAPL}.jsonl`,
+  `sw1/news/input/market/GENERAL.jsonl` 생성 및 원본 코멘터리와 내용 일치
+  확인, 이슈 4건 모두 자동 코멘트 + 자동 닫힘 확인.
+
+- **버그 C (마크다운 코드펜스로 감싼 LLM 응답 파싱 실패)**:
+  `sw1/news/scorer.py`의 `parse_news_scoring_response()`가
+  `json.loads(raw_text)`를 바로 호출하는데, Claude가 JSON 배열을
+  마크다운 코드펜스(```json ... ```)로 감싸서 응답하는 경우가 있어 매번
+  `json.JSONDecodeError`로 실패 (`collect-daily-data` 워크플로 로그에서
+  7개 종목 전부 이 에러로 스킵되는 것을 확인 — LLM 분석 자체는 정상
+  작동하고 있었음). `_strip_code_fence()` 헬퍼 함수를 추가해 파싱 전에
+  코드펜스를 제거하도록 수정.
+
+**최종 검증**: `collect-daily-data`를 수동 실행(workflow_dispatch)하여
+`data/signals/latest.csv`의 `news_score` 컬럼에 7개 종목 전부 실제
+점수가 채점되어 반영됨을 확인 (예: NVDA +0.45, MSFT -0.70). 라이브
+대시보드(`https://hyunwoo-ml.github.io/trading-strategy-lab/`)에서도
+M7 퀀트 시그널 카드의 "뉴스 감성 점수"가 "준비중"에서 실제 숫자로
+바뀐 것, 그리고 가격기준 모델 섹션에서 뉴스 게이트(기준 -0.35)가 실제로
+작동해 MSFT·META가 "🔒 신규진입 보류 (뉴스)"로 표시되는 것까지 확인
+완료. 사용자가 보고한 두 증상(뉴스 감성 점수 미반영, 가격기준 모델
+매매가 무변동) 모두 해소됨.
