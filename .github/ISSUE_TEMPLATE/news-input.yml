@@ -1,5 +1,5 @@
 name: "📰 뉴스/시황 입력"
-description: "M7 종목 중 하나에 대한 이번 주 뉴스/시황 코멘터리를 입력합니다. 제출하면 자동으로 sw1/news/input/{TICKER}.txt 에 반영되고, 다음 자동 실행 때 감성점수로 채점되어 매매 기준에 반영됩니다. Claude에게 따로 요청할 필요 없이 이 폼만 제출하면 됩니다."
+description: "M7 종목 하나 또는 종목과 무관한 전체 시장 시황을 입력합니다. 제출하면 자동으로 누적 로그에 append되고, 다음 자동 실행 때 감성점수로 채점되어 매매 기준에 반영됩니다. Claude에게 따로 요청할 필요 없이 이 폼만 제출하면 됩니다."
 title: "[뉴스입력] "
 labels: ["news-input"]
 body:
@@ -8,11 +8,15 @@ body:
       value: |
         아래 두 항목만 채워서 제출하면 자동으로 처리됩니다 (사람이 확인/커밋할 필요 없음).
         제출 후 잠시 뒤(약 1분 이내) 이 이슈에 처리 완료 댓글이 달리고 자동으로 닫힙니다.
+
+        "전체 시장 (종목무관)"을 선택하면, 특정 종목에 묶이지 않는 시황(예: 거시
+        정책·정치 발언 등)으로 기록됩니다. 이후 각 종목 채점 시 AI가 이 내용이 그
+        종목과 관련 있는지 직접 판단해서 관련 있을 때만 반영합니다.
   - type: dropdown
     id: ticker
     attributes:
       label: 종목 (티커)
-      description: 코멘터리를 반영할 M7 종목을 선택하세요.
+      description: 코멘터리를 반영할 M7 종목을 선택하거나, 특정 종목과 무관하면 "전체 시장"을 선택하세요.
       options:
         - AAPL
         - MSFT
@@ -21,15 +25,19 @@ body:
         - NVDA
         - META
         - TSLA
+        - 전체 시장 (종목무관)
     validations:
       required: true
   - type: textarea
     id: commentary
     attributes:
       label: 뉴스/시황 코멘터리
-      description: 이 내용이 그대로 sw1/news/input/{TICKER}.txt 파일에 저장됩니다 (기존 내용을 덮어씁니다).
+      description: 이 내용이 오늘 날짜와 함께 누적 로그에 한 줄 추가됩니다 (기존 내용을 덮어쓰지 않습니다).
       placeholder: |
         예) OpenAI/Anthropic/Grok/Meta 등에서 AI 발전 속도를 늦춰야 한다는 논의가 재점화.
         이미 7,000억 달러 이상 투자된 산업이라 장기적으로 큰 의미는 없다고 판단.
+
+        예 (전체 시장): 트럼프가 이란과의 협상 가능성을 언급 -- 이란은 미국과의
+        협상을 간절히 원하고 있다고 발언.
     validations:
       required: true
