@@ -1,1 +1,142 @@
-{}
+{
+  "AAPL": {
+    "entries_hash": "ff61058cb6a60a12c71b5a15dd78702f5b9c26d08bf8dfe74f93ec5c5811b95d",
+    "news_score": 0.24285714285714288,
+    "items": [
+      {
+        "category": "규제_소송",
+        "sentiment": 0.6,
+        "summary": "애플, 일론 머스크의 X 및 xAI와 반독점 소송 합의",
+        "source": "ticker",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "거시경제",
+        "sentiment": -0.4,
+        "summary": "AI 감속론 - 트럼프의 AI 발전 안전 강조 및 인프라 디레버리징",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  },
+  "MSFT": {
+    "entries_hash": "46331ac46383d2db82138276a40ed0f58125231d7947a2433dce188afdc57e25",
+    "news_score": -0.7,
+    "items": [
+      {
+        "category": "거시경제",
+        "sentiment": -0.7,
+        "summary": "AI감속론 - 트럼프가 젠슨황에게 AI 발전을 안전하게 진행해야 한다고 언급, AI 인프라 쇼크 디레버리징",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  },
+  "GOOGL": {
+    "entries_hash": "3ae66102be94e04d814fd6f925c7cfc52a438da096d0081272c0d9e9ccac4ff4",
+    "news_score": -0.08095238095238091,
+    "items": [
+      {
+        "category": "제품_기술",
+        "sentiment": -0.3,
+        "summary": "구글, 사내 엔지니어들에게 내부 코딩 업무에서 엔트로픽의 클로드 사용 허용",
+        "source": "ticker",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "제품_기술",
+        "sentiment": 0.4,
+        "summary": "구글, 뉴멕시코주 리 카운티에 신규 데이터센터 건설 검토",
+        "source": "ticker",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "거시경제",
+        "sentiment": -0.5,
+        "summary": "AI감속론 대두 및 AI 인프라 디레버리징 우려",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  },
+  "AMZN": {
+    "entries_hash": "46331ac46383d2db82138276a40ed0f58125231d7947a2433dce188afdc57e25",
+    "news_score": -0.25384615384615383,
+    "items": [
+      {
+        "category": "거시경제",
+        "sentiment": 0.3,
+        "summary": "러시아-우크라이나 에너지 시설 공격 중단 합의로 디젤가격 상승 원인 해소",
+        "source": "general",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "제품_기술",
+        "sentiment": -0.6,
+        "summary": "AI 감속론 대두 - 트럼프가 젠슨황에게 AI 안전한 발전 강조, AI 인프라 디레버리징",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  },
+  "NVDA": {
+    "entries_hash": "d3fe1053022652ed61e196e9a6fef1b644a66b32836941677f0f6e245db1e882",
+    "news_score": 0.4543478260869565,
+    "items": [
+      {
+        "category": "실적",
+        "sentiment": 0.75,
+        "summary": "Agility가 2027년 상반기 조기 액세스 전에 이미 3억 달러 이상의 주문 확보",
+        "source": "ticker",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "제품_기술",
+        "sentiment": 0.65,
+        "summary": "NVDA가 안전 스택 구동 기술 제공",
+        "source": "ticker",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "거시경제",
+        "sentiment": -0.45,
+        "summary": "AI감속론 및 젠슨황에게 AI 안전한 발전 필요성 언급, AI 인프라 쇼크 디레버리징",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  },
+  "META": {
+    "entries_hash": "46331ac46383d2db82138276a40ed0f58125231d7947a2433dce188afdc57e25",
+    "news_score": -0.7,
+    "items": [
+      {
+        "category": "거시경제",
+        "sentiment": -0.7,
+        "summary": "AI감속론 제기 및 AI 인프라 투자 디레버리징 우려",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  },
+  "TSLA": {
+    "entries_hash": "46331ac46383d2db82138276a40ed0f58125231d7947a2433dce188afdc57e25",
+    "news_score": -0.25384615384615383,
+    "items": [
+      {
+        "category": "거시경제",
+        "sentiment": 0.3,
+        "summary": "러-우 에너지 시설 공격 중단 합의로 디젤가격 상승 원인 해소",
+        "source": "general",
+        "date": "2026-09-15"
+      },
+      {
+        "category": "제품_기술",
+        "sentiment": -0.6,
+        "summary": "AI감속론 - 트럼프가 젠슨황에게 AI 안전한 발전 강조",
+        "source": "general",
+        "date": "2026-09-15"
+      }
+    ]
+  }
+}
