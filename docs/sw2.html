@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Strategy Lab — SW2 페이퍼 트레이딩 성과 대시보드</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b0f17'/%3E%3Cpath d='M20 65 L40 45 L55 58 L80 28' stroke='%2322d3ee' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0d14;
+    --bg-elevated:#10141d;
+    --bg-card:#121722;
+    --bg-card-hover:#151b28;
+    --border:#1f2632;
+    --border-soft:#181e29;
+    --text-primary:#e8ebf1;
+    --text-secondary:#98a2b8;
+    --text-muted:#6b7688;
+    --accent:#22d3ee;
+    --accent-dim:#0e7490;
+    --accent-soft:rgba(34,211,238,0.1);
+    --green:#34d399;
+    --green-dim:rgba(52,211,153,0.14);
+    --red:#f87171;
+    --red-dim:rgba(248,113,113,0.14);
+    --amber:#fbbf24;
+    --amber-dim:rgba(251,191,36,0.14);
+    --radius:14px;
+    --radius-sm:9px;
+    --mono: 'SF Mono', 'Roboto Mono', 'Consolas', 'Menlo', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+    /* Type scale: 5 steps only, used everywhere below instead of ad-hoc px values */
+    --fs-xs:10px;
+    --fs-sm:11px;
+    --fs-base:13px;
+    --fs-lg:16px;
+    --fs-hero:28px;
+  }
+
+  *{box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(34,211,238,0.06), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 0%, rgba(52,211,153,0.04), transparent 60%);
+    background-attachment:fixed;
+    color:var(--text-primary);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding: 28px 20px 60px;
+  }
+  @media (min-width:640px){ .wrap{ padding: 40px 32px 80px; } }
+
+  a{color:var(--accent);}
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    padding-bottom:28px;
+    margin-bottom:32px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .brand-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg, var(--accent), #0891b2);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    box-shadow:0 0 24px rgba(34,211,238,0.25);
+  }
+  .brand-mark svg{width:20px;height:20px;}
+  .brand-name{
+    font-size:var(--fs-lg);
+    font-weight:700;
+    letter-spacing:-0.02em;
+    color:var(--text-primary);
+  }
+  .brand-name .mono-tag{
+    font-family:var(--mono);
+    font-size:var(--fs-sm);
+    font-weight:600;
+    color:var(--accent);
+    background:var(--accent-soft);
+    padding:2px 7px;
+    border-radius:5px;
+    margin-left:8px;
+    vertical-align:2px;
+    letter-spacing:0.02em;
+  }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:var(--fs-base);
+    font-family:var(--mono);
+    color:var(--text-secondary);
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    padding:6px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .status-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 8px var(--green);
+    animation:pulse-dot 2.2s ease-in-out infinite;
+    flex-shrink:0;
+  }
+  @keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+  .desc{
+    font-size:var(--fs-base);
+    color:var(--text-secondary);
+    max-width:640px;
+  }
+  .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    font-size:var(--fs-sm);
+    color:var(--text-muted);
+    font-family:var(--mono);
+  }
+  .meta-row span{
+    display:flex;align-items:center;gap:6px;
+  }
+  .meta-row b{ color:var(--text-secondary); font-weight:600; }
+
+  .news-input-link{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:var(--fs-sm);
+    font-weight:600;
+    color:#0a0d14;
+    background:var(--accent);
+    padding:7px 14px;
+    border-radius:999px;
+    text-decoration:none;
+    white-space:nowrap;
+    transition:opacity .15s ease;
+  }
+  .news-input-link:hover{ opacity:0.85; }
+
+  /* ---------- Section shell ---------- */
+  section{ margin-bottom:52px; }
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:6px;
+    flex-wrap:wrap;
+  }
+  .section-title{
+    font-size:var(--fs-lg);
+    font-weight:700;
+    letter-spacing:0.02em;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-title .idx{
+    font-family:var(--mono);
+    color:var(--accent);
+    font-size:var(--fs-sm);
+    font-weight:600;
+  }
+  .section-sub{
+    font-size:var(--fs-sm);
+    color:var(--text-muted);
+    margin-bottom:20px;
+  }
+  .panel-title{
+    font-size:var(--fs-base);
+    color:var(--text-secondary);
+    font-weight:600;
+  }
+
+  /* ---------- Loading / error / empty states ---------- */
+  .state-box{
+    border:1px dashed var(--border);
+    border-radius:var(--radius);
+    padding:28px 20px;
+    text-align:center;
+    color:var(--text-muted);
+    font-size:var(--fs-base);
+    background:var(--bg-elevated);
+  }
+  .state-box.error{ border-color:rgba(248,113,113,0.3); color:#e0a3a3; background:rgba(248,113,113,0.04); }
+  .state-box .state-title{ color:var(--text-secondary); font-weight:600; font-size:var(--fs-base); margin-bottom:5px; }
+  .spinner{
+    width:16px;height:16px;
+    border-radius:50%;
+    border:2px solid var(--border);
+    border-top-color:var(--accent);
+    animation:spin 0.8s linear infinite;
+    display:inline-block;
+    vertical-align:-3px;
+    margin-right:8px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- M7 Card grid ---------- */
+  .m7-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(258px, 1fr));
+    gap:14px;
+  }
+  .m7-card{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px 18px 16px;
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .m7-card:hover{ border-color:#2a3342; }
+  .m7-card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .ticker-id{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:var(--fs-base);
+    letter-spacing:0.01em;
+  }
+  .ticker-name{
+    font-size:var(--fs-sm);
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .price-block{ text-align:right; }
+  .price{
+    font-family:var(--mono);
+    font-size:var(--fs-base);
+    font-weight:600;
+  }
+  .price-sub{
+    font-size:var(--fs-sm);
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+
+  .quant-block{
+    background:var(--bg-elevated);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .quant-label-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .quant-label{
+    font-size:var(--fs-xs);
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    font-weight:600;
+  }
+  .quant-value{
+    font-family:var(--mono);
+    font-size:var(--fs-hero);
+    font-weight:800;
+    letter-spacing:-0.02em;
+    line-height:1;
+  }
+  .quant-value.pos{ color:var(--green); }
+  .quant-value.neg{ color:var(--red); }
+  .quant-value.neu{ color:var(--text-secondary); }
+  .quant-bar-track{
+    position:relative;
+    height:6px;
+    border-radius:4px;
+    background:#1c2432;
+    overflow:hidden;
+  }
+  .quant-bar-mid{
+    position:absolute;
+    left:50%; top:-3px; bottom:-3px;
+    width:1px;
+    background:var(--border);
+  }
+  .quant-bar-fill{
+    position:absolute;
+    top:0; bottom:0;
+    border-radius:4px;
+  }
+  .quant-bar-fill.pos{ background:linear-gradient(90deg, rgba(52,211,153,0.5), var(--green)); left:50%; }
+  .quant-bar-fill.neg{ background:linear-gradient(90deg, var(--red), rgba(248,113,113,0.5)); right:50%; }
+
+  .metric-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px 10px;
+    margin-bottom:12px;
+  }
+  .metric{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  .metric-k{
+    font-size:var(--fs-sm);
+    color:var(--text-muted);
+    letter-spacing:0.03em;
+  }
+  .metric-v{
+    font-family:var(--mono);
+    font-size:var(--fs-base);
+    font-weight:600;
+    color:var(--text-primary);
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .metric-v.pos{ color:var(--green); }
+  .metric-v.neg{ color:var(--red); }
+
+  .tag{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:var(--fs-xs);
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:5px;
+    font-family:var(--mono);
+  }
+  .tag.golden{ background:var(--green-dim); color:var(--green); }
+  .tag.dead{ background:var(--red-dim); color:var(--red); }
+  .tag.none{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
+
+  .card-footer-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding-top:12px;
+    border-top:1px solid var(--border-soft);
+    font-size:var(--fs-xs);
+    color:var(--text-muted);
+  }
+  .news-soon{
+    font-size:var(--fs-xs);
+    color:var(--amber);
+    background:var(--amber-dim);
+    padding:2px 7px;
+    border-radius:5px;
+    font-weight:600;
+  }
+
+  /* ---------- Price-criteria section ---------- */
+  .criteria-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .criteria-tab{
+    font-family:var(--sans);
+    font-size:var(--fs-sm);
+    font-weight:600;
+    color:var(--text-secondary);
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    padding:6px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .criteria-tab:hover{ border-color:#2a3342; color:var(--text-primary); }
+  .criteria-tab.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .criteria-basis-row{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding-top:12px;
+    border-top:1px solid var(--border-soft);
+    font-size:var(--fs-xs);
+    color:var(--text-muted);
+  }
+
+  /* ---------- SW2 section ---------- */
+  .sw2-layout{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:16px;
+  }
+  .panel{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px 18px 14px;
+  }
+  .chart-panel{
+    padding:20px 16px 12px;
+  }
+  .chart-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    padding:0 6px 14px;
+  }
+  .legend-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .legend-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:var(--fs-sm);
+    color:var(--text-secondary);
+    font-family:var(--mono);
+  }
+  .legend-dot{ width:9px;height:9px;border-radius:2px; }
+  .chart-wrap{ position:relative; height:300px; padding:0 6px; }
+  @media (min-width:640px){ .chart-wrap{ height:340px; } }
+
+  .model-summary-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+    gap:10px;
+    margin-top:16px;
+  }
+  .model-summary{
+    background:var(--bg-elevated);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+  }
+  .model-summary .name{
+    font-size:var(--fs-sm);
+    color:var(--text-secondary);
+    font-weight:600;
+    margin-bottom:6px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .model-summary .eq{
+    font-family:var(--mono);
+    font-size:var(--fs-lg);
+    font-weight:700;
+  }
+  .model-summary .ret{
+    font-family:var(--mono);
+    font-size:var(--fs-sm);
+    margin-top:3px;
+  }
+
+  .summary-card{
+    background:var(--bg-elevated);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+  }
+  .summary-label{
+    font-size:var(--fs-sm);
+    color:var(--text-secondary);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .summary-value{
+    font-family:var(--mono);
+    font-size:var(--fs-lg);
+    font-weight:700;
+  }
+
+  table.stats-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:var(--fs-base);
+  }
+  .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table.stats-table thead th{
+    text-align:left;
+    font-size:var(--fs-xs);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--text-muted);
+    font-weight:600;
+    padding:0 12px 10px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  table.stats-table tbody td{
+    padding:12px;
+    border-bottom:1px solid var(--border-soft);
+    font-family:var(--mono);
+    white-space:nowrap;
+  }
+  table.stats-table tbody tr:last-child td{ border-bottom:none; }
+  table.stats-table tbody tr:hover{ background:rgba(255,255,255,0.015); }
+  .sig-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:3px 9px;
+    border-radius:6px;
+    font-size:var(--fs-sm);
+    font-weight:700;
+    font-family:var(--sans);
+  }
+  .sig-badge.yes{ background:var(--green-dim); color:var(--green); }
+  .sig-badge.no{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
+  /* p-value is the hero number of the comparisons table: bold + colored, not plain mono text */
+  .stat-pvalue{ font-weight:800; font-size:var(--fs-lg); letter-spacing:-0.01em; }
+  .stat-pvalue.yes{ color:var(--green); }
+  .stat-pvalue.no{ color:var(--text-secondary); }
+
+  /* ---------- Footer ---------- */
+  footer{
+    margin-top:60px;
+    padding-top:24px;
+    border-top:1px solid var(--border-soft);
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    font-size:var(--fs-sm);
+    color:var(--text-muted);
+  }
+  footer .repo-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    color:var(--text-secondary);
+    text-decoration:none;
+    border:1px solid var(--border);
+    padding:7px 12px;
+    border-radius:8px;
+    width:fit-content;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  footer .repo-link:hover{ border-color:var(--accent); color:var(--accent); }
+  footer .foot-note{ line-height:1.7; max-width:640px; }
+
+  @media (max-width:380px){
+    .brand-name{ font-size:14px; }
+    .quant-value{ font-size:22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 16 L9 10 L13 14 L21 5" stroke="#0a0d14" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">Trading Strategy Lab<span class="mono-tag">SW2 · PAPER TRADING</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="desc">SW1 퀀트 신호와 사용자 정의 가격기준을 서로 다른 매매 규칙으로 적용한 다섯 모델의 장기 페이퍼 트레이딩(paper trading) 성과를 일일 자산가치(equity) 추이와 통계적 유의성 비교로 보여줍니다.</div>
+    <div class="meta-row">
+      <span>⚙ <b>GitHub Actions</b>로 매 평일 자동 갱신</span>
+      <span>💰 모델당 초기 자본 <b>$100,000</b> (paper trading)</span>
+      <span>📡 정적 페이지 · 백엔드 없음</span>
+      <a class="news-input-link" href="index.html">← SW1 퀀트 시그널 보기</a>
+    </div>
+  </header>
+
+  <!-- ===================== SW2 ===================== -->
+  <section id="sw2-section">
+    <div class="section-head">
+      <div class="section-title"><span class="idx">01</span> 페이퍼 트레이딩 성과 비교 (SW2)</div>
+    </div>
+    <div class="section-sub">baseline · technical_only · conservative · price_model_1 · price_model_2 다섯 모델의 일일 자산가치(equity) 추이와 수익률에 대한 쌍대(t-test) 통계 비교</div>
+
+    <div class="sw2-layout">
+      <div class="panel chart-panel">
+        <div class="chart-head">
+          <div class="panel-title">모델별 Equity Curve</div>
+          <div class="legend-row" id="chart-legend"></div>
+        </div>
+        <div id="equity-content">
+          <div class="chart-wrap"><div class="state-box" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span class="spinner"></span>Equity 데이터를 불러오는 중입니다…</div></div>
+        </div>
+        <div id="model-summary-row" class="model-summary-row"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" style="margin-bottom:14px;">모델 간 통계적 유의성 비교 (t-test)</div>
+        <div id="comparisons-content">
+          <div class="state-box"><span class="spinner"></span>비교 데이터를 불러오는 중입니다…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <a class="repo-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub 저장소 보기
+    </a>
+    <div class="foot-note">이 프로젝트는 개인 학습 목적의 퀀트/AI 트레이딩 전략 검증 프로젝트입니다. 매 평일 GitHub Actions 스케줄러가 SW1(지표 계산)과 SW2(페이퍼 트레이딩)를 자동으로 실행하고 결과를 저장소에 커밋하며, 이 페이지는 그 결과를 보여주는 읽기 전용 정적 대시보드입니다. 실제 자금 운용과는 무관한 시뮬레이션(paper trading)입니다.</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/";
+  var EQUITY_URL = function(m){ return BASE + "data/sw2/equity/" + m + ".csv"; };
+  var COMPARISONS_URL = BASE + "data/sw2/comparisons/latest.json";
+
+  var MODELS = [
+    { key:"baseline", label:"Baseline", color:"#22d3ee" },
+    { key:"technical_only", label:"Technical Only", color:"#fbbf24" },
+    { key:"conservative", label:"Conservative", color:"#a78bfa" },
+    { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
+    { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
+  ];
+
+  /* ---------------- helpers ---------------- */
+
+  function fmtNum(v, digits){
+    if(v === null || v === undefined || isNaN(v)) return "—";
+    return Number(v).toLocaleString("en-US", { minimumFractionDigits:digits, maximumFractionDigits:digits });
+  }
+  function fmtUSD(v){
+    if(v === null || v === undefined || isNaN(v)) return "—";
+    return "$" + Number(v).toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+  function fmtPct(v, digits){
+    if(v === null || v === undefined || isNaN(v)) return "—";
+    var d = digits === undefined ? 2 : digits;
+    var sign = v > 0 ? "+" : "";
+    return sign + (v*100).toLocaleString("en-US", { minimumFractionDigits:d, maximumFractionDigits:d }) + "%";
+  }
+  function parseNumOrNull(s){
+    if(s === undefined || s === null) return null;
+    var t = String(s).trim();
+    if(t === "") return null;
+    var n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  /* Minimal defensive CSV parser: no quoted-comma fields in this dataset. */
+  function parseCSV(text){
+    if(!text) return [];
+    var lines = text.replace(/\r\n/g,"\n").split("\n").filter(function(l){ return l.trim().length > 0; });
+    if(lines.length < 1) return [];
+    var headers = lines[0].split(",").map(function(h){ return h.trim(); });
+    var rows = [];
+    for(var i=1;i<lines.length;i++){
+      var cells = lines[i].split(",");
+      var row = {};
+      for(var j=0;j<headers.length;j++){
+        row[headers[j]] = cells[j] !== undefined ? cells[j].trim() : "";
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function fetchText(url){
+    return fetch(url, { cache:"no-store" }).then(function(res){
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.text();
+    });
+  }
+  function fetchJSON(url){
+    return fetch(url, { cache:"no-store" }).then(function(res){
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    });
+  }
+
+  function stateBox(title, sub, isError){
+    return '<div class="state-box' + (isError ? ' error' : '') + '">' +
+      '<div class="state-title">' + escapeHtml(title) + '</div>' +
+      (sub ? '<div>' + escapeHtml(sub) + '</div>' : '') +
+    '</div>';
+  }
+
+  /* ---------------- section 2: SW2 equity + comparisons ---------------- */
+
+  function loadEquityForModel(model){
+    return fetchText(EQUITY_URL(model.key)).then(function(text){
+      var rows = parseCSV(text).map(function(r){
+        return {
+          date: r.date,
+          equity: parseNumOrNull(r.equity),
+          daily_return: parseNumOrNull(r.daily_return)
+        };
+      }).filter(function(r){ return r.equity !== null; });
+      return { model: model, rows: rows, error: null };
+    }).catch(function(err){
+      return { model: model, rows: [], error: err.message };
+    });
+  }
+
+  function renderEquityChart(results){
+    var allDates = [];
+    results.forEach(function(r){
+      r.rows.forEach(function(row){
+        if(allDates.indexOf(row.date) === -1) allDates.push(row.date);
+      });
+    });
+    allDates.sort();
+
+    var haveAnyData = results.some(function(r){ return r.rows.length > 0; });
+
+    // legend
+    var legendHtml = MODELS.map(function(m){
+      return '<span class="legend-item"><span class="legend-dot" style="background:' + m.color + ';"></span>' + m.label + '</span>';
+    }).join("");
+    document.getElementById("chart-legend").innerHTML = legendHtml;
+
+    var contentEl = document.getElementById("equity-content");
+    var allFailed = results.every(function(r){ return r.error; });
+
+    if(allFailed){
+      contentEl.innerHTML = stateBox(
+        "Equity 데이터를 불러올 수 없습니다",
+        "세 모델 파일 요청이 모두 실패했습니다 (data/sw2/equity/*.csv 경로를 확인해 주세요). 첫 예: " + results[0].error,
+        true
+      );
+      document.getElementById("model-summary-row").innerHTML = "";
+      return;
+    }
+
+    if(!haveAnyData){
+      contentEl.innerHTML = stateBox(
+        "Equity 데이터가 아직 없습니다",
+        "SW2 첫 실행 이후 데이터가 쌓이면 차트가 표시됩니다.",
+        false
+      );
+      document.getElementById("model-summary-row").innerHTML = "";
+      return;
+    }
+
+    var maxPoints = allDates.length;
+    var lowDataNotice = maxPoints < 3
+      ? '<div style="font-size:var(--fs-sm);color:var(--text-muted);padding:0 6px 10px;">📈 데이터 축적 초기 단계입니다 (현재 ' + maxPoints + '일치). 평일마다 자동으로 포인트가 추가됩니다.</div>'
+      : '';
+
+    contentEl.innerHTML = lowDataNotice + '<div class="chart-wrap"><canvas id="equity-canvas"></canvas></div>';
+
+    var ctx = document.getElementById("equity-canvas").getContext("2d");
+    var datasets = results.map(function(r){
+      var byDate = {};
+      r.rows.forEach(function(row){ byDate[row.date] = row.equity; });
+      var data = allDates.map(function(d){ return byDate.hasOwnProperty(d) ? byDate[d] : null; });
+      return {
+        label: r.model.label,
+        data: data,
+        borderColor: r.model.color,
+        backgroundColor: r.model.color,
+        pointBackgroundColor: r.model.color,
+        pointRadius: maxPoints <= 3 ? 5 : 2.5,
+        pointHoverRadius: 6,
+        borderWidth: 2.25,
+        tension: maxPoints <= 3 ? 0 : 0.25,
+        spanGaps: true
+      };
+    });
+
+    new Chart(ctx, {
+      type: "line",
+      data: { labels: allDates, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#11151d",
+            borderColor: "#1f2632",
+            borderWidth: 1,
+            titleColor: "#e8ebf1",
+            bodyColor: "#c3cad9",
+            padding: 10,
+            callbacks: {
+              label: function(item){
+                var v = item.parsed.y;
+                return item.dataset.label + ": " + (v===null||v===undefined ? "—" : "$" + Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "#161c27", drawTicks:false },
+            ticks: { color: "#6b7688", font: { family:"monospace", size:10 }, maxRotation:0, autoSkip:true }
+          },
+          y: {
+            grid: { color: "#161c27", drawTicks:false },
+            ticks: {
+              color: "#6b7688",
+              font: { family:"monospace", size:10 },
+              callback: function(v){ return "$" + Number(v).toLocaleString("en-US"); }
+            }
+          }
+        }
+      }
+    });
+
+    // per-model summary cards
+    var summaryHtml = results.map(function(r){
+      if(r.rows.length === 0){
+        return '<div class="model-summary"><div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + r.model.label + '</div><div class="eq">—</div><div class="ret" style="color:var(--text-muted);">데이터 없음</div></div>';
+      }
+      var last = r.rows[r.rows.length - 1];
+      var first = r.rows[0];
+      var totalRet = (first.equity && first.equity !== 0) ? (last.equity - first.equity) / first.equity : null;
+      var retCls = totalRet === null ? "" : (totalRet >= 0 ? "pos" : "neg");
+      var retColorVar = totalRet === null ? "var(--text-muted)" : (totalRet >= 0 ? "var(--green)" : "var(--red)");
+      return '<div class="model-summary">' +
+        '<div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + r.model.label + '</div>' +
+        '<div class="eq">' + fmtUSD(last.equity) + '</div>' +
+        '<div class="ret" style="color:' + retColorVar + ';">' + (totalRet === null ? "누적 수익률 계산 불가" : fmtPct(totalRet) + " 누적") + ' · ' + r.rows.length + '일치</div>' +
+      '</div>';
+    }).join("");
+    document.getElementById("model-summary-row").innerHTML = summaryHtml;
+  }
+
+  function loadEquitySection(){
+    return Promise.all(MODELS.map(loadEquityForModel)).then(function(results){
+      try{
+        renderEquityChart(results);
+      }catch(e){
+        document.getElementById("equity-content").innerHTML = stateBox("차트를 그리는 중 오류가 발생했습니다", e.message, true);
+      }
+      return results;
+    });
+  }
+
+  function significanceBadge(pAdjusted, pRaw){
+    // Task #23: prefer the multiple-comparison-corrected (FDR) p-value when
+    // it's available -- raw per-pair p-values overstate significance once
+    // several pairs are being compared together, which is exactly this
+    // table's situation. Falls back to the raw p-value (labeled as such)
+    // only for older data / correction_method=None.
+    var hasAdjusted = pAdjusted !== null && pAdjusted !== undefined && !isNaN(pAdjusted);
+    if(hasAdjusted){
+      return pAdjusted < 0.05
+        ? '<span class="sig-badge yes">✓ 유의함 (FDR 보정)</span>'
+        : '<span class="sig-badge no">유의하지 않음 (FDR 보정)</span>';
+    }
+    var hasRaw = pRaw !== null && pRaw !== undefined && !isNaN(pRaw);
+    if(!hasRaw){
+      return '<span class="sig-badge no">—</span>';
+    }
+    return pRaw < 0.05
+      ? '<span class="sig-badge yes">✓ 유의함 (보정 전)</span>'
+      : '<span class="sig-badge no">유의하지 않음</span>';
+  }
+
+  function effectSizeText(d){
+    if(d === null || d === undefined || isNaN(d)) return "—";
+    var abs = Math.abs(d);
+    // Cohen's conventional thresholds for |d|.
+    var mag = abs < 0.2 ? "매우 작음" : abs < 0.5 ? "작음" : abs < 0.8 ? "중간" : "큼";
+    return Number(d).toFixed(3) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(' + mag + ')</span>';
+  }
+
+  function autocorrelationNote(c){
+    // Task #23: Ljung-Box flagged serial correlation in at least one of
+    // the two return series -- the t-test/effect-size i.i.d. assumption
+    // may not hold, so surface it as a caveat rather than silently
+    // trusting the p-value.
+    if(c.autocorrelation_warning_a || c.autocorrelation_warning_b){
+      return ' <span class="sig-badge no" title="일별 수익률에서 유의한 자기상관이 감지되었습니다 (Ljung-Box). t-test와 p-value가 가정하는 독립성이 흔들릴 수 있으니 참고용으로 해석하세요.">⚠ 자기상관</span>';
+    }
+    return '';
+  }
+
+  function modelLabel(key){
+    var m = MODELS.filter(function(m){ return m.key === key; })[0];
+    return m ? m.label : key;
+  }
+
+  function loadComparisonsSection(equityResults){
+    var minPoints = equityResults ? Math.min.apply(null, equityResults.map(function(r){ return r.rows.length; })) : 0;
+
+    return fetchJSON(COMPARISONS_URL).then(function(data){
+      var comparisons = (data && Array.isArray(data.comparisons)) ? data.comparisons : [];
+      var el = document.getElementById("comparisons-content");
+
+      if(comparisons.length === 0){
+        var currentDays = isFinite(minPoints) ? minPoints : 0;
+        el.innerHTML = stateBox(
+          "아직 통계적으로 유의미한 비교가 불가능합니다",
+          "일일 수익률 비교에는 모델당 최소 2일치 데이터가 필요합니다 (현재 " + currentDays + "일치). 평일마다 자동 실행되는 SW2 결과가 쌓이면 이 영역에 t-test 비교 결과가 표시됩니다.",
+          false
+        );
+        return;
+      }
+
+      var rowsHtml = comparisons.map(function(c){
+        var sig = significanceBadge(c.p_value_adjusted, c.p_value);
+        var pVal = c.p_value;
+        var hasP = pVal !== null && pVal !== undefined && !isNaN(pVal);
+        var pCls = hasP ? (pVal < 0.05 ? "yes" : "no") : "no";
+        var pText = hasP ? '<span class="stat-pvalue ' + pCls + '">' + Number(pVal).toFixed(4) + '</span>' : "—";
+        var pAdjVal = c.p_value_adjusted;
+        var hasPAdj = pAdjVal !== null && pAdjVal !== undefined && !isNaN(pAdjVal);
+        var pAdjCls = hasPAdj ? (pAdjVal < 0.05 ? "yes" : "no") : "no";
+        var pAdjText = hasPAdj ? '<span class="stat-pvalue ' + pAdjCls + '">' + Number(pAdjVal).toFixed(4) + '</span>' : "—";
+        return '<tr>' +
+          '<td>' + escapeHtml(modelLabel(c.model_a)) + ' <span style="color:var(--text-muted);">vs</span> ' + escapeHtml(modelLabel(c.model_b)) + autocorrelationNote(c) + '</td>' +
+          '<td>' + fmtPct(c.mean_daily_return_a, 3) + '</td>' +
+          '<td>' + fmtPct(c.mean_daily_return_b, 3) + '</td>' +
+          '<td>' + (c.t_statistic === null || c.t_statistic === undefined ? "—" : Number(c.t_statistic).toFixed(3)) + '</td>' +
+          '<td>' + pText + '</td>' +
+          '<td>' + pAdjText + '</td>' +
+          '<td>' + effectSizeText(c.cohens_d) + '</td>' +
+          '<td>' + (c.n_a !== undefined ? c.n_a : "—") + ' / ' + (c.n_b !== undefined ? c.n_b : "—") + '</td>' +
+          '<td>' + sig + '</td>' +
+        '</tr>';
+      }).join("");
+
+      el.innerHTML =
+        '<div class="table-scroll"><table class="stats-table">' +
+          '<thead><tr>' +
+            '<th>모델 비교</th><th>평균 수익률 A</th><th>평균 수익률 B</th><th>t-statistic</th><th>p-value</th><th>p-value (FDR 보정)</th><th>효과크기 (Cohen\'s d)</th><th>n (A/B)</th><th>유의성</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rowsHtml + '</tbody>' +
+        '</table></div>';
+    }).catch(function(err){
+      document.getElementById("comparisons-content").innerHTML = stateBox(
+        "비교 데이터를 불러올 수 없습니다",
+        "data/sw2/comparisons/latest.json 을 확인해 주세요 (" + err.message + ")",
+        true
+      );
+    });
+  }
+
+  /* ---------------- init ---------------- */
+
+  loadEquitySection().then(function(equityResults){
+    loadComparisonsSection(equityResults);
+  });
+
+})();
+</script>
+</body>
+</html>
