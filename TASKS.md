@@ -381,24 +381,26 @@
   커밋 후 GitHub Actions `tests` 워크플로에서도 동일하게 7 failed / 256
   passed 확인(CI 로그 직접 확인해 실패 목록이 로컬과 정확히 일치함을
   재검증) — `pages build and deployment`는 성공.
-- 대시보드는 아직 `data/walkforward/results.json`이 존재하지 않아 "아직
-  검증 결과가 없습니다" 빈 상태로 표시됨 — `walkforward-validation.yml`이
-  `workflow_dispatch`뿐이라 최초 1회는 수동 트리거가 필요(다음 세션 또는
-  사용자가 GitHub Actions 탭에서 직접 실행 가능).
+- **최초 실행 완료(같은 세션, 커밋 직후)**: `walkforward-validation.yml`을
+  GitHub Actions 탭에서 수동 트리거(`workflow_dispatch`) → 성공
+  (run_ts 2026-09-15T04:54:31Z). `data/walkforward/results.json` 결과:
+  7종목 전부 성공(failures 없음), 풀링 140/140구간 검증, 전체 평균 IC
+  0.055, 양(+) 구간 비율 70%, 최고 IC 0.456 / 최저 IC -0.426. 종목별로는
+  TSLA(평균 IC 0.137, 양수 100%)·NVDA(0.131, 90%)가 가장 안정적이고
+  GOOGL(-0.038, 40%)·META(0.003, 50%)는 혼재/약함 — 종목마다 신호 강도
+  차이가 크다는 것을 그대로 보여줌(과장 없이 실제 계산값). 라이브 대시보드
+  (https://hyunwoo-ml.github.io/trading-strategy-lab/)를 `get_page_text` +
+  `read_console_messages`로 재확인: "04 Walk-forward 검증" 섹션이 요약
+  카드 3개 + 종목별 테이블로 정상 렌더링, 콘솔 에러 없음.
 
 ## 다음 세션이 할 일
 
 원래 태스크 시퀀스(#13, NaN 수정, #22, #24, #23, #25)와 그 뒤 self-directed
 follow-up(block bootstrap p-value), 이전 세션의 뉴스 게이트 마무리 +
 대시보드 뉴스 노출 + 뉴스 입력 폼, 그리고 이번 세션의 **Task #35
-walk-forward(롤링 윈도우) 검증**까지 모두 완료됨.
+walk-forward(롤링 윈도우) 검증**(최초 실행까지 완료, 대시보드에 실제
+데이터 표시 중)까지 모두 완료됨.
 
-0. **`walkforward-validation.yml` 최초 1회 수동 트리거**: 커밋은 완료됐지만
-   `workflow_dispatch`뿐이라 아직 한 번도 실행되지 않음 —
-   `data/walkforward/results.json`이 없어 대시보드 04번 섹션이 빈 상태로
-   표시 중. GitHub Actions 탭에서 `walkforward-validation` 워크플로를 수동
-   실행해 실제 검증 결과(IC 값들)로 채울 것. 다음 세션이 자동으로 해도 되고,
-   사용자가 직접 실행해도 됨.
 1. **SW1/SW2 대시보드 분리** (사용자 요청, 진행 동의 받음, 아직 미착수):
    현재 `docs/index.html` 하나에 M7 신호(SW1 일부) + 가격기준모델(SW1) +
    SW2 페이퍼트레이딩 성과가 전부 한 페이지에 있음. 사용자는 SW1과 SW2를
