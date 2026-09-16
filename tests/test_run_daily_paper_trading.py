@@ -6,6 +6,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from sw2.compare import ComparisonResult  # noqa: E402
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import run_daily_paper_trading as script  # noqa: E402
 
@@ -132,6 +134,58 @@ def test_comparisons_file_grows_once_enough_history_exists(wired_script):
     wired_script.main()
     third = json.loads((wired_script.COMPARISONS_DIR / "latest.json").read_text())
     assert len(third["comparisons"]) == 3  # 3 equity points -> 2 valid daily returns -> 3 models -> 3 pairs
+
+
+def test_comparisons_carry_governance_verdict(wired_script):
+    # Task #25's sw2.governance.evaluate_promotion wired into the daily
+    # comparisons write (2026-09-16) -- every comparison the pipeline
+    # writes should now carry a nested "governance" verdict alongside the
+    # existing stats, not just a library function nobody calls.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
+    wired_script.main()
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 202.0, "quant_score": 0.0, "news_score": None}])
+    wired_script.main()
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 205.0, "quant_score": 0.0, "news_score": None}])
+    wired_script.main()
+
+    data = json.loads((wired_script.COMPARISONS_DIR / "latest.json").read_text())
+    assert len(data["comparisons"]) == 3
+    for c in data["comparisons"]:
+        gov = c["governance"]
+        assert gov is not None
+        assert gov["model_a"] == c["model_a"]
+        assert gov["model_b"] == c["model_b"]
+        # only 2 valid daily-return observations per model here, far below
+        # sw2.governance.GOVERNANCE_MIN_N (20) -- the conservative verdict
+        # for "not enough history yet" must be insufficient_data, and must
+        # never be misread as "hold" (which would imply enough evidence
+        # existed to actively reject promotion).
+        assert gov["verdict"] == "insufficient_data"
+        assert any("sample size" in r for r in gov["reasons"])
+
+
+def test_comparison_to_dict_embeds_promote_verdict_when_criteria_met(wired_script):
+    # Unit-level check on the new serialization helper itself, using a
+    # synthetic ComparisonResult that clears all three of
+    # evaluate_promotion's bars (n>=20, significant adjusted p-value,
+    # model_a's mean return ahead of model_b's) -- exercises the
+    # "promote" path that the day-to-day integration tests above can't
+    # reach without 20+ days of scripted history.
+    comparison = ComparisonResult(
+        model_a="a",
+        model_b="b",
+        mean_daily_return_a=0.01,
+        mean_daily_return_b=-0.002,
+        t_statistic=6.0,
+        p_value=0.001,
+        n_a=25,
+        n_b=25,
+        p_value_adjusted=0.01,
+    )
+    result = script._comparison_to_dict(comparison, {})
+    assert result["model_a"] == "a"  # existing ComparisonResult fields still present, unchanged
+    assert result["governance"]["verdict"] == "promote"
+    assert result["governance"]["model_a"] == "a"
 
 
 # -- price-criteria models (sw1.criteria.generator / sw2.price_criteria_model) --
