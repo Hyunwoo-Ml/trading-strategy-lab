@@ -535,6 +535,7 @@
   }
   .sig-badge.yes{ background:var(--green-dim); color:var(--green); }
   .sig-badge.no{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
+  .sig-badge.warn{ background:var(--amber-dim); color:var(--amber); }
   /* p-value is the hero number of the comparisons table: bold + colored, not plain mono text */
   .stat-pvalue{ font-weight:800; font-size:var(--fs-lg); letter-spacing:-0.01em; }
   .stat-pvalue.yes{ color:var(--green); }
@@ -615,7 +616,8 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title" style="margin-bottom:14px;">모델 간 통계적 유의성 비교 (t-test)</div>
+        <div class="panel-title">모델 간 통계적 유의성 비교 (t-test)</div>
+        <div class="section-sub" style="margin-bottom:14px;">"승격 판정" 열은 sw2/governance.py의 evaluate_promotion() 기준 — 양쪽 모델 모두 20일 이상의 기록, FDR 보정 p-value &lt; 0.05(없으면 보정 전 p-value로 대체), A가 B보다 평균 수익률 우위, 최근 5일 이상 연속 우위 — 을 전부 충족해야 "승격 가능"이며, 하나라도 부족하면 보수적으로 "보류" 또는 "데이터 부족"으로 처리됩니다. 배지에 마우스를 올리면 판정 근거를 볼 수 있습니다.</div>
         <div id="comparisons-content">
           <div class="state-box"><span class="spinner"></span>비교 데이터를 불러오는 중입니다…</div>
         </div>
@@ -915,6 +917,27 @@
     return m ? m.label : key;
   }
 
+  function governanceBadge(g){
+    // Task #25's sw2.governance.evaluate_promotion, wired into the daily
+    // comparisons write for the first time (2026-09-16) -- surfaces its
+    // promote/hold/insufficient_data verdict for "model_a promoted over
+    // model_b" right next to the stats it was computed from. `reasons`
+    // (accumulated caveats, not just a bare yes/no -- see the module
+    // docstring) goes into the badge's tooltip so the verdict stays
+    // auditable rather than a black box.
+    if(!g || !g.verdict){
+      return '<span class="sig-badge no">—</span>';
+    }
+    var reasonsText = Array.isArray(g.reasons) ? g.reasons.join(" · ") : "";
+    if(g.verdict === "promote"){
+      return '<span class="sig-badge yes" title="' + escapeHtml(reasonsText) + '">✓ ' + escapeHtml(modelLabel(g.model_a)) + ' 승격 가능</span>';
+    }
+    if(g.verdict === "insufficient_data"){
+      return '<span class="sig-badge warn" title="' + escapeHtml(reasonsText) + '">데이터 부족</span>';
+    }
+    return '<span class="sig-badge no" title="' + escapeHtml(reasonsText) + '">보류</span>';
+  }
+
   function loadComparisonsSection(equityResults){
     var minPoints = equityResults ? Math.min.apply(null, equityResults.map(function(r){ return r.rows.length; })) : 0;
 
@@ -952,13 +975,14 @@
           '<td>' + effectSizeText(c.cohens_d) + '</td>' +
           '<td>' + (c.n_a !== undefined ? c.n_a : "—") + ' / ' + (c.n_b !== undefined ? c.n_b : "—") + '</td>' +
           '<td>' + sig + '</td>' +
+          '<td>' + governanceBadge(c.governance) + '</td>' +
         '</tr>';
       }).join("");
 
       el.innerHTML =
         '<div class="table-scroll"><table class="stats-table">' +
           '<thead><tr>' +
-            '<th>모델 비교</th><th>평균 수익률 A</th><th>평균 수익률 B</th><th>t-statistic</th><th>p-value</th><th>p-value (FDR 보정)</th><th>효과크기 (Cohen\'s d)</th><th>n (A/B)</th><th>유의성</th>' +
+            '<th>모델 비교</th><th>평균 수익률 A</th><th>평균 수익률 B</th><th>t-statistic</th><th>p-value</th><th>p-value (FDR 보정)</th><th>효과크기 (Cohen\'s d)</th><th>n (A/B)</th><th>유의성</th><th>승격 판정</th>' +
           '</tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
         '</table></div>';
