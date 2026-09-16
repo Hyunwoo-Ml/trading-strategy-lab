@@ -544,3 +544,73 @@ M7 퀀트 시그널 카드의 "뉴스 감성 점수"가 "준비중"에서 실제
 작동해 MSFT·META가 "🔒 신규진입 보류 (뉴스)"로 표시되는 것까지 확인
 완료. 사용자가 보고한 두 증상(뉴스 감성 점수 미반영, 가격기준 모델
 매매가 무변동) 모두 해소됨.
+
+---
+
+## 2026-09-16 세션: governance.py 승격 판정 파이프라인/대시보드 연동
+
+이전 세션 `TASKS.md`의 "다음 세션이 할 일" 2번 — `sw2/governance.py`의
+`evaluate_promotion`이 라이브러리 함수로만 존재하고 어디에서도 호출되지
+않는 문제 — 에 대해 두 가지 선택지(governance 연동 vs KIS 연동)를
+`AskUserQuestion`으로 물어 사용자가 **"governance.py 승격판정 연동"**을
+선택, 그 지시에 따라 진행.
+
+**설계 결정 (이번 세션 범위 내에서 자체 판단)**: `evaluate_promotion`은
+`comparison.model_a`가 `model_b`보다 승격할 만한지를 판단하는 방향성
+있는(directional) 함수. 기존 비교 테이블이 이미 "A vs B" 형태의 방향성
+있는 쌍대 비교이므로, 그 방향 그대로 판정을 계산해 각 comparison 딕셔너리
+안에 `"governance"` 중첩 객체로 내장 (별도 리스트/파일로 분리하지 않음 —
+인덱스 정렬이 어긋날 가능성을 원천 차단). 자동 승격 액션이나 알림 등은
+추가하지 않음 (사용자가 승인한 범위를 벗어나는 제품/정책 결정이므로).
+
+**변경 파일 (3개, 전부 GitHub 웹 에디터 브라우저 자동화로 커밋, 전부
+SHA-256 해시로 삽입 내용 검증 완료):**
+
+- `scripts/run_daily_paper_trading.py` (커밋 `76ef6b1`) — `sw2.governance.evaluate_promotion`
+  import 및 `_comparison_to_dict()` 헬퍼 추가. 각 `ComparisonResult`를
+  직렬화할 때 해당 모델 쌍의 일별 수익률 시리즈로 `evaluate_promotion`을
+  호출해 `"governance"` 키로 verdict(`promote`/`hold`/`insufficient_data`)와
+  `reasons`를 함께 저장. 평가 중 예외 발생 시 `try/except`로 감싸
+  `governance: null` + 경고 로그로 graceful degradation (기존 코드베이스
+  관례 일치).
+- `tests/test_run_daily_paper_trading.py` (커밋 `e527726`) — 신규 테스트 2건
+  추가: `test_comparisons_carry_governance_verdict` (일일 파이프라인
+  3회 실행 후 모든 comparison에 `governance` 객체가 붙고, 표본 수가
+  적을 때 `insufficient_data` + "sample size" 사유가 포함되는지),
+  `test_comparison_to_dict_embeds_promote_verdict_when_criteria_met`
+  (n>=20, 유의한 보정 p-value, A의 평균 수익률 우위 조건을 모두 만족하는
+  합성 `ComparisonResult`로 `promote` 경로 단위 검증).
+- `docs/sw2.html` (커밋 `78c7dae`) — 모델 비교 테이블에 "승격 판정" 열
+  추가. `governanceBadge()` 렌더 함수: `promote`는 녹색 배지("✓ {모델명}
+  승격 가능"), `insufficient_data`는 주황 배지("데이터 부족"),
+  `hold`은 회색 배지("보류") — 배지에 마우스를 올리면 `reasons` 배열이
+  툴팁으로 표시됨. 패널 제목 아래에 판정 기준(20일 이상 기록, FDR 보정
+  p-value < 0.05, A의 평균 수익률 우위, 5일 이상 연속 우위)을 설명하는
+  안내 문구 추가. `.sig-badge.warn` CSS 클래스 신규 추가. 5개 청크(8000자
+  ×3 + 8000자 + 1707자)로 분할 삽입, 최종 SHA-256 해시(`47eb13c2...`)로
+  검증 완료.
+
+**검증:**
+
+- 로컬 `python -m pytest -q`: 신규 2건 포함 통과, 기존과 동일하게 7건
+  실패 — 이 7건은 2026-09-15 세션 기록에 이미 문서화된 기존 이슈
+  (`sw1/calendar/events.py`에 하드코딩된 FOMC 블랙아웃 날짜와 오늘 날짜가
+  겹쳐서 발생, 이번 governance 작업과 무관)와 완전히 동일한 목록임을
+  재확인. **회귀 없음.**
+- GitHub Actions `tests` 워크플로: 커밋 3건(`76ef6b1`, `e527726`,
+  `78c7dae`) 각각 실행 후 "failed" 상태이나, 실패한 테스트 7건이 위와
+  동일한 기존 이슈임을 CI 로그에서 직접 확인 (governance 커밋 이전인
+  `d7134cc`에서도 이미 동일하게 실패 상태였음을 대조 확인).
+- `run-paper-trading` 워크플로를 수동 실행(`workflow_dispatch`, run #10)
+  하여 새 스크립트로 `data/sw2/comparisons/latest.json`을 재생성 — raw
+  fetch로 실제 JSON을 확인한 결과 comparison 10건 전부에 `governance`
+  중첩 객체가 정상적으로 포함됨 (현재는 모델당 9일치 데이터만 쌓여
+  `n_a=9, n_b=9`로 `insufficient_data` 판정, "sample size too small"
+  사유 포함 — 20일 이상 쌓이면 자연히 `promote`/`hold` 판정으로 전환됨).
+- 라이브 대시보드(`https://hyunwoo-ml.github.io/trading-strategy-lab/sw2.html`)를
+  브라우저로 직접 열어 확인: "승격 판정" 열이 10개 행 전부에 주황색
+  "데이터 부족" 배지로 정상 렌더링됨, 콘솔 에러 없음, `pages build and
+  deployment` 워크플로 성공.
+
+**다음 세션이 할 일 갱신**: 위 "다음 세션이 할 일" 2번(governance 연동)
+완료로 마감. 남은 항목은 1번(KIS 연동, 여전히 사용자 재요청 전까지 보류)뿐.
