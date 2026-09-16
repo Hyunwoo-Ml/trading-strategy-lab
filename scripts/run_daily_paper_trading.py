@@ -18,8 +18,12 @@ this:
      its equity curve.
   5. Persists the updated portfolio state and equity curve back to data/,
      then runs a pairwise statistical comparison (sw2.compare) across every
-     model that has 2+ days of daily-return history and writes that to
-     data/sw2/comparisons/latest.json.
+     model that has 2+ days of daily-return history, runs each pair's
+     result through sw2.governance.evaluate_promotion (Task #25's
+     promote/hold/insufficient_data verdict, wired into this daily run for
+     the first time -- 2026-09-16), and writes both to
+     data/sw2/comparisons/latest.json (each comparison carries its own
+     nested "governance" object).
 
 Position sizing (Task #22, 2026-09-14): each buy tranche's dollar amount
 comes from sw2.sizing.risk_based_tranche_dollars, which sizes the tranche
@@ -45,7 +49,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from sw1.calendar.events import is_event_blackout  # noqa: E402
 from sw1.criteria.generator import PriceCriteria, load_price_criteria_params  # noqa: E402
 from sw1.indicators.weekly import compute_weekly_trend  # noqa: E402
-from sw2.compare import compare_all_pairs  # noqa: E402
+from sw2.compare import ComparisonResult, compare_all_pairs  # noqa: E402
+from sw2.governance import evaluate_promotion  # noqa: E402
 from sw2.ledger import Portfolio, Position, Trade  # noqa: E402
 from sw2.models import TradingModel, default_registry  # noqa: E402
 from sw2.price_criteria_model import MarketContext, PriceCriteriaModel  # noqa: E402
@@ -317,6 +322,42 @@ def _finalize_model_run(model_name: str, portfolio: Portfolio, returns_by_model:
     )
 
 
+def _comparison_to_dict(comparison: ComparisonResult, returns_by_model: dict[str, pd.Series]) -> dict:
+    """Serializes one pairwise comparison together with its governance
+    verdict (Task #25's sw2.governance.evaluate_promotion, wired in here
+    for the first time -- previously a library function nothing called).
+    Embeds the verdict under a nested "governance" key rather than writing
+    a parallel list, so the dashboard/any future consumer always finds a
+    comparison's promotion call right next to the stats it was computed
+    from and the two can never drift out of index-alignment with each
+    other.
+
+    evaluate_promotion() only decides whether `comparison.model_a` earns
+    promotion over `comparison.model_b` specifically (the docstring on
+    that function notes both orders would need evaluating for a symmetric
+    leaderboard) -- for this per-pair table that directional read is
+    exactly what's being displayed already (model_a vs model_b), so no
+    second call in the opposite direction is made here.
+
+    Wrapped in try/except as a graceful-degradation fallback consistent
+    with the rest of this pipeline (a bad ticker/day never takes down the
+    whole run): evaluate_promotion() has no known way to raise given a
+    well-formed ComparisonResult, but this pipeline's day-to-day driver
+    seat is not the place to discover a new one the hard way."""
+    result = asdict(comparison)
+    try:
+        verdict = evaluate_promotion(
+            comparison,
+            returns_by_model.get(comparison.model_a),
+            returns_by_model.get(comparison.model_b),
+        )
+        result["governance"] = asdict(verdict)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[WARN] could not evaluate promotion for {comparison.model_a} vs {comparison.model_b}: {exc}")
+        result["governance"] = None
+    return result
+
+
 def main() -> int:
     if not SIGNALS_PATH.exists():
         print(f"[ERROR] no signals file at {SIGNALS_PATH} -- run collect_daily_data.py first")
@@ -371,7 +412,10 @@ def main() -> int:
     # writing broken JSON that the dashboard can't read.
     comparisons_path.write_text(
         json.dumps(
-            {"run_date": run_date, "comparisons": [asdict(c) for c in comparisons]},
+            {
+                "run_date": run_date,
+                "comparisons": [_comparison_to_dict(c, returns_by_model) for c in comparisons],
+            },
             ensure_ascii=False,
             indent=2,
             allow_nan=False,
