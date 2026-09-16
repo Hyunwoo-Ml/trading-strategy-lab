@@ -1,0 +1,36 @@
+name: historical-backtest
+
+# On-demand only -- this replays the currently-registered SW2 trading
+# models against ~3 years of real market history (see sw1/validation/
+# backtest.py and scripts/run_historical_backtest.py), a completely
+# separate exercise from the daily live paper-trading run
+# (run-paper-trading.yml) and from the walk-forward IC stability check
+# (walkforward-validation.yml). Re-run manually after changing a model's
+# rules/thresholds, or periodically to refresh the historical read.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run historical backtest (SW2 models, ~3y history, quarterly periods)
+        run: python scripts/run_historical_backtest.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/backtest/
+          git diff --staged --quiet && echo "no changes" && exit 0
+          git commit -m "chore: historical backtest run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
