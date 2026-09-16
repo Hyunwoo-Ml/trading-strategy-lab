@@ -1,0 +1,209 @@
+"""Tests for scripts/run_historical_backtest.py.
+
+The underlying math (period bucketing) is unit-tested in tests/
+test_backtest.py; the underlying technical-indicator/weekly-trend/market-
+regime rules are unit-tested in their own sw1 test files
+(test_weekly_trend.py, test_market_regime.py, test_price_criteria_
+generator.py). What's tested HERE is this script's own wiring: does it
+call the shared decision/ledger code correctly, does it degrade gracefully
+on a bad ticker, does it write the expected output shape.
+
+yfinance is mocked out entirely -- no network in tests, same pattern as
+tests/test_run_walkforward_validation.py."""
+import importlib
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+import run_historical_backtest as script  # noqa: E402
+
+
+def _fake_ohlcv(n=300, seed=0, start="2023-01-02", vol=2.0):
+    rng = np.random.RandomState(seed)
+    dates = pd.bdate_range(start, periods=n)
+    close = 100 + np.cumsum(rng.randn(n) * vol)
+    close = np.maximum(close, 5.0)
+    return pd.DataFrame(
+        {
+            "Open": close,
+            "High": close * 1.01,
+            "Low": close * 0.99,
+            "Close": close,
+            "Volume": rng.randint(1_000_000, 5_000_000, size=n),
+        },
+        index=dates,
+    )
+
+
+@pytest.fixture
+def wired_script(tmp_path, monkeypatch):
+    importlib.reload(script)
+    output_path = tmp_path / "data" / "backtest" / "results.json"
+    monkeypatch.setattr(script, "OUTPUT_PATH", output_path)
+    return script
+
+
+def _mock_fetch(monkeypatch, mod, seed_offset=0):
+    def fake_fetch(ticker, period="3y"):
+        return _fake_ohlcv(seed=(abs(hash(ticker)) + seed_offset) % 1000)
+
+    monkeypatch.setattr(mod, "fetch_ohlcv", fake_fetch)
+
+
+# -- run_backtest / main wiring --
+
+
+def test_main_writes_output_with_all_five_models(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script)
+    rc = wired_script.main()
+    assert rc == 0
+
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert set(output["models"].keys()) == {
+        "baseline", "technical_only", "conservative", "price_model_1", "price_model_2",
+    }
+    assert output["failures"] == []
+    assert output["config"]["period_freq"] == "Q"
+    assert output["config"]["fetch_period"] == "3y"
+    assert len(output["config"]["scope_notes"]) > 0
+
+
+def test_each_model_has_periods_and_summary_fields(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    for name, payload in output["models"].items():
+        assert payload["starting_cash"] == wired_script.STARTING_CASH
+        assert "total_return" in payload
+        assert "final_equity" in payload
+        assert "n_trades" in payload
+        assert isinstance(payload["periods"], list)
+        assert len(payload["periods"]) > 0
+        for p in payload["periods"]:
+            assert set(p.keys()) == {"period", "start_date", "end_date", "start_equity", "end_equity", "period_return"}
+
+
+def test_score_threshold_models_actually_trade_on_volatile_history(wired_script, monkeypatch):
+    # sanity check that the score-threshold path (baseline/technical_only)
+    # is genuinely wired to sw2.ledger.Portfolio, not just producing an
+    # all-zero equity curve -- volatile synthetic history should clear at
+    # least one model's buy_1 threshold somewhere across ~300 trading days.
+    _mock_fetch(monkeypatch, wired_script, seed_offset=42)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    total_trades = sum(output["models"][m]["n_trades"] for m in ("baseline", "technical_only", "conservative"))
+    assert total_trades > 0
+
+
+def test_one_ticker_failure_does_not_crash_the_run(wired_script, monkeypatch):
+    def flaky_fetch(ticker, period="3y"):
+        if ticker == "TSLA":
+            raise RuntimeError("simulated fetch failure")
+        return _fake_ohlcv(seed=abs(hash(ticker)) % 1000)
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", flaky_fetch)
+    rc = wired_script.main()
+    assert rc == 0  # 6/7 tickers still came through
+
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert any(t == "TSLA" for t, _err in output["failures"])
+    assert len(output["models"]) == 5  # models still produced, just without TSLA's contribution
+
+
+def test_all_tickers_failing_returns_nonzero(wired_script, monkeypatch):
+    monkeypatch.setattr(
+        wired_script, "fetch_ohlcv", lambda ticker, period="3y": (_ for _ in ()).throw(RuntimeError("boom"))
+    )
+    rc = wired_script.main()
+    assert rc == 1
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert output["models"] == {}
+    assert len(output["failures"]) == len(wired_script.M7_TICKERS)
+
+
+def test_qqq_fetch_failure_degrades_gracefully_instead_of_crashing(wired_script, monkeypatch):
+    def fetch_with_bad_qqq(ticker, period="3y"):
+        if ticker == wired_script.MARKET_INDEX_TICKER:
+            raise RuntimeError("simulated QQQ fetch failure")
+        return _fake_ohlcv(seed=abs(hash(ticker)) % 1000)
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", fetch_with_bad_qqq)
+    rc = wired_script.main()
+    assert rc == 0
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert any(t == wired_script.MARKET_INDEX_TICKER for t, _err in output["failures"])
+    assert len(output["models"]) == 5  # market-regime filter just defaults to risk_on everywhere, no crash
+
+
+# -- _regime_series --
+
+
+def test_regime_series_risk_off_when_confirmed_downtrend(wired_script):
+    idx = pd.date_range("2024-01-01", periods=3)
+    qqq = pd.DataFrame({"Close": [90.0, 100.0, 100.0], "MA_50": [95.0, 95.0, np.nan], "MA_200": [105.0, 105.0, 100.0]}, index=idx)
+    result = wired_script._regime_series(qqq)
+    assert result.iloc[0] == "risk_off"  # close < MA_50 < MA_200
+    assert result.iloc[1] == "risk_on"   # close > MA_50
+    assert result.iloc[2] == "risk_on"   # missing MA_50 -> defaults risk_on, same as compute_market_regime
+
+
+# -- _apply_price_criteria_day (trade-application wiring, decoupled from generate_price_criteria) --
+
+
+def test_apply_price_criteria_day_opens_position_on_buy_1_touch(wired_script):
+    from sw2.ledger import Portfolio
+    from sw2.price_criteria_model import MarketContext, PriceCriteriaModel
+    from sw1.criteria.generator import PriceCriteriaParams
+
+    params = PriceCriteriaParams(model_name="test_model", stop_loss_pct=-0.08, reward_risk_ratio=2.0)
+    model = PriceCriteriaModel(params=params)
+    portfolio = Portfolio(model_name="test_model", starting_cash=100_000.0)
+    rows = [{"ticker": "AAPL", "close": 100.0, "buy_1_price": 105.0, "buy_2_price": 95.0, "stop_loss_pct": -0.08, "target_price": 120.0}]
+    context = {"AAPL": MarketContext()}  # no confirmation gates active -> touch should convert straight to a buy
+
+    wired_script._apply_price_criteria_day(model, portfolio, rows, "2024-01-02", context)
+
+    assert "AAPL" in portfolio.positions
+    assert len(portfolio.trades) == 1
+    assert portfolio.trades[0].action == "buy_1"
+    assert len(portfolio.equity_curve) == 1
+
+
+def test_apply_price_criteria_day_blocked_entry_when_market_context_gates(wired_script):
+    from sw2.ledger import Portfolio
+    from sw2.price_criteria_model import MarketContext, PriceCriteriaModel
+    from sw1.criteria.generator import PriceCriteriaParams
+
+    params = PriceCriteriaParams(model_name="test_model", stop_loss_pct=-0.08, reward_risk_ratio=2.0)
+    model = PriceCriteriaModel(params=params)
+    portfolio = Portfolio(model_name="test_model", starting_cash=100_000.0)
+    rows = [{"ticker": "AAPL", "close": 100.0, "buy_1_price": 105.0, "buy_2_price": 95.0, "stop_loss_pct": -0.08, "target_price": 120.0}]
+    context = {"AAPL": MarketContext(market_regime="risk_off")}  # risk-off should hold back the new entry
+
+    wired_script._apply_price_criteria_day(model, portfolio, rows, "2024-01-02", context)
+
+    assert "AAPL" not in portfolio.positions
+    assert portfolio.trades == []
+    assert len(portfolio.equity_curve) == 1  # still marks to market even with no trade
+
+
+def test_apply_price_criteria_day_stop_loss_closes_existing_position(wired_script):
+    from sw2.ledger import Portfolio, Position
+    from sw2.price_criteria_model import MarketContext, PriceCriteriaModel
+    from sw1.criteria.generator import PriceCriteriaParams
+
+    params = PriceCriteriaParams(model_name="test_model", stop_loss_pct=-0.08, reward_risk_ratio=2.0)
+    model = PriceCriteriaModel(params=params)
+    portfolio = Portfolio(model_name="test_model", starting_cash=100_000.0)
+    portfolio.positions["AAPL"] = Position(ticker="AAPL", shares=10.0, entry_price=100.0, entry_date="2024-01-01")
+    rows = [{"ticker": "AAPL", "close": 90.0, "buy_1_price": 85.0, "buy_2_price": 80.0, "stop_loss_pct": -0.08, "target_price": 130.0}]
+
+    wired_script._apply_price_criteria_day(model, portfolio, rows, "2024-01-05", {"AAPL": MarketContext()})
+
+    assert "AAPL" not in portfolio.positions
+    assert portfolio.trades[-1].action == "stop_loss"
