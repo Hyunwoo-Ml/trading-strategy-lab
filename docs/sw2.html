@@ -625,6 +625,17 @@
     </div>
   </section>
 
+  <section id="backtest-section">
+    <div class="section-head">
+      <div class="section-title"><span class="idx">02</span> 3년 역사적 백테스트 (구간별 수익률)</div>
+    </div>
+    <div class="section-sub">현재 등록된 5개 모델의 매매 기준을 과거 약 3년치 실제 시세(M7 + QQQ)에 그대로 적용했다면 분기별로 어떤 수익률이 났을지 재현한 결과입니다. 위의 실시간 페이퍼 트레이딩 기록과는 완전히 별개의 가상 시뮬레이션이며, SW1 페이지의 워크포워드 검증("수식이 예측력이 있는가")과도 다른 질문 — "실제로 이 규칙대로 거래했다면 얼마를 벌었을까" — 에 답합니다.</div>
+
+    <div id="backtest-content">
+      <div class="state-box"><span class="spinner"></span>백테스트 데이터를 불러오는 중입니다…</div>
+    </div>
+  </section>
+
   <footer>
     <a class="repo-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab" target="_blank" rel="noopener">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -642,6 +653,7 @@
   var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/";
   var EQUITY_URL = function(m){ return BASE + "data/sw2/equity/" + m + ".csv"; };
   var COMPARISONS_URL = BASE + "data/sw2/comparisons/latest.json";
+  var BACKTEST_URL = BASE + "data/backtest/results.json";
 
   var MODELS = [
     { key:"baseline", label:"Baseline", color:"#22d3ee" },
@@ -995,11 +1007,102 @@
     });
   }
 
+  /* ---------------- section 3: 3-year historical backtest ---------------- */
+
+  function periodCellClass(v){
+    if(v === null || v === undefined || isNaN(v)) return "";
+    return v >= 0 ? "pos" : "neg";
+  }
+
+  function loadBacktestSection(){
+    var el = document.getElementById("backtest-content");
+    return fetchJSON(BACKTEST_URL).then(function(data){
+      var models = (data && data.models) ? data.models : {};
+      var modelKeys = MODELS.map(function(m){ return m.key; }).filter(function(k){ return !!models[k]; });
+
+      if(modelKeys.length === 0){
+        el.innerHTML = stateBox(
+          "백테스트 데이터가 아직 없습니다",
+          "GitHub Actions의 \"historical-backtest\" 워크플로우를 수동 실행(workflow_dispatch)하면 이 영역에 결과가 표시됩니다.",
+          false
+        );
+        return;
+      }
+
+      var summaryHtml = modelKeys.map(function(key){
+        var m = models[key];
+        var meta = MODELS.filter(function(mm){ return mm.key === key; })[0];
+        var retCls = periodCellClass(m.total_return);
+        return '<div class="summary-card">' +
+          '<div class="summary-label"><span class="legend-dot" style="background:' + meta.color + ';"></span>' + meta.label + '</div>' +
+          '<div class="summary-value">' + fmtUSD(m.final_equity) + '</div>' +
+          '<div class="metric-v ' + retCls + '" style="margin-top:4px;">' + fmtPct(m.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
+          '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;">거래 ' + (m.n_trades !== undefined ? m.n_trades : "—") + '건</div>' +
+        '</div>';
+      }).join("");
+
+      var allPeriods = [];
+      modelKeys.forEach(function(key){
+        (models[key].periods || []).forEach(function(p){
+          if(allPeriods.indexOf(p.period) === -1) allPeriods.push(p.period);
+        });
+      });
+      allPeriods.sort();
+
+      var periodByModel = {};
+      modelKeys.forEach(function(key){
+        periodByModel[key] = {};
+        (models[key].periods || []).forEach(function(p){
+          periodByModel[key][p.period] = p.period_return;
+        });
+      });
+
+      var headerHtml = '<th>구간</th>' + modelKeys.map(function(key){
+        return '<th>' + escapeHtml(modelLabel(key)) + '</th>';
+      }).join("");
+
+      var rowsHtml = allPeriods.map(function(period){
+        var cells = modelKeys.map(function(key){
+          var v = periodByModel[key][period];
+          return '<td><span class="metric-v ' + periodCellClass(v) + '">' + fmtPct(v) + '</span></td>';
+        }).join("");
+        return '<tr><td>' + escapeHtml(period) + '</td>' + cells + '</tr>';
+      }).join("");
+
+      var notes = (data.config && Array.isArray(data.config.scope_notes)) ? data.config.scope_notes : [];
+      var notesHtml = notes.length > 0
+        ? '<div class="section-sub" style="margin-top:16px;"><b style="color:var(--text-secondary);">참고 — 이 백테스트의 한계</b><br>' +
+            notes.map(function(n){ return "· " + escapeHtml(n); }).join("<br>") +
+          '</div>'
+        : '';
+
+      var startingCash = data.config && data.config.starting_cash;
+      var footNote = data.run_ts
+        ? '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:12px;">마지막 실행: ' + escapeHtml(data.run_ts) + ' · 모델당 초기 자본 ' + fmtUSD(startingCash) + '</div>'
+        : '';
+
+      el.innerHTML =
+        '<div class="model-summary-row">' + summaryHtml + '</div>' +
+        '<div class="table-scroll" style="margin-top:16px;"><table class="stats-table">' +
+          '<thead><tr>' + headerHtml + '</tr></thead>' +
+          '<tbody>' + rowsHtml + '</tbody>' +
+        '</table></div>' +
+        notesHtml + footNote;
+    }).catch(function(err){
+      el.innerHTML = stateBox(
+        "백테스트 데이터를 불러올 수 없습니다",
+        "data/backtest/results.json 을 확인해 주세요 (" + err.message + ")",
+        true
+      );
+    });
+  }
+
   /* ---------------- init ---------------- */
 
   loadEquitySection().then(function(equityResults){
     loadComparisonsSection(equityResults);
   });
+  loadBacktestSection();
 
 })();
 </script>
