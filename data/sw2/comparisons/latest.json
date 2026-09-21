@@ -1,5 +1,5 @@
 {
-  "run_date": "2026-09-18",
+  "run_date": "2026-09-21",
   "comparisons": [
     {
       "model_a": "baseline",
@@ -8,8 +8,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 12,
+      "n_a": 13,
+      "n_b": 13,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -20,7 +20,7 @@
         "model_b": "technical_only",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=12 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=13 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -32,8 +32,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 12,
+      "n_a": 13,
+      "n_b": 13,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -44,7 +44,7 @@
         "model_b": "conservative",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=12 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=13 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -56,8 +56,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 11,
+      "n_a": 13,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -68,7 +68,7 @@
         "model_b": "price_model_1",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -80,8 +80,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 11,
+      "n_a": 13,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -92,7 +92,7 @@
         "model_b": "price_model_2",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -104,8 +104,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 12,
+      "n_a": 13,
+      "n_b": 13,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -116,7 +116,7 @@
         "model_b": "conservative",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=12 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=13 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -128,8 +128,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 11,
+      "n_a": 13,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -140,7 +140,7 @@
         "model_b": "price_model_1",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -152,8 +152,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 11,
+      "n_a": 13,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -164,7 +164,7 @@
         "model_b": "price_model_2",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -176,8 +176,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 11,
+      "n_a": 13,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -188,7 +188,7 @@
         "model_b": "price_model_1",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -200,8 +200,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 12,
-      "n_b": 11,
+      "n_a": 13,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -212,7 +212,7 @@
         "model_b": "price_model_2",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=12, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=13, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -224,8 +224,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 11,
-      "n_b": 11,
+      "n_a": 12,
+      "n_b": 12,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -236,7 +236,7 @@
         "model_b": "price_model_2",
         "verdict": "insufficient_data",
         "reasons": [
-          "sample size too small: n_a=11, n_b=11 (need >= 20 each)"
+          "sample size too small: n_a=12, n_b=12 (need >= 20 each)"
         ],
         "consecutive_advantage_days_a": null
       }
