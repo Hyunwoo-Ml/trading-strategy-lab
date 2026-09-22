@@ -1069,6 +1069,67 @@
         return '<tr><td>' + escapeHtml(period) + '</td>' + cells + '</tr>';
       }).join("");
 
+      // 2026-09-22: SPY/QQQ/TLT buy-and-hold reference lines (backend added
+      // in scripts/run_historical_backtest.py as a `benchmarks` sibling to
+      // `models` -- this renders them as a visually separate block, since
+      // they carry none of the trading models' rules (no stop-loss, no
+      // transaction costs, no position sizing; see scope_notes below).
+      var benchmarks = (data && data.benchmarks) ? data.benchmarks : {};
+      var benchmarkOrder = ["SPY", "QQQ", "TLT"];
+      var benchmarkColors = { SPY: "#7d8798", QQQ: "#9aa5b8", TLT: "#b7c0d1" };
+      var benchmarkKeys = benchmarkOrder.filter(function(k){ return !!benchmarks[k]; });
+      var benchmarkSectionHtml = "";
+
+      if(benchmarkKeys.length > 0){
+        var benchmarkSummaryHtml = benchmarkKeys.map(function(key){
+          var b = benchmarks[key];
+          var retCls = periodCellClass(b.total_return);
+          return '<div class="summary-card" style="border-style:dashed;">' +
+            '<div class="summary-label"><span class="legend-dot" style="background:' + benchmarkColors[key] + ';"></span>' + escapeHtml(b.label || key) + '</div>' +
+            '<div class="summary-value">' + fmtUSD(b.final_equity) + '</div>' +
+            '<div class="metric-v ' + retCls + '" style="margin-top:4px;">' + fmtPct(b.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
+            '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;">매수 후 보유 (거래 1건)</div>' +
+          '</div>';
+        }).join("");
+
+        var benchmarkPeriodByKey = {};
+        benchmarkKeys.forEach(function(key){
+          benchmarkPeriodByKey[key] = {};
+          (benchmarks[key].periods || []).forEach(function(p){
+            benchmarkPeriodByKey[key][p.period] = p.period_return;
+          });
+        });
+        var allBenchmarkPeriods = [];
+        benchmarkKeys.forEach(function(key){
+          (benchmarks[key].periods || []).forEach(function(p){
+            if(allBenchmarkPeriods.indexOf(p.period) === -1) allBenchmarkPeriods.push(p.period);
+          });
+        });
+        allBenchmarkPeriods.sort();
+
+        var benchmarkHeaderHtml = '<th>구간</th>' + benchmarkKeys.map(function(key){
+          return '<th>' + escapeHtml(benchmarks[key].label || key) + '</th>';
+        }).join("");
+
+        var benchmarkRowsHtml = allBenchmarkPeriods.map(function(period){
+          var cells = benchmarkKeys.map(function(key){
+            var v = benchmarkPeriodByKey[key][period];
+            return '<td><span class="metric-v ' + periodCellClass(v) + '">' + fmtPct(v) + '</span></td>';
+          }).join("");
+          return '<tr><td>' + escapeHtml(period) + '</td>' + cells + '</tr>';
+        }).join("");
+
+        benchmarkSectionHtml =
+          '<div class="section-sub" style="margin-top:22px;margin-bottom:0;"><b style="color:var(--text-secondary);">참고 — 장기 보유(Buy &amp; Hold) 벤치마크</b> ' +
+            '<span style="color:var(--text-muted);">(매매 규칙 없음, 첫날 전액 매수 후 그대로 보유만 가정 — 모델이 아니라 비교 기준선입니다)</span>' +
+          '</div>' +
+          '<div class="model-summary-row" style="margin-top:10px;">' + benchmarkSummaryHtml + '</div>' +
+          '<div class="table-scroll" style="margin-top:16px;"><table class="stats-table">' +
+            '<thead><tr>' + benchmarkHeaderHtml + '</tr></thead>' +
+            '<tbody>' + benchmarkRowsHtml + '</tbody>' +
+          '</table></div>';
+      }
+
       var notes = (data.config && Array.isArray(data.config.scope_notes)) ? data.config.scope_notes : [];
       var notesHtml = notes.length > 0
         ? '<div class="section-sub" style="margin-top:16px;"><b style="color:var(--text-secondary);">참고 — 이 백테스트의 한계</b><br>' +
@@ -1087,6 +1148,7 @@
           '<thead><tr>' + headerHtml + '</tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
         '</table></div>' +
+        benchmarkSectionHtml +
         notesHtml + footNote;
     }).catch(function(err){
       el.innerHTML = stateBox(
