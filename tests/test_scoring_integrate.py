@@ -40,6 +40,12 @@ def test_weights_validate_rejects_bad_blend_sum():
         bad.validate()
 
 
+def test_weights_validate_rejects_bad_dominance_sum():
+    bad = ScoringWeights(consensus_weight=0.5, dominance_weight=0.6)
+    with pytest.raises(ValueError):
+        bad.validate()
+
+
 def test_neutral_row_scores_near_zero():
     row = make_indicator_row()
     score = compute_quant_score(row)
@@ -123,4 +129,60 @@ def test_default_thresholds_are_ordered_sensibly():
     t = DEFAULT_THRESHOLDS
     assert t.buy_1_score < t.buy_2_score
     assert t.stop_loss_pct < 0 < t.take_profit_pct
+
+
+# -- 2026-09-22: 합의+지배 혼합 (consensus+dominance blend) --
+
+
+def test_single_extreme_indicator_dominates_score():
+    """A single maxed-out sub-score (RSI=0 -> _score_rsi=1.0, everything else
+    neutral) used to be diluted to just its own weight share under pure
+    consensus (0.25) -- not enough to clear buy_1_score (0.30) on its own.
+    Under the consensus+dominance blend it should contribute far more."""
+    row = make_indicator_row(RSI=0.0)
+    score = compute_quant_score(row)
+    pure_consensus_equivalent = 1.0 * DEFAULT_WEIGHTS.rsi  # what the old formula alone would give
+    assert score > pure_consensus_equivalent
+    assert score >= DEFAULT_THRESHOLDS.buy_1_score
+
+
+def test_dominant_subscore_is_signed_max_abs():
+    # RSI=40 -> mild +0.2; MA_CROSS=dead -> -1.0 (largest |value|) should dominate.
+    row = make_indicator_row(RSI=40.0, MA_CROSS="dead")
+    score = compute_quant_score(row)
+    assert score == pytest.approx(-0.6)
+
+
+def test_consensus_and_dominance_weights_are_tunable():
+    row = make_indicator_row(RSI=0.0)
+    pure_consensus = ScoringWeights(consensus_weight=1.0, dominance_weight=0.0)
+    pure_dominance = ScoringWeights(consensus_weight=0.0, dominance_weight=1.0)
+    consensus_only_score = compute_quant_score(row, weights=pure_consensus)
+    dominance_only_score = compute_quant_score(row, weights=pure_dominance)
+    assert consensus_only_score == pytest.approx(0.25)  # exactly the old weighted-average formula
+    assert dominance_only_score == pytest.approx(1.0)   # the dominant sub-score alone, unweighted-average
+
+
+# -- 2026-09-22: MACD scale normalized by per-ticker MACD_HIST_STD_60 --
+
+
+def test_macd_scale_uses_per_ticker_std_when_present():
+    row_default_scale = make_indicator_row(MACD_HIST=2.0)
+    row_tighter_scale = make_indicator_row(MACD_HIST=2.0, MACD_HIST_STD_60=0.5)
+    # a smaller scale means the same histogram value saturates the tanh more
+    assert compute_quant_score(row_tighter_scale) > compute_quant_score(row_default_scale)
+
+
+def test_macd_scale_falls_back_to_one_when_std_missing_or_nan():
+    row_missing = make_indicator_row(MACD_HIST=2.0)
+    row_nan = make_indicator_row(MACD_HIST=2.0, MACD_HIST_STD_60=float("nan"))
+    assert compute_quant_score(row_nan) == pytest.approx(compute_quant_score(row_missing))
+
+
+def test_macd_scale_falls_back_to_one_when_std_is_zero_or_negative():
+    row_missing = make_indicator_row(MACD_HIST=2.0)
+    row_zero = make_indicator_row(MACD_HIST=2.0, MACD_HIST_STD_60=0.0)
+    row_negative = make_indicator_row(MACD_HIST=2.0, MACD_HIST_STD_60=-0.5)
+    assert compute_quant_score(row_zero) == pytest.approx(compute_quant_score(row_missing))
+    assert compute_quant_score(row_negative) == pytest.approx(compute_quant_score(row_missing))
 
