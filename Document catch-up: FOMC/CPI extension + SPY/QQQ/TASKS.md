@@ -846,3 +846,104 @@ technical_only도 거래 건수와 수익률이 크게 늘었는데, 이는 세 
 **다음 세션이 할 일 갱신**: 이번 세션에서 확인된 이슈 3건 + 신규 발견
 NaN 버그까지 전부 수정 완료. 남은 항목은 기존과 동일하게 1번(KIS 연동,
 여전히 사용자 재요청 전까지 보류)뿐.
+
+
+---
+
+## 2026-09-22 세션 (이어서): TASKS.md 갱신 공백 발견 및 후속 마무리 — FOMC/CPI 확장 문서화 + SPY/QQQ/TLT 벤치마크 대시보드 노출
+
+**배경**: 이 세션을 시작하며 TASKS.md를 읽었을 때, 문서 내용(위 "NaN Close 크래시" 섹션까지)과 실제
+저장소 상태 사이에 공백이 있음을 발견함 — GitHub 커밋 로그를 보면 TASKS.md를 마지막으로 갱신한 커밋
+(`de3af67`) *이후에* 같은 날(2026-09-22) 세션이 추가로 다음 두 가지 작업을 이미 완료해 커밋까지
+마쳤으나, TASKS.md에는 전혀 기록되지 않은 상태였음(아마 직전 세션이 코드 작업을 다 끝낸 뒤 문서
+갱신 전에 사용량 초과로 끊긴 것으로 추정 — "사용량 초과 될 때 까지 우선 돌려줄래" 지침과 정확히
+맞아떨어지는 상황):
+
+1. **FOMC/CPI 매크로 블랙아웃 날짜 2023~2025년 확장** (커밋 `1ff4c39`, `5c00834`, `48b5e64`) —
+   `sw1/calendar/events.py`에 `FOMC_ANNOUNCEMENT_DATES_2023/2024/2025`, `CPI_RELEASE_DATES_2023/2024/2025`
+   추가(federalreserve.gov, bls.gov에서 실제 발표일 조회 — 2025년 CPI는 정부 셧다운으로 연기된 실제
+   발표일 기준), `ALL_FOMC_ANNOUNCEMENT_DATES`/`ALL_CPI_RELEASE_DATES`로 통합해 `MACRO_EVENT_DATES`
+   구성. `is_event_blackout`의 FOMC/CPI 라벨 조회가 2026년 리스트만 보던 버그도 함께 수정. 이전에는
+   3년 역사적 백테스트(2023~2026 재생)에 매크로 블랙아웃 필터가 사실상 전혀 적용되지 않고 있었음.
+   `tests/test_event_calendar.py`에 71줄 테스트 추가, `scripts/run_historical_backtest.py`의
+   scope_notes/모듈 docstring도 이 필터가 이제 전체 기간에 적용된다고 갱신.
+2. **SPY/QQQ/TLT 장기 보유(Buy & Hold) 벤치마크를 3년 백테스트에 추가** (커밋 `aac911c`, `cd004f6`) —
+   사용자 요청("SPY 장기 보유, QQQ 장기 보유, 국채 30년물 장기 보유와도 비교하고 싶다")에 따라
+   `scripts/run_historical_backtest.py`에 `BENCHMARK_TICKERS`(SPY/QQQ/TLT)와
+   `_buy_and_hold_payload()` 추가 — 매매 규칙 전혀 없이 "첫날 $100,000 전액 매수 후 보유"만 계산,
+   5개 트레이딩 모델과 동일한 `{starting_cash, final_equity, total_return, n_trades, n_trading_days,
+   periods}` 형태로 `data/backtest/results.json`에 `benchmarks{}`로 저장(모델과 동일한 셰이프라
+   대시보드 렌더링 코드를 재사용 가능). QQQ는 시장 레짐 필터용으로 이미 받아온 시세를 재사용(중복
+   fetch 방지). TLT는 "30년물 국채 그 자체"가 아니라 장기 국채 익스포저에 대한 실용적 대용치라는
+   점을 scope_notes에 명시.
+
+이 두 가지는 이미 로컬 테스트 통과 + GitHub 커밋 + `tests` CI 녹색까지 확인된 상태였으나, **(a) TASKS.md
+문서화가 안 됐고, (b) 벤치마크 데이터가 대시보드에 전혀 노출되지 않고 있었으며(백엔드만 추가되고
+`docs/sw2.html` 렌더링 코드가 없었음), (c) 벤치마크가 추가된 새 코드로 `historical-backtest` 워크플로가
+재실행되지 않아 `data/backtest/results.json`이 여전히 벤치마크 도입 전 데이터였음** — 이 세 가지를
+이번 세션에서 마무리함.
+
+**이번 세션에서 한 일**:
+
+1. `docs/sw2.html`의 `loadBacktestSection()`에 벤치마크 렌더링 추가 (커밋 `066201e`) — 기존 5개
+   모델 요약 카드/분기 테이블 *아래에* 시각적으로 구분된 별도 블록으로 추가(점선 테두리 카드 +
+   별도 분기별 수익률 테이블), "참고 — 장기 보유(Buy & Hold) 벤치마크 (매매 규칙 없음 ... 모델이
+   아니라 비교 기준선입니다)"라는 안내문과 함께. 트레이딩 모델과 섞이면 "SPY도 6번째 모델"처럼
+   오해될 수 있어 명확히 분리. 45KB대 파일 전체를 재전송하는 대신, 브라우저에서
+   `document.querySelector('.cm-content').cmTile.view`로 CodeMirror 문서 전체 텍스트를 가져와
+   `loadBacktestSection` 함수 블록 전체(3651자)를 anchor로 찾아 SHA-256으로 유일성/일치 확인 후
+   교체 텍스트(7118자)로 치환 — 로컬로 파일 전체(약 40KB)를 끌어오지 않고도 브라우저 쪽에서
+   old/new 텍스트 해시를 계산·대조하는 방식으로 기존 패턴과 동일한 신뢰도를 확보(로컬에는 교체될
+   함수 블록 old_str/new_str 텍스트만 저장해 `node --check`로 문법 검증 후 base64로 브라우저에
+   전달). 커밋 후 GitHub Contents API + raw fetch 양쪽에서 SHA-256(`f9132bfc...`)이 브라우저에서
+   사전 계산한 기대값과 정확히 일치함을 확인.
+2. `historical-backtest` 워크플로 수동 재실행(`workflow_dispatch`, run #4,
+   id `35688928364`) — FOMC 확장 + 벤치마크 코드가 반영된 새 결과를 생성. 성공, `failures: []`.
+   GitHub Contents API로 새 `data/backtest/results.json`(커밋 `9eaa12a`, run_ts
+   `2026-09-22T04:59:45+00:00`) 확인.
+3. TASKS.md에 이 섹션 추가(현재 작업) — 다음 세션이 직전 세션의 미문서화 작업을 다시 발견하느라
+   시간을 쓰지 않도록.
+
+**중요한 발견 — 벤치마크 대비 성과**: 이번에 처음으로 노출된 3년 벤치마크 수치가 상당히 의미있는
+결과를 보여줌 — 5개 트레이딩 모델 전부가 단순 장기 보유보다 큰 격차로 **뒤처짐**:
+
+| 항목 | 3년 누적 수익률 |
+|---|---|
+| SPY 장기 보유 (벤치마크) | +86.34% |
+| QQQ 장기 보유 (벤치마크) | +110.70% |
+| TLT 장기 보유 (벤치마크, 30년물 국채 대용) | +1.59% |
+| Technical Only (최고 성과 모델) | +43.60% |
+| Price Model 2 | +31.47% |
+| Price Model 1 | +26.16% |
+| Conservative | +24.06% |
+| Baseline | +20.88% |
+
+QQQ 장기 보유(+110.70%) 대비 최고 성과 모델(Technical Only, +43.60%)조차 절반에도 못 미침. 이 결과를
+과장하거나 축소하지 않고 있는 그대로 사용자에게 보고할 것 — 이 백테스트 자체의 기존 한계(뉴스 미반영,
+실적 블랙아웃 미반영 등, `scope_notes`에 명시)를 감안하면 트레이딩 모델의 절대적 우열을 최종 결론
+내리기엔 이르지만, 현재 등록된 5개 모델의 매매 규칙이 "그냥 QQQ를 사서 아무것도 안 하는 것"보다
+낫다는 근거가 이 백테스트에는 전혀 없다는 점은 명확한 사실임.
+
+**검증**:
+- 이번 세션은 신규 Python 코드를 작성하지 않음(HTML/JS 렌더링 코드만 추가) — `python -m pytest -q`
+  대상 코드 변경 없음. 대신 `node --check`로 삽입된 JS 함수 블록의 문법 검증(구 버전/신 버전 모두
+  통과).
+- `docs/sw2.html` 커받 후 GitHub Contents API(`size: 43957`) + raw fetch(길이 41677자, SHA-256
+  `f9132bfc...`) 양쪽에서 브라우저가 커밋 직전 계산한 기대 해시와 정확히 일치 확인.
+- `historical-backtest` run #4 성공(`failures: []`), Contents API로 새 `results.json`에
+  `benchmarks.SPY/QQQ/TLT` 키가 모두 정상 포함됨을 확인.
+- **알려진 이슈 (다음 세션이 재확인할 것)**: 세션 종료 시점 기준 `raw.githubusercontent.com`이
+  새 `results.json`을 아직 캐싱된 이전 버전(`run_ts: 2026-09-22T00:47:44`)으로 서빙 중 — GitHub
+  Contents API로는 새 데이터(`04:59:45`)가 확인되지만 raw CDN 전파 지연으로 라이브 대시보드
+  (`docs/sw2.html`이 `BASE = raw.githubusercontent.com/.../main/`에서 JSON을 직접 fetch)가 당장은
+  구 데이터를 보여줄 수 있음. 이전에도 여러 세션에서 이 CDN 전파 지연이 관찰되었고 결국엔 저절로
+  해소됐던 패턴과 동일 — 코드/데이터 자체는 정확함이 API로 이미 확인됐으므로 별도 조치 불필요,
+  다음 세션(또는 몇 분 후 재확인)에서 라이브 대시보드에 벤치마크 섹션이 실제로 보이는지 한 번 더
+  확인할 것.
+
+**다음 세션이 할 일 갱신**: 위 미문서화 작업(FOMC 확장, 벤치마크 백엔드) + 이번 세션 마무리 작업
+(벤치마크 대시보드 노출, 신규 백테스트 실행)까지 전부 완료. 남은 항목은 기존과 동일하게 1번(KIS
+연동, 여전히 사용자 재요청 전까지 보류)뿐. 추가로: 벤치마크가 모든 트레이딩 모델을 크게 앞선다는
+이번 발견을 사용자에게 있는 그대로 보고했으니, 사용자가 이에 대해 추가 지시(예: 모델 튜닝 재검토,
+벤치마크와의 격차를 줄이기 위한 전략 변경 등)를 내리면 그때 그 지시에 따라 진행할 것 — 임의로
+모델 파라미터를 바꾸지 말 것.
