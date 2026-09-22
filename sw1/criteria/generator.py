@@ -125,20 +125,55 @@ def generate_price_criteria(
     sw1.indicators.technical.compute_all_technical_indicators (needs Close,
     BB_LOWER, MA_50 columns at minimum -- MA_50/BB_LOWER can be NaN for
     tickers with short history; this degrades gracefully via the fallbacks
-    above)."""
+    above).
+
+    2026-09-22 (1-day lag fix): buy_1_price/buy_2_price used to be derived
+    from the SAME row (today's) whose close they were then compared
+    against in sw2.price_criteria_model.PriceCriteriaModel.decide() (and
+    in the live pipeline, scripts/run_daily_paper_trading.py reading the
+    same day's latest.csv). Because _pick_buy_1/_pick_buy_2 only accept a
+    candidate support level that's strictly below the reference close,
+    anchoring both to today's own close made buy_1_price mathematically
+    always < today's close (or hit the -3% fallback) -- so
+    `criteria.close <= criteria.buy_1_price` could essentially never be
+    true on the day it was computed. Confirmed empirically against 77 rows
+    of live production data (data/sw1/price_criteria/price_model_1|2/
+    history.csv): zero touches, ever.
+
+    Fix: when at least 2 rows of history are available, support levels
+    (bb_lower/ma50/lookback_low, and the "close" used inside
+    _pick_buy_1/_pick_buy_2's `v < close` filters) are computed from
+    YESTERDAY's row (indicators_df.iloc[-2]) -- i.e. "if the stock pulls
+    back to about $X (derived from data through yesterday), that's your
+    entry" -- while the `close` field stored on the returned PriceCriteria
+    (the value actually compared against buy_1_price/buy_2_price by
+    decide()) stays TODAY's actual close. With fewer than 2 rows (e.g. a
+    ticker's very first day of history), there is no "yesterday" to
+    anchor to, so this falls back to the old same-day behavior --
+    unavoidable on day 1, and _pick_buy_1/_pick_buy_2's fallback branches
+    already handle the degenerate case gracefully."""
     params.validate()
     if len(indicators_df) == 0:
         raise ValueError("indicators_df must not be empty")
 
-    last = indicators_df.iloc[-1]
-    close = float(last["Close"])
-    bb_lower = last.get("BB_LOWER")
-    ma50 = last.get("MA_50")
+    today = indicators_df.iloc[-1]
+    close = float(today["Close"])
 
-    buy_1_price, buy_1_basis = _pick_buy_1(close, bb_lower, ma50)
+    has_reference_day = len(indicators_df) >= 2
+    reference = indicators_df.iloc[-2] if has_reference_day else today
+    reference_close = float(reference["Close"])
+    bb_lower = reference.get("BB_LOWER")
+    ma50 = reference.get("MA_50")
 
-    lookback_low = indicators_df["Close"].tail(params.buy2_lookback_days).min()
-    buy_2_price, buy_2_basis = _pick_buy_2(close, buy_1_price, bb_lower, lookback_low, params.buy2_lookback_days)
+    reference_history = indicators_df.iloc[:-1] if has_reference_day else indicators_df
+    lookback_low = reference_history["Close"].tail(params.buy2_lookback_days).min()
+
+    buy_1_price, buy_1_basis = _pick_buy_1(reference_close, bb_lower, ma50)
+    buy_2_price, buy_2_basis = _pick_buy_2(reference_close, buy_1_price, bb_lower, lookback_low, params.buy2_lookback_days)
+
+    if has_reference_day:
+        buy_1_basis = f"{buy_1_basis} (전일 종가 기준)"
+        buy_2_basis = f"{buy_2_basis} (전일 종가 기준)"
 
     stop_loss_price = buy_1_price * (1 + params.stop_loss_pct)
     risk_per_share = buy_1_price - stop_loss_price
