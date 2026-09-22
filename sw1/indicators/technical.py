@@ -47,8 +47,24 @@ def add_macd(
     fast: int = 12,
     slow: int = 26,
     signal: int = 9,
+    std_window: int = 60,
+    std_min_periods: int = 20,
 ) -> pd.DataFrame:
-    """Adds MACD line, signal line, and histogram (MACD - Signal)."""
+    """Adds MACD line, signal line, and histogram (MACD - Signal).
+
+    Also adds MACD_HIST_STD_{std_window} -- a rolling standard deviation of
+    the histogram, added 2026-09-22 so sw1.scoring.integrate can convert the
+    histogram to a [-1, 1] sub-score using a scale that means something for
+    THIS ticker, instead of a fixed constant. A $5 histogram swing is huge
+    for a $50 stock and tiny for a $500 one; a fixed scale=1.0 treated every
+    ticker as if it moved like a ~$1 stock, so high-priced tickers'
+    sub-scores saturated at +-1 almost every day while low-priced tickers'
+    barely moved off 0 -- neither reflected genuine momentum. NaN until
+    std_min_periods histogram values exist (same warm-up pattern as the
+    other rolling indicators here); sw1.scoring.integrate falls back to the
+    old fixed scale=1.0 when this is NaN, same graceful-degradation pattern
+    used everywhere else in this module.
+    """
     _validate(df)
     out = df.copy()
     ema_fast = out["Close"].ewm(span=fast, adjust=False).mean()
@@ -57,6 +73,9 @@ def add_macd(
     out["MACD"] = ema_fast - ema_slow
     out["MACD_SIGNAL"] = out["MACD"].ewm(span=signal, adjust=False).mean()
     out["MACD_HIST"] = out["MACD"] - out["MACD_SIGNAL"]
+    out[f"MACD_HIST_STD_{std_window}"] = out["MACD_HIST"].rolling(
+        window=std_window, min_periods=std_min_periods
+    ).std()
     return out
 
 
