@@ -21,14 +21,38 @@ tranche size.
 This governs the DOLLAR AMOUNT passed into Portfolio.buy() -- it doesn't
 touch sw2/ledger.py, which stays sizing-agnostic (buy() just clips whatever
 dollar amount it's given to available cash; see its own docstring).
+
+2026-09-22 retune (benchmark-gap investigation, user request): the original
+v1-matching constants below (RISK_FRACTION=0.004, bounds [0.02, 0.12]) sized
+every tranche at only ~5-8% of starting cash even at max tranche_count=2 per
+ticker, across the M7 universe. Cross-referencing scripts/run_historical_
+backtest.py's data/backtest/results.json showed this was the dominant,
+model-agnostic cause of the ~3-year gap against the SPY/QQQ buy-and-hold
+benchmarks (which are 100%-invested from day one): every one of the five
+registered models was structurally capped well under full deployment, in a
+period where SPY/QQQ were up 86%/111%. Confirming evidence: WITHIN the five
+models, the ones whose stop_loss_pct happened to produce a bigger tranche
+fraction under the old constants (conservative and price_model_2, both
+-5% stops -> 8%) outperformed their otherwise-similar siblings with wider
+stops and smaller tranches (baseline -7% -> 5.7%; price_model_1 -8% -> 5%)
+-- i.e. more capital deployed per signal correlated directly with better
+total_return across the board, independent of each model's entry/exit
+logic. Doubling RISK_FRACTION (and raising the bounds proportionally so the
+wider range isn't immediately clamped away) doubles typical tranche size
+for every model uniformly, without touching any model's own thresholds/
+weights/entry logic -- a structural sizing fix rather than a signal-quality
+change. Verify by re-running the historical-backtest workflow after this
+change lands and comparing data/backtest/results.json total_return against
+the pre-change numbers recorded in TASKS.md.
 """
 from __future__ import annotations
 
-RISK_FRACTION = 0.004         # risk ~0.4% of starting cash per tranche if the stop-loss triggers --
-                               # tuned so a typical ~8% stop (SW1's price-criteria default) reproduces
-                               # the old v1 fixed 5% tranche almost exactly (0.004 / 0.08 = 0.05).
-MIN_TRANCHE_FRACTION = 0.02   # never size a tranche below 2% of starting cash
-MAX_TRANCHE_FRACTION = 0.12   # never size a tranche above 12% of starting cash
+RISK_FRACTION = 0.008         # risk ~0.8% of starting cash per tranche if the stop-loss triggers --
+                               # 2x the original v1-matching value (see 2026-09-22 retune note above).
+                               # A typical ~8% stop now sizes a tranche at ~10% of starting cash
+                               # (0.008 / 0.08 = 0.10), a ~5% stop at ~16% (0.008 / 0.05 = 0.16).
+MIN_TRANCHE_FRACTION = 0.03   # never size a tranche below 3% of starting cash
+MAX_TRANCHE_FRACTION = 0.20   # never size a tranche above 20% of starting cash
 
 
 def risk_based_tranche_dollars(
