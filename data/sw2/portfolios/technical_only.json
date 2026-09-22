@@ -2,9 +2,27 @@
   "model_name": "technical_only",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 100000.0,
-  "positions": {},
-  "trades": [],
+  "cash": 88571.42857142858,
+  "positions": {
+    "GOOGL": {
+      "ticker": "GOOGL",
+      "shares": 32.512651606327516,
+      "entry_price": 351.1600036621094,
+      "entry_date": "2026-09-22",
+      "tranche_count": 1
+    }
+  },
+  "trades": [
+    {
+      "date": "2026-09-22",
+      "ticker": "GOOGL",
+      "action": "buy_1",
+      "shares": 32.512651606327516,
+      "price": 351.1600036621094,
+      "cash_delta": -11428.571428571428,
+      "fee": 11.428571428571427
+    }
+  ],
   "equity_curve": [
     {
       "date": "2026-09-12",
@@ -61,6 +79,10 @@
     {
       "date": "2026-09-21",
       "equity": 100000.0
+    },
+    {
+      "date": "2026-09-22",
+      "equity": 99988.57142857143
     }
   ]
 }
