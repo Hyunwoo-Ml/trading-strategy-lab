@@ -43,6 +43,12 @@ silently diverge from what actually runs live:
     and including that day, never later rows) -- the same "recompute from
     whatever's known as of today" shape the live pipeline uses, just
     replayed day by day instead of once.
+  - benchmark buy-and-hold references (SPY/QQQ/TLT, added 2026-09-22 user
+    request -- see BENCHMARK_TICKERS below): NOT trading models at all, no
+    decide()/Portfolio involved. Just "buy the whole $100,000 on day one
+    and never touch it again", bucketed through the exact same
+    sw1.validation.backtest helpers so the output shape (and therefore the
+    dashboard rendering code) is identical to a real model's.
 
 SCOPE / LIMITATIONS (also written into the output JSON's config.scope_notes
 so the dashboard can show them next to the numbers):
@@ -63,6 +69,10 @@ so the dashboard can show them next to the numbers):
     transaction costs (10bps), and risk-based position sizing ARE all
     replayed faithfully against real historical data, identically to the
     live pipeline's rules.
+  - Benchmark buy-and-hold references carry NONE of the above rules (no
+    stop-loss, no transaction costs, no position sizing) -- they're a pure
+    "what if I'd just bought and never sold" reference line, not another
+    trading model.
 """
 from __future__ import annotations
 
@@ -101,6 +111,26 @@ STARTING_CASH = 100_000.0
 WEEKLY_SHORT_WINDOW = 10  # weeks -- matches sw1.indicators.weekly's own default
 WEEKLY_LONG_WINDOW = 30   # weeks
 
+# 2026-09-22 user request ("SPY 장기 보유, QQQ 장기 보유, 국채 30년물 장기
+# 보유와도 비교하고 싶다"): pure buy-and-hold reference lines, computed with
+# the SAME fetch window/starting cash as the five trading models so the
+# comparison is apples-to-apples. TLT (iShares 20+ Year Treasury Bond ETF)
+# stands in for "30년물 국채 장기 보유" -- there is no investable instrument
+# that IS the raw 30-year Treasury bond with dividends/coupons reinvested,
+# and yfinance has no clean total-return series for it either, so TLT's
+# quoted price (which yfinance auto-adjusts for distributions) is the
+# closest practical proxy for "long-duration Treasury exposure, held". A
+# literal 30y zero-coupon or a hand-rolled coupon-reinvestment model would
+# be a lot more machinery for a reference line that's meant to answer one
+# question -- "did the actual strategies beat just parking the money" --
+# so TLT was judged close enough for that purpose; see the matching
+# scope_notes entry below for the same caveat surfaced on the dashboard.
+BENCHMARK_TICKERS: dict[str, str] = {
+    "SPY": "S&P 500 (SPY) 장기 보유",
+    "QQQ": "나스닥 100 (QQQ) 장기 보유",
+    "TLT": "20년+ 국채 ETF (TLT, 30년물 장기채 대용) 장기 보유",
+}
+
 SCOPE_NOTES = [
     "뉴스 감성 점수는 과거 데이터가 없어 이 백테스트 전 기간 동안 중립(미반영)으로 처리됩니다 -- "
     "뉴스 비중이 있는 모델(baseline 등)도 이 기간에는 사실상 기술적 지표만으로 판단합니다.",
@@ -111,6 +141,10 @@ SCOPE_NOTES = [
     "전 기간에 반영됩니다.",
     "라이브 페이퍼 트레이딩 포트폴리오(data/sw2/portfolios/*.json)와는 완전히 별개 -- 이 백테스트는 "
     "$100,000 짜리 새 가상 포트폴리오 5개로 과거를 재생할 뿐, 실시간 진행 중인 매매 기록은 전혀 건드리지 않습니다.",
+    "벤치마크(SPY/QQQ/TLT)는 매매 규칙이 전혀 없는 '기간 첫날 $100,000 전액 매수 후 그대로 보유'만 가정한 "
+    "참고선입니다 -- yfinance가 자동 조정한 종가를 사용해 배당/분배금 재투자 효과를 근사치로 반영하며, "
+    "거래비용·리밸런싱·손절은 전혀 적용하지 않습니다. TLT(iShares 20년+ 국채 ETF)는 만기 30년물 국채 그 "
+    "자체가 아니라 장기 국채 익스포저에 대한 실용적 대용치입니다.",
 ]
 
 
@@ -287,6 +321,38 @@ def _config(period_freq: str) -> dict:
     }
 
 
+def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> dict:
+    """Turns a raw OHLCV history into the same {starting_cash, final_equity,
+    total_return, n_trades, n_trading_days, periods} shape a real model
+    produces, so the dashboard's existing per-model rendering code can
+    treat a benchmark exactly like a model without a parallel code path.
+    n_trades is always 1 -- the single day-one purchase -- there is no
+    selling, rebalancing, or re-entry.
+
+    2026-09-22: a benchmark's Close can carry the same isolated NaN gaps a
+    stock ticker's can (see _generate_criteria_rows_for_day's docstring for
+    the live-pipeline equivalent) -- dropping those rows before computing
+    equity is safe here because equity is just close price * a FIXED share
+    count, so a missing day is simply absent from the curve rather than
+    corrupting it.
+    """
+    close = ohlcv["Close"].dropna()
+    if close.empty:
+        raise RuntimeError("no usable Close prices for buy-and-hold benchmark")
+    shares = STARTING_CASH / float(close.iloc[0])
+    equity_df = pd.DataFrame({"equity": close * shares})
+    periods = bucket_equity_by_period(equity_df, freq=period_freq)
+    return {
+        "label": label,
+        "starting_cash": STARTING_CASH,
+        "final_equity": float(equity_df["equity"].iloc[-1]),
+        "total_return": total_return(equity_df),
+        "n_trades": 1,
+        "n_trading_days": len(equity_df),
+        "periods": [p.to_dict() for p in periods],
+    }
+
+
 def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
     ticker_data: dict[str, dict] = {}
     failures: list[tuple[str, str]] = []
@@ -311,9 +377,11 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "run_ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "config": _config(period_freq),
             "models": {},
+            "benchmarks": {},
             "failures": failures,
         }
 
+    qqq_ohlcv = pd.DataFrame()
     try:
         qqq_ohlcv = fetch_ohlcv(MARKET_INDEX_TICKER, period=FETCH_PERIOD)
         qqq_indicators = compute_all_technical_indicators(qqq_ohlcv)
@@ -382,10 +450,25 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "periods": [p.to_dict() for p in periods],
         }
 
+    # -- benchmark buy-and-hold references (SPY / QQQ / TLT) --
+    # QQQ was already fetched above for the market-regime filter -- reused
+    # here instead of fetched a second time. SPY/TLT are fetched fresh.
+    benchmarks_output: dict[str, dict] = {}
+    for ticker, label in BENCHMARK_TICKERS.items():
+        try:
+            if ticker == MARKET_INDEX_TICKER and not qqq_ohlcv.empty:
+                bench_ohlcv = qqq_ohlcv
+            else:
+                bench_ohlcv = fetch_ohlcv(ticker, period=FETCH_PERIOD)
+            benchmarks_output[ticker] = _buy_and_hold_payload(bench_ohlcv, label, period_freq)
+        except Exception as exc:  # noqa: BLE001 -- one bad benchmark ticker must not crash the whole run
+            failures.append((ticker, str(exc)))
+
     return {
         "run_ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "config": _config(period_freq),
         "models": models_output,
+        "benchmarks": benchmarks_output,
         "failures": failures,
     }
 
@@ -416,11 +499,16 @@ def main() -> int:
     )
 
     n_models = len(result["models"])
-    print(f"[backtest] {n_models} models backtested over {FETCH_PERIOD} history ({PERIOD_FREQ} periods)")
+    n_benchmarks = len(result.get("benchmarks", {}))
+    print(f"[backtest] {n_models} models + {n_benchmarks} benchmarks backtested over {FETCH_PERIOD} history ({PERIOD_FREQ} periods)")
     for name, payload in result["models"].items():
         tr = payload["total_return"]
         tr_str = f"{tr:.1%}" if tr is not None else "n/a"
         print(f"  {name}: total_return={tr_str}, final_equity={payload['final_equity']:.2f}, trades={payload['n_trades']}")
+    for name, payload in result.get("benchmarks", {}).items():
+        tr = payload["total_return"]
+        tr_str = f"{tr:.1%}" if tr is not None else "n/a"
+        print(f"  [benchmark] {name}: total_return={tr_str}, final_equity={payload['final_equity']:.2f}")
 
     if result["failures"]:
         for ticker, err in result["failures"]:
