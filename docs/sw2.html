@@ -26,6 +26,8 @@
     --red-dim:rgba(248,113,113,0.14);
     --amber:#fbbf24;
     --amber-dim:rgba(251,191,36,0.14);
+    --bench:#9ca3af;
+    --bench-dim:rgba(156,163,175,0.14);
     --radius:14px;
     --radius-sm:9px;
     --mono: 'SF Mono', 'Roboto Mono', 'Consolas', 'Menlo', monospace;
@@ -444,21 +446,131 @@
     color:var(--text-secondary);
     font-family:var(--mono);
   }
-  .legend-dot{ width:9px;height:9px;border-radius:2px; }
+  .legend-dot{ width:9px;height:9px;border-radius:2px; flex-shrink:0; }
   .chart-wrap{ position:relative; height:300px; padding:0 6px; }
   @media (min-width:640px){ .chart-wrap{ height:340px; } }
 
-  .model-summary-row{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
-    gap:10px;
+  /* ---------- info tooltip (매매 기준 안내) ---------- */
+  .info-wrap{ position:relative; display:inline-flex; align-items:center; }
+  .info-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:15px;height:15px;
+    border-radius:50%;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:9px;
+    font-weight:700;
+    font-family:var(--sans);
+    cursor:help;
+    flex-shrink:0;
+    line-height:1;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .info-icon:hover, .info-icon:focus-visible{ border-color:var(--accent); color:var(--accent); }
+  .info-tooltip{
+    position:absolute;
+    z-index:40;
+    bottom:calc(100% + 8px);
+    left:50%;
+    transform:translateX(-50%) translateY(4px);
+    width:252px;
+    max-width:72vw;
+    background:#151b28;
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:12px 13px;
+    box-shadow:0 12px 28px rgba(0,0,0,0.45);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .12s ease, transform .12s ease;
+    font-family:var(--sans);
+  }
+  .info-tooltip.show{ opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+  .info-tooltip::after{
+    content:"";
+    position:absolute;
+    top:100%; left:50%;
+    transform:translateX(-50%);
+    border:6px solid transparent;
+    border-top-color:#151b28;
+  }
+  .info-tooltip-kind{
+    font-size:var(--fs-xs);
+    font-weight:700;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    margin-bottom:5px;
+  }
+  .info-tooltip-kind.model{ color:var(--accent); }
+  .info-tooltip-kind.benchmark{ color:var(--bench); }
+  .info-tooltip-body{
+    font-size:var(--fs-sm);
+    line-height:1.55;
+    color:var(--text-secondary);
+  }
+  .info-tooltip-link{
+    display:inline-block;
+    margin-top:8px;
+    font-size:var(--fs-sm);
+    font-weight:600;
+    color:var(--accent);
+    text-decoration:none;
+  }
+  .info-tooltip-link:hover{ text-decoration:underline; }
+
+  /* ---------- carousel (모델/벤치마크 카드 가로 스크롤) ---------- */
+  .carousel-wrap{
+    position:relative;
+    display:flex;
+    align-items:stretch;
+    gap:6px;
     margin-top:16px;
   }
+  .carousel-track{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    scroll-snap-type:x proximity;
+    scroll-behavior:smooth;
+    padding-bottom:6px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    scrollbar-color:var(--border) transparent;
+  }
+  .carousel-track::-webkit-scrollbar{ height:6px; }
+  .carousel-track::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+  .carousel-track > *{ scroll-snap-align:start; flex:0 0 auto; }
+  .carousel-btn{
+    flex-shrink:0;
+    width:28px;
+    border:1px solid var(--border);
+    background:var(--bg-elevated);
+    color:var(--text-secondary);
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .carousel-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  @media (max-width:520px){ .carousel-btn{ display:none; } }
+
+  .model-summary-row{ /* legacy alias kept for the equity-chart panel's static id target */ }
   .model-summary{
+    width:172px;
     background:var(--bg-elevated);
     border:1px solid var(--border-soft);
     border-radius:var(--radius-sm);
     padding:12px 14px;
+  }
+  .model-summary.is-benchmark{
+    border-style:dashed;
+    background:rgba(156,163,175,0.05);
   }
   .model-summary .name{
     font-size:var(--fs-sm);
@@ -479,6 +591,27 @@
     font-size:var(--fs-sm);
     margin-top:3px;
   }
+  .bh-tag{
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:0.04em;
+    color:var(--bench);
+    background:var(--bench-dim);
+    padding:1px 6px;
+    border-radius:4px;
+    margin-left:auto;
+    white-space:nowrap;
+  }
+  .delta-spy{
+    font-size:var(--fs-xs);
+    margin-top:6px;
+    padding-top:6px;
+    border-top:1px solid var(--border-soft);
+    color:var(--text-muted);
+  }
+  .delta-spy b{ font-family:var(--mono); }
+  .delta-spy.pos b{ color:var(--green); }
+  .delta-spy.neg b{ color:var(--red); }
 
   .summary-card{
     background:var(--bg-elevated);
@@ -515,6 +648,7 @@
     border-bottom:1px solid var(--border);
     white-space:nowrap;
   }
+  table.stats-table thead th.is-benchmark{ color:var(--bench); }
   table.stats-table tbody td{
     padding:12px;
     border-bottom:1px solid var(--border-soft);
@@ -540,6 +674,37 @@
   .stat-pvalue{ font-weight:800; font-size:var(--fs-lg); letter-spacing:-0.01em; }
   .stat-pvalue.yes{ color:var(--green); }
   .stat-pvalue.no{ color:var(--text-secondary); }
+
+  /* ---------- 매매 기준 상세 section ---------- */
+  .criteria-detail-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:14px;
+  }
+  .criteria-detail-card{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    scroll-margin-top:24px;
+  }
+  .criteria-detail-card.is-benchmark{ border-style:dashed; }
+  .criteria-detail-card h3{
+    margin:0 0 4px;
+    font-size:var(--fs-lg);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .criteria-detail-card ul{
+    margin:10px 0 0;
+    padding-left:18px;
+    font-size:var(--fs-base);
+    color:var(--text-secondary);
+    line-height:1.7;
+  }
+  .criteria-detail-card li{ margin-bottom:8px; }
+  .criteria-detail-card li:last-child{ margin-bottom:0; }
 
   /* ---------- Footer ---------- */
   footer{
@@ -587,7 +752,7 @@
         </div>
       </div>
     </div>
-    <div class="desc">SW1 퀀트 신호와 사용자 정의 가격기준을 서로 다른 매매 규칙으로 적용한 다섯 모델의 장기 페이퍼 트레이딩(paper trading) 성과를 일일 자산가치(equity) 추이와 통계적 유의성 비교로 보여줍니다.</div>
+    <div class="desc">SW1 퀀트 신호와 사용자 정의 가격기준을 서로 다른 매매 규칙으로 적용한 다섯 모델의 장기 페이퍼 트레이딩(paper trading) 성과를 일일 자산가치(equity) 추이와 통계적 유의성 비교로 보여줍니다. 각 모델 이름 옆 <span class="info-icon" aria-hidden="true">ⓘ</span> 아이콘에 커서를 올리면 매매 기준을 바로 확인할 수 있습니다.</div>
     <div class="meta-row">
       <span>⚙ <b>GitHub Actions</b>로 매 평일 자동 갱신</span>
       <span>💰 모델당 초기 자본 <b>$100,000</b> (paper trading)</span>
@@ -612,7 +777,11 @@
         <div id="equity-content">
           <div class="chart-wrap"><div class="state-box" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><span class="spinner"></span>Equity 데이터를 불러오는 중입니다…</div></div>
         </div>
-        <div id="model-summary-row" class="model-summary-row"></div>
+        <div class="carousel-wrap">
+          <button class="carousel-btn prev" aria-label="이전 카드">‹</button>
+          <div id="model-summary-row" class="model-summary-row carousel-track"></div>
+          <button class="carousel-btn next" aria-label="다음 카드">›</button>
+        </div>
       </div>
 
       <div class="panel">
@@ -629,11 +798,19 @@
     <div class="section-head">
       <div class="section-title"><span class="idx">02</span> 3년 역사적 백테스트 (구간별 수익률)</div>
     </div>
-    <div class="section-sub">현재 등록된 5개 모델의 매매 기준을 과거 약 3년치 실제 시세(M7 + QQQ)에 그대로 적용했다면 분기별로 어떤 수익률이 났을지 재현한 결과입니다. 위의 실시간 페이퍼 트레이딩 기록과는 완전히 별개의 가상 시뮬레이션이며, SW1 페이지의 워크포워드 검증("수식이 예측력이 있는가")과도 다른 질문 — "실제로 이 규칙대로 거래했다면 얼마를 벌었을까" — 에 답합니다.</div>
+    <div class="section-sub">현재 등록된 5개 모델의 매매 기준을 과거 약 3년치 실제 시세(M7 + QQQ)에 그대로 적용했다면 분기별로 어떤 수익률이 났을지 재현한 결과이며, SPY·QQQ·TLT를 그냥 매수해 들고만 있었을 경우(buy-and-hold)와도 함께 비교합니다. 위의 실시간 페이퍼 트레이딩 기록과는 완전히 별개의 가상 시뮬레이션이며, SW1 페이지의 워크포워드 검증("수식이 예측력이 있는가")과도 다른 질문 — "실제로 이 규칙대로 거래했다면 얼마를 벌었을까, 그리고 그냥 지수를 사서 들고만 있는 것보다 나았을까" — 에 답합니다. 카드 목록은 좌우로 스크롤하거나 화살표 버튼으로 더 볼 수 있습니다.</div>
 
     <div id="backtest-content">
       <div class="state-box"><span class="spinner"></span>백테스트 데이터를 불러오는 중입니다…</div>
     </div>
+  </section>
+
+  <section id="criteria-detail-section">
+    <div class="section-head">
+      <div class="section-title"><span class="idx">03</span> 모델 · 벤치마크 매매 기준 상세</div>
+    </div>
+    <div class="section-sub">위 두 섹션의 <span class="info-icon" aria-hidden="true">ⓘ</span> 아이콘 툴팁 "자세히 보기" 링크가 여기로 연결됩니다. 각 트레이딩 모델의 점수 계산식·매매 임계값과, 각 벤치마크의 buy-and-hold 전제를 전부 풀어서 설명합니다.</div>
+    <div id="criteria-detail-content" class="criteria-detail-grid"></div>
   </section>
 
   <footer>
@@ -663,6 +840,113 @@
     { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
   ];
 
+  // 2026-09-22 user request: compare the backtest against simple
+  // buy-and-hold benchmarks too (SPY/QQQ, plus TLT as the closest
+  // investable stand-in for "30-year Treasury, held long-term" -- see
+  // scripts/run_historical_backtest.py's BENCHMARK_TICKERS docstring for
+  // why TLT specifically). These are NOT trading models -- no decide()
+  // logic, just "bought once, never sold" -- so they're kept in a
+  // separate array and only ever merged with MODELS for rendering, never
+  // for the live paper-trading sections (section 01), which has no
+  // equivalent live buy-and-hold data source.
+  var BENCHMARKS = [
+    { key:"SPY", label:"SPY (S&P500)", color:"#9ca3af" },
+    { key:"QQQ", label:"QQQ (나스닥100)", color:"#7dd3fc" },
+    { key:"TLT", label:"TLT (20년+ 국채)", color:"#d4a373" }
+  ];
+
+  // Single source of truth for the info-tooltip short text AND the full
+  // "매매 기준 상세" section (03) -- rendered from this same object so the
+  // two never drift out of sync with each other.
+  var CRITERIA_INFO = {
+    baseline: {
+      label: "Baseline",
+      kind: "model",
+      short: "RSI·MACD·볼린저밴드·이동평균 교차 4개 기술지표(각 25%)를 \"합의\"(가중평균, 50%)와 \"지배 신호\"(4개 중 가장 극단적인 값, 50%)로 혼합해 quant score를 만들고, 뉴스 감성점수와 6:4로 블렌드합니다.",
+      detail: [
+        "SW1 기본 가중치/임계값을 그대로 쓰는 기준 모델입니다.",
+        "기술 지표 점수 계산: RSI(과매수/과매도), MACD 히스토그램(모멘텀, 종목별 60일 표준편차로 정규화), 볼린저밴드 %B(밴드 내 위치), 이동평균 골든/데드크로스 4개를 각각 -1~+1로 환산한 뒤 25%씩 가중평균한 \"합의(consensus)\" 값과, 4개 중 절댓값이 가장 큰(가장 극단적인) 지표 하나를 그대로 쓰는 \"지배(dominance)\" 값을 5:5로 섞어 quant_score를 만듭니다. 거래량이 평균보다 적으면 점수를 줄이고 많으면 살짝 증폭합니다.",
+        "통합점수 = quant_score × 0.6 + 뉴스 감성점수 × 0.4 (뉴스 감성점수는 수기 입력된 시황 코멘터리를 스코어링한 값).",
+        "매매 규칙: 통합점수 ≥ 0.30 → 1차 매수, ≥ 0.60 → 2차 매수(추가), ≤ -0.30 → 관망 신호. 보유 중에는 진입가 대비 -7% → 손절, +15% → 익절이 점수 조건보다 우선합니다.",
+        "포지션 크기는 손절폭이 좁을수록 크게, 넓을수록 작게 잡는 리스크 기반 사이징을 쓰며, 거래마다 수수료+슬리피지 10bps를 반영합니다."
+      ]
+    },
+    technical_only: {
+      label: "Technical Only",
+      kind: "model",
+      short: "baseline과 지표 계산 방식은 동일하지만 뉴스 감성점수 비중을 0으로 없애고 기술 점수만 100% 사용합니다. 매수/매도 임계값도 baseline과 동일.",
+      detail: [
+        "quant_score 계산 로직(RSI/MACD/볼린저/MA크로스 4지표 25%씩 + 합의·지배 5:5 혼합)은 baseline과 완전히 동일합니다.",
+        "다른 점은 단 하나 — 통합점수 = quant_score × 1.0 + 뉴스 감성점수 × 0.0, 즉 뉴스는 전혀 반영하지 않고 순수 기술적 지표만으로 판단합니다.",
+        "매수/매도 임계값(1차 0.30 / 2차 0.60 / 관망 -0.30 / 손절 -7% / 익절 +15%)은 baseline과 동일합니다.",
+        "뉴스 데이터를 신뢰하기 어려울 때, 또는 순수 기술적 신호만의 성과를 baseline과 비교하고 싶을 때를 위한 대조군 모델입니다."
+      ]
+    },
+    conservative: {
+      label: "Conservative",
+      kind: "model",
+      short: "가중치 계산 방식은 baseline과 같지만, 매수 문턱을 훨씬 높이고(1차 0.45 / 2차 0.75) 손절은 더 타이트하게(-5%), 익절은 더 짧게(+12%) 잡은 보수적 버전입니다.",
+      detail: [
+        "quant_score와 통합점수(기술 60% + 뉴스 40%) 계산 방식은 baseline과 동일합니다.",
+        "다른 점은 매매 임계값입니다: 1차 매수 ≥ 0.45(baseline 0.30보다 높음), 2차 매수 ≥ 0.75(baseline 0.60보다 높음), 관망 ≤ -0.20(baseline -0.30보다 예민함).",
+        "손절은 -5%로 baseline(-7%)보다 타이트하고, 익절은 +12%로 baseline(+15%)보다 짧게 잡아 더 빨리 이익을 확정합니다.",
+        "결과적으로 더 확실한 신호에서만 진입하고, 손실은 더 빨리 끊고, 이익도 더 빨리 챙기는 방어적인 매매 스타일입니다."
+      ]
+    },
+    price_model_1: {
+      label: "Price Model 1",
+      kind: "model",
+      short: "추상적인 점수가 아니라 실제 \"달러 가격대\" 기준. 전일 데이터로 계산한 지지선(볼린저 하단/50일 이평선)에 닿으면 매수, 손절 -8%, 목표가는 리스크의 2배. 뉴스 감성점수가 -0.35 미만이면 신규 진입 보류.",
+      detail: [
+        "이 모델은 점수를 매기지 않고, SW1이 계산한 구체적인 가격 레벨(1차 매수가/2차 매수가/목표가)에 실제 종가가 닿았는지만 봅니다.",
+        "1차 매수가 = 볼린저 하단(20일)과 50일 이동평균 중 (전일 종가보다 낮으면서) 더 얕은 지지선. 2차 매수가 = 볼린저 하단과 60일 최저가 중 1차 매수가보다 더 깊은 지지선. 두 값 모두 오늘이 아닌 \"전일\" 데이터로 계산합니다 (2026-09-22 수정 — 당일 데이터로 계산하면 수학적으로 절대 닿을 수 없는 구조적 버그가 있었습니다).",
+        "손절 -8%, 목표가 = 1차 매수가 + (1차 매수가 - 손절가) × 2배(reward_risk_ratio).",
+        "신규 진입(1차/2차 매수)은 거래량이 평균 이하이거나, 주봉 추세가 하락 중이거나, 시장 전체가 리스크오프(QQQ 하락추세)이거나, FOMC/CPI 발표일 전후 1일 이내이거나, 뉴스 감성점수가 -0.35 미만이면 보류됩니다. 손절/익절 청산은 이 조건들과 무관하게 즉시 실행됩니다."
+      ]
+    },
+    price_model_2: {
+      label: "Price Model 2",
+      kind: "model",
+      short: "매수가 산출 로직은 price_model_1과 동일하지만, 손절을 더 타이트하게(-5%) 잡고 목표 리스크배수를 3배로 높인 공격적 버전. 뉴스 감성점수 -0.20 미만이면 신규 진입 보류.",
+      detail: [
+        "1차/2차 매수가를 고르는 로직(볼린저 하단/50일 이평선/60일 최저가, 전일 데이터 기준)은 price_model_1과 완전히 동일합니다.",
+        "차이는 리스크 파라미터입니다: 손절 -5%(price_model_1은 -8%로 더 넓음), 목표가 = 1차 매수가 + 리스크 × 3배(price_model_1은 2배).",
+        "손절을 타이트하게 잡는 철학에 맞춰 뉴스 감성점수 게이트도 더 예민한 -0.20으로 설정 — 다소 부정적인 시황만 있어도 신규 진입을 보류합니다 (price_model_1은 -0.35).",
+        "같은 지지선 접근에서 더 작은 손실을 감수하는 대신 더 높은 목표가를 노리는, 상대적으로 회전율이 높은 공격적 변형입니다."
+      ]
+    },
+    SPY: {
+      label: "SPY (S&P 500)",
+      kind: "benchmark",
+      short: "매매 규칙 없이 백테스트 첫날 $100,000를 전액 매수해 그대로 보유(buy-and-hold)한 S&P 500 추종 ETF 기준선. 거래비용·리밸런싱·손절 없음.",
+      detail: [
+        "다섯 개 트레이딩 모델과 완전히 다른 성격의 \"기준선(benchmark)\"입니다 — 어떤 매매 판단도 하지 않고, 3년 백테스트 구간 첫날 종가로 $100,000어치를 전량 매수한 뒤 마지막 날까지 단 한 번도 매도하지 않습니다.",
+        "yfinance가 자동 조정한 종가를 사용해 배당 재투자 효과를 근사치로 반영하며, 거래비용/슬리피지는 전혀 적용하지 않습니다 (트레이딩 모델은 매 거래마다 10bps를 반영).",
+        "\"다섯 모델이 그냥 지수를 사서 들고만 있는 것보다 나은가?\"를 직접 확인하기 위한 참고선입니다."
+      ]
+    },
+    QQQ: {
+      label: "QQQ (나스닥 100)",
+      kind: "benchmark",
+      short: "SPY와 동일한 buy-and-hold 방식이지만 나스닥 100 추종 ETF 기준. 이 프로젝트의 매매 모델들이 QQQ를 \"시장 레짐\" 판단 기준으로도 쓰고 있어, 그 지수 자체의 단순 보유 성과와 비교하는 의미가 있습니다.",
+      detail: [
+        "SPY 벤치마크와 계산 방식은 동일합니다 (백테스트 첫날 전액 매수 후 그대로 보유, 거래비용 없음).",
+        "QQQ는 이 프로젝트에서 시장 전체 리스크온/리스크오프 국면을 판단하는 기준 지수로도 쓰이고 있어 (sw1.market.regime), 매매 모델들이 참고하는 지수 자체의 단순 보유 성과와 실제 매매 성과를 나란히 비교할 수 있습니다.",
+        "M7 개별 종목보다 변동성은 낮고 SPY보다는 기술주 비중이 높아 다른 위험/수익 프로파일을 보여줍니다."
+      ]
+    },
+    TLT: {
+      label: "TLT (20년+ 국채)",
+      kind: "benchmark",
+      short: "장기 국채(20년 이상 만기) ETF의 buy-and-hold. 실제 30년물 국채 자체는 아니며, 장기 국채 익스포저에 대한 실용적 대용치입니다.",
+      detail: [
+        "SPY/QQQ와 동일한 buy-and-hold 방식입니다.",
+        "\"30년물 국채 장기 보유\"에 가장 가까운 투자 가능 상품으로 TLT(iShares 20+ Year Treasury Bond ETF)를 사용했습니다 — 30년 만기 국채 그 자체를 쿠폰 재투자까지 반영해 추적하는 깔끔한 데이터 소스가 없고, TLT가 장기 국채 익스포저를 대표하는 가장 널리 쓰이는 투자 가능 대용치이기 때문입니다.",
+        "주식 모델들과 상관관계가 낮은 자산이라, \"주식 전략이 무위험에 가까운 채권 보유보다 리스크에 걸맞은 수익을 냈는가\"를 보는 참고선입니다."
+      ]
+    }
+  };
+
   /* ---------------- helpers ---------------- */
 
   function fmtNum(v, digits){
@@ -690,6 +974,80 @@
     return String(s).replace(/[&<>"']/g, function(c){
       return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
     });
+  }
+
+  /* Info-icon + tooltip markup, shared by every place a model/benchmark
+     name is rendered (section 01 legend/cards, section 02 cards/table). */
+  function infoIconHtml(key){
+    var info = CRITERIA_INFO[key];
+    if(!info) return "";
+    return (
+      '<span class="info-wrap">' +
+        '<span class="info-icon" tabindex="0" role="button" aria-label="' + escapeHtml(info.label) + ' 매매 기준 보기">ⓘ</span>' +
+        '<span class="info-tooltip" role="tooltip">' +
+          '<div class="info-tooltip-kind ' + info.kind + '">' + (info.kind === "benchmark" ? "BUY & HOLD 벤치마크" : "트레이딩 모델") + '</div>' +
+          '<div class="info-tooltip-body">' + escapeHtml(info.short) + '</div>' +
+          '<a class="info-tooltip-link" href="#criteria-' + escapeHtml(key) + '">자세히 보기 →</a>' +
+        '</span>' +
+      '</span>'
+    );
+  }
+
+  /* Event delegation so dynamically re-rendered cards never need their
+     tooltip listeners re-attached by hand. */
+  document.addEventListener("mouseover", function(e){
+    var icon = e.target.closest ? e.target.closest(".info-icon") : null;
+    if(icon){ var tip = icon.nextElementSibling; if(tip) tip.classList.add("show"); }
+  });
+  document.addEventListener("mouseout", function(e){
+    var icon = e.target.closest ? e.target.closest(".info-icon") : null;
+    if(icon){ var tip = icon.nextElementSibling; if(tip) tip.classList.remove("show"); }
+  });
+  document.addEventListener("focusin", function(e){
+    var icon = e.target.closest ? e.target.closest(".info-icon") : null;
+    if(icon){ var tip = icon.nextElementSibling; if(tip) tip.classList.add("show"); }
+  });
+  document.addEventListener("focusout", function(e){
+    var icon = e.target.closest ? e.target.closest(".info-icon") : null;
+    if(icon){ var tip = icon.nextElementSibling; if(tip) tip.classList.remove("show"); }
+  });
+  document.addEventListener("click", function(e){
+    var icon = e.target.closest ? e.target.closest(".info-icon") : null;
+    if(icon){
+      e.stopPropagation();
+      var tip = icon.nextElementSibling;
+      if(tip) tip.classList.toggle("show");
+      return;
+    }
+    var btn = e.target.closest ? e.target.closest(".carousel-btn") : null;
+    if(btn){
+      var wrap = btn.closest(".carousel-wrap");
+      var track = wrap ? wrap.querySelector(".carousel-track") : null;
+      if(track){
+        var dir = btn.classList.contains("next") ? 1 : -1;
+        track.scrollBy({ left: dir * 210, behavior: "smooth" });
+      }
+      return;
+    }
+    // clicking anywhere else closes any open tooltip
+    document.querySelectorAll(".info-tooltip.show").forEach(function(t){ t.classList.remove("show"); });
+  });
+
+  function renderCriteriaDetailSection(){
+    var order = MODELS.map(function(m){ return m.key; }).concat(BENCHMARKS.map(function(b){ return b.key; }));
+    var html = order.map(function(key){
+      var info = CRITERIA_INFO[key];
+      if(!info) return "";
+      var itemsHtml = info.detail.map(function(line){ return "<li>" + escapeHtml(line) + "</li>"; }).join("");
+      return (
+        '<div class="criteria-detail-card' + (info.kind === "benchmark" ? " is-benchmark" : "") + '" id="criteria-' + escapeHtml(key) + '">' +
+          '<h3>' + escapeHtml(info.label) + (info.kind === "benchmark" ? '<span class="bh-tag">BUY&nbsp;&amp;&nbsp;HOLD</span>' : "") + '</h3>' +
+          '<div class="info-tooltip-kind ' + info.kind + '">' + (info.kind === "benchmark" ? "BUY & HOLD 벤치마크" : "트레이딩 모델") + '</div>' +
+          '<ul>' + itemsHtml + '</ul>' +
+        '</div>'
+      );
+    }).join("");
+    document.getElementById("criteria-detail-content").innerHTML = html;
   }
 
   /* Minimal defensive CSV parser: no quoted-comma fields in this dataset. */
@@ -730,7 +1088,7 @@
     '</div>';
   }
 
-  /* ---------------- section 2: SW2 equity + comparisons ---------------- */
+  /* ---------------- section 1: SW2 equity + comparisons ---------------- */
 
   function loadEquityForModel(model){
     return fetchText(EQUITY_URL(model.key)).then(function(text){
@@ -760,7 +1118,7 @@
 
     // legend
     var legendHtml = MODELS.map(function(m){
-      return '<span class="legend-item"><span class="legend-dot" style="background:' + m.color + ';"></span>' + m.label + '</span>';
+      return '<span class="legend-item"><span class="legend-dot" style="background:' + m.color + ';"></span>' + escapeHtml(m.label) + infoIconHtml(m.key) + '</span>';
     }).join("");
     document.getElementById("chart-legend").innerHTML = legendHtml;
 
@@ -854,18 +1212,17 @@
       }
     });
 
-    // per-model summary cards
+    // per-model summary cards (horizontally scrollable carousel track)
     var summaryHtml = results.map(function(r){
       if(r.rows.length === 0){
-        return '<div class="model-summary"><div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + r.model.label + '</div><div class="eq">—</div><div class="ret" style="color:var(--text-muted);">데이터 없음</div></div>';
+        return '<div class="model-summary"><div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + escapeHtml(r.model.label) + infoIconHtml(r.model.key) + '</div><div class="eq">—</div><div class="ret" style="color:var(--text-muted);">데이터 없음</div></div>';
       }
       var last = r.rows[r.rows.length - 1];
       var first = r.rows[0];
       var totalRet = (first.equity && first.equity !== 0) ? (last.equity - first.equity) / first.equity : null;
-      var retCls = totalRet === null ? "" : (totalRet >= 0 ? "pos" : "neg");
       var retColorVar = totalRet === null ? "var(--text-muted)" : (totalRet >= 0 ? "var(--green)" : "var(--red)");
       return '<div class="model-summary">' +
-        '<div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + r.model.label + '</div>' +
+        '<div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + escapeHtml(r.model.label) + infoIconHtml(r.model.key) + '</div>' +
         '<div class="eq">' + fmtUSD(last.equity) + '</div>' +
         '<div class="ret" style="color:' + retColorVar + ';">' + (totalRet === null ? "누적 수익률 계산 불가" : fmtPct(totalRet) + " 누적") + ' · ' + r.rows.length + '일치</div>' +
       '</div>';
@@ -1007,20 +1364,32 @@
     });
   }
 
-  /* ---------------- section 3: 3-year historical backtest ---------------- */
+  /* ---------------- section 2: 3-year historical backtest ---------------- */
 
   function periodCellClass(v){
     if(v === null || v === undefined || isNaN(v)) return "";
     return v >= 0 ? "pos" : "neg";
   }
 
+  function backtestEntryMeta(key){
+    var m = MODELS.filter(function(x){ return x.key === key; })[0];
+    if(m) return { key:key, label:m.label, color:m.color, isBenchmark:false };
+    var b = BENCHMARKS.filter(function(x){ return x.key === key; })[0];
+    if(b) return { key:key, label:b.label, color:b.color, isBenchmark:true };
+    return { key:key, label:key, color:"#888", isBenchmark:false };
+  }
+
   function loadBacktestSection(){
     var el = document.getElementById("backtest-content");
     return fetchJSON(BACKTEST_URL).then(function(data){
       var models = (data && data.models) ? data.models : {};
-      var modelKeys = MODELS.map(function(m){ return m.key; }).filter(function(k){ return !!models[k]; });
+      var benchmarks = (data && data.benchmarks) ? data.benchmarks : {};
+      var allEntries = Object.assign({}, models, benchmarks);
 
-      if(modelKeys.length === 0){
+      var orderedKeys = MODELS.map(function(m){ return m.key; }).concat(BENCHMARKS.map(function(b){ return b.key; }));
+      var entryKeys = orderedKeys.filter(function(k){ return !!allEntries[k]; });
+
+      if(entryKeys.length === 0){
         el.innerHTML = stateBox(
           "백테스트 데이터가 아직 없습니다",
           "GitHub Actions의 \"historical-backtest\" 워크플로우를 수동 실행(workflow_dispatch)하면 이 영역에 결과가 표시됩니다.",
@@ -1029,106 +1398,60 @@
         return;
       }
 
-      var summaryHtml = modelKeys.map(function(key){
-        var m = models[key];
-        var meta = MODELS.filter(function(mm){ return mm.key === key; })[0];
+      // 2026-09-22 user request: "최소한 SPY 보단 수익률이 좋았으면 좋겠다" --
+      // show each trading model's return gap against SPY's buy-and-hold
+      // return directly on its card, so that goal has a literal number
+      // next to it instead of requiring a mental subtraction against the
+      // SPY card elsewhere in the row.
+      var spyReturn = benchmarks.SPY ? benchmarks.SPY.total_return : null;
+
+      var summaryHtml = entryKeys.map(function(key){
+        var m = allEntries[key];
+        var meta = backtestEntryMeta(key);
         var retCls = periodCellClass(m.total_return);
-        return '<div class="summary-card">' +
-          '<div class="summary-label"><span class="legend-dot" style="background:' + meta.color + ';"></span>' + meta.label + '</div>' +
-          '<div class="summary-value">' + fmtUSD(m.final_equity) + '</div>' +
-          '<div class="metric-v ' + retCls + '" style="margin-top:4px;">' + fmtPct(m.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
+        var deltaHtml = "";
+        if(key !== "SPY" && spyReturn !== null && spyReturn !== undefined && m.total_return !== null && m.total_return !== undefined){
+          var delta = m.total_return - spyReturn;
+          var deltaCls = delta >= 0 ? "pos" : "neg";
+          deltaHtml = '<div class="delta-spy ' + deltaCls + '">SPY 대비 <b>' + fmtPct(delta) + 'p</b></div>';
+        }
+        return '<div class="model-summary' + (meta.isBenchmark ? " is-benchmark" : "") + '">' +
+          '<div class="name"><span class="legend-dot" style="background:' + meta.color + ';"></span>' + escapeHtml(meta.label) + infoIconHtml(key) + (meta.isBenchmark ? '<span class="bh-tag">B&amp;H</span>' : "") + '</div>' +
+          '<div class="eq">' + fmtUSD(m.final_equity) + '</div>' +
+          '<div class="ret ' + '" style="color:' + (retCls === "pos" ? "var(--green)" : retCls === "neg" ? "var(--red)" : "var(--text-muted)") + ';">' + fmtPct(m.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
           '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;">거래 ' + (m.n_trades !== undefined ? m.n_trades : "—") + '건</div>' +
+          deltaHtml +
         '</div>';
       }).join("");
 
       var allPeriods = [];
-      modelKeys.forEach(function(key){
-        (models[key].periods || []).forEach(function(p){
+      entryKeys.forEach(function(key){
+        (allEntries[key].periods || []).forEach(function(p){
           if(allPeriods.indexOf(p.period) === -1) allPeriods.push(p.period);
         });
       });
       allPeriods.sort();
 
       var periodByModel = {};
-      modelKeys.forEach(function(key){
+      entryKeys.forEach(function(key){
         periodByModel[key] = {};
-        (models[key].periods || []).forEach(function(p){
+        (allEntries[key].periods || []).forEach(function(p){
           periodByModel[key][p.period] = p.period_return;
         });
       });
 
-      var headerHtml = '<th>구간</th>' + modelKeys.map(function(key){
-        return '<th>' + escapeHtml(modelLabel(key)) + '</th>';
+      var headerHtml = '<th>구간</th>' + entryKeys.map(function(key){
+        var meta = backtestEntryMeta(key);
+        return '<th class="' + (meta.isBenchmark ? "is-benchmark" : "") + '">' + escapeHtml(meta.label) + (meta.isBenchmark ? ' <span class="bh-tag">B&amp;H</span>' : "") + '</th>';
       }).join("");
 
       var rowsHtml = allPeriods.map(function(period){
-        var cells = modelKeys.map(function(key){
+        var cells = entryKeys.map(function(key){
           var v = periodByModel[key][period];
           return '<td><span class="metric-v ' + periodCellClass(v) + '">' + fmtPct(v) + '</span></td>';
         }).join("");
         return '<tr><td>' + escapeHtml(period) + '</td>' + cells + '</tr>';
       }).join("");
-
-      // 2026-09-22: SPY/QQQ/TLT buy-and-hold reference lines (backend added
-      // in scripts/run_historical_backtest.py as a `benchmarks` sibling to
-      // `models` -- this renders them as a visually separate block, since
-      // they carry none of the trading models' rules (no stop-loss, no
-      // transaction costs, no position sizing; see scope_notes below).
-      var benchmarks = (data && data.benchmarks) ? data.benchmarks : {};
-      var benchmarkOrder = ["SPY", "QQQ", "TLT"];
-      var benchmarkColors = { SPY: "#7d8798", QQQ: "#9aa5b8", TLT: "#b7c0d1" };
-      var benchmarkKeys = benchmarkOrder.filter(function(k){ return !!benchmarks[k]; });
-      var benchmarkSectionHtml = "";
-
-      if(benchmarkKeys.length > 0){
-        var benchmarkSummaryHtml = benchmarkKeys.map(function(key){
-          var b = benchmarks[key];
-          var retCls = periodCellClass(b.total_return);
-          return '<div class="summary-card" style="border-style:dashed;">' +
-            '<div class="summary-label"><span class="legend-dot" style="background:' + benchmarkColors[key] + ';"></span>' + escapeHtml(b.label || key) + '</div>' +
-            '<div class="summary-value">' + fmtUSD(b.final_equity) + '</div>' +
-            '<div class="metric-v ' + retCls + '" style="margin-top:4px;">' + fmtPct(b.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
-            '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;">매수 후 보유 (거래 1건)</div>' +
-          '</div>';
-        }).join("");
-
-        var benchmarkPeriodByKey = {};
-        benchmarkKeys.forEach(function(key){
-          benchmarkPeriodByKey[key] = {};
-          (benchmarks[key].periods || []).forEach(function(p){
-            benchmarkPeriodByKey[key][p.period] = p.period_return;
-          });
-        });
-        var allBenchmarkPeriods = [];
-        benchmarkKeys.forEach(function(key){
-          (benchmarks[key].periods || []).forEach(function(p){
-            if(allBenchmarkPeriods.indexOf(p.period) === -1) allBenchmarkPeriods.push(p.period);
-          });
-        });
-        allBenchmarkPeriods.sort();
-
-        var benchmarkHeaderHtml = '<th>구간</th>' + benchmarkKeys.map(function(key){
-          return '<th>' + escapeHtml(benchmarks[key].label || key) + '</th>';
-        }).join("");
-
-        var benchmarkRowsHtml = allBenchmarkPeriods.map(function(period){
-          var cells = benchmarkKeys.map(function(key){
-            var v = benchmarkPeriodByKey[key][period];
-            return '<td><span class="metric-v ' + periodCellClass(v) + '">' + fmtPct(v) + '</span></td>';
-          }).join("");
-          return '<tr><td>' + escapeHtml(period) + '</td>' + cells + '</tr>';
-        }).join("");
-
-        benchmarkSectionHtml =
-          '<div class="section-sub" style="margin-top:22px;margin-bottom:0;"><b style="color:var(--text-secondary);">참고 — 장기 보유(Buy &amp; Hold) 벤치마크</b> ' +
-            '<span style="color:var(--text-muted);">(매매 규칙 없음, 첫날 전액 매수 후 그대로 보유만 가정 — 모델이 아니라 비교 기준선입니다)</span>' +
-          '</div>' +
-          '<div class="model-summary-row" style="margin-top:10px;">' + benchmarkSummaryHtml + '</div>' +
-          '<div class="table-scroll" style="margin-top:16px;"><table class="stats-table">' +
-            '<thead><tr>' + benchmarkHeaderHtml + '</tr></thead>' +
-            '<tbody>' + benchmarkRowsHtml + '</tbody>' +
-          '</table></div>';
-      }
 
       var notes = (data.config && Array.isArray(data.config.scope_notes)) ? data.config.scope_notes : [];
       var notesHtml = notes.length > 0
@@ -1139,16 +1462,19 @@
 
       var startingCash = data.config && data.config.starting_cash;
       var footNote = data.run_ts
-        ? '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:12px;">마지막 실행: ' + escapeHtml(data.run_ts) + ' · 모델당 초기 자본 ' + fmtUSD(startingCash) + '</div>'
+        ? '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:12px;">마지막 실행: ' + escapeHtml(data.run_ts) + ' · 모델당/벤치마크당 초기 자본 ' + fmtUSD(startingCash) + '</div>'
         : '';
 
       el.innerHTML =
-        '<div class="model-summary-row">' + summaryHtml + '</div>' +
+        '<div class="carousel-wrap">' +
+          '<button class="carousel-btn prev" aria-label="이전 카드">‹</button>' +
+          '<div class="model-summary-row carousel-track">' + summaryHtml + '</div>' +
+          '<button class="carousel-btn next" aria-label="다음 카드">›</button>' +
+        '</div>' +
         '<div class="table-scroll" style="margin-top:16px;"><table class="stats-table">' +
           '<thead><tr>' + headerHtml + '</tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
         '</table></div>' +
-        benchmarkSectionHtml +
         notesHtml + footNote;
     }).catch(function(err){
       el.innerHTML = stateBox(
@@ -1161,6 +1487,7 @@
 
   /* ---------------- init ---------------- */
 
+  renderCriteriaDetailSection();
   loadEquitySection().then(function(equityResults){
     loadComparisonsSection(equityResults);
   });
