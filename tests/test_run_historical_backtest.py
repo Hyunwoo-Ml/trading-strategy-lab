@@ -234,3 +234,94 @@ def test_apply_price_criteria_day_stop_loss_closes_existing_position(wired_scrip
 
     assert "AAPL" not in portfolio.positions
     assert portfolio.trades[-1].action == "stop_loss"
+
+
+# -- benchmark buy-and-hold references (SPY / QQQ / TLT, 2026-09-22 user request) --
+
+
+def test_benchmarks_present_with_expected_tickers(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert set(output["benchmarks"].keys()) == {"SPY", "QQQ", "TLT"}
+    for key, payload in output["benchmarks"].items():
+        assert payload["starting_cash"] == wired_script.STARTING_CASH
+        assert payload["n_trades"] == 1  # pure buy-and-hold: one purchase, never sold
+        assert isinstance(payload["periods"], list)
+        assert len(payload["periods"]) > 0
+        assert payload["label"]  # human-readable label present for the dashboard
+
+
+def test_benchmark_total_return_matches_simple_buy_and_hold_math(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+
+    # same seeded synthetic series the mock handed the script for "SPY"
+    fake_spy = wired_script.fetch_ohlcv("SPY", period="3y")
+    close = fake_spy["Close"].dropna()
+    expected_return = close.iloc[-1] / close.iloc[0] - 1.0
+    expected_equity = wired_script.STARTING_CASH * close.iloc[-1] / close.iloc[0]
+
+    assert output["benchmarks"]["SPY"]["total_return"] == pytest.approx(expected_return, rel=1e-6)
+    assert output["benchmarks"]["SPY"]["final_equity"] == pytest.approx(expected_equity, rel=1e-6)
+
+
+def test_qqq_benchmark_reuses_regime_fetch_not_double_fetched(wired_script, monkeypatch):
+    calls: list[str] = []
+
+    def counting_fetch(ticker, period="3y"):
+        calls.append(ticker)
+        return _fake_ohlcv(seed=abs(hash(ticker)) % 1000)
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", counting_fetch)
+    wired_script.main()
+    assert calls.count("QQQ") == 1  # regime fetch is reused for the QQQ benchmark, not fetched a second time
+
+
+def test_one_benchmark_failure_does_not_crash_the_run(wired_script, monkeypatch):
+    def fetch_with_bad_spy(ticker, period="3y"):
+        if ticker == "SPY":
+            raise RuntimeError("simulated SPY fetch failure")
+        return _fake_ohlcv(seed=abs(hash(ticker)) % 1000)
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", fetch_with_bad_spy)
+    rc = wired_script.main()
+    assert rc == 0
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert any(t == "SPY" for t, _err in output["failures"])
+    assert set(output["benchmarks"].keys()) == {"QQQ", "TLT"}
+    assert len(output["models"]) == 5  # trading models are unaffected by a benchmark-only failure
+
+
+def test_benchmark_nan_close_is_dropped_not_crashed(wired_script, monkeypatch):
+    """Same NaN-gap shape as test_isolated_nan_close_does_not_crash_the_run,
+    but asserting the benchmark path specifically: _buy_and_hold_payload
+    must drop the NaN day rather than letting it corrupt the equity curve
+    or crash the JSON write."""
+    def fetch_with_one_nan_close(ticker, period="3y"):
+        df = _fake_ohlcv(seed=abs(hash(ticker)) % 1000, vol=6.0)
+        df = df.copy()
+        df.iloc[len(df) // 2, df.columns.get_loc("Close")] = float("nan")
+        return df
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", fetch_with_one_nan_close)
+    rc = wired_script.main()
+    assert rc == 0
+    raw = wired_script.OUTPUT_PATH.read_text(encoding="utf-8")
+    assert "NaN" not in raw
+    output = json.loads(raw)
+    assert set(output["benchmarks"].keys()) == {"SPY", "QQQ", "TLT"}
+    for payload in output["benchmarks"].values():
+        assert payload["total_return"] is not None
+
+
+def test_buy_and_hold_payload_pure_function(wired_script):
+    idx = pd.bdate_range("2024-01-01", periods=5)
+    ohlcv = pd.DataFrame({"Close": [100.0, 110.0, 105.0, 120.0, 130.0]}, index=idx)
+    payload = wired_script._buy_and_hold_payload(ohlcv, "테스트 벤치마크", "Q")
+    assert payload["label"] == "테스트 벤치마크"
+    assert payload["n_trades"] == 1
+    assert payload["starting_cash"] == wired_script.STARTING_CASH
+    assert payload["final_equity"] == pytest.approx(wired_script.STARTING_CASH * 130.0 / 100.0)
+    assert payload["total_return"] == pytest.approx(0.3)
