@@ -188,12 +188,26 @@ def _generate_criteria_rows_for_day(
         indicators = d["indicators"]
         if date not in indicators.index:
             continue
+        # 2026-09-22: yfinance's 3y history occasionally has a NaN Close on
+        # an isolated day (data-provider gap). Before the 1-day-lag fix,
+        # price_model_1/2 never actually traded, so a NaN close was never
+        # fed into Portfolio.buy()/mark_to_market() and this was never
+        # exposed. Now that they do trade, a single NaN close would corrupt
+        # that day's equity and, if it landed on a quarter's last trading
+        # day, produce a NaN in the JSON output (json.dumps(allow_nan=False)
+        # then crashes the whole run). Skip the ticker for this one day
+        # instead -- same graceful-degradation pattern used everywhere else
+        # in this pipeline.
+        if pd.isna(indicators.loc[date, "Close"]):
+            continue
         pos = indicators.index.get_loc(date)
         hist_slice = indicators.iloc[: pos + 1]
         for params in price_criteria_params:
             try:
                 criteria = generate_price_criteria(ticker, hist_slice, params)
             except Exception:  # noqa: BLE001 -- one bad ticker/day must not crash the whole backtest
+                continue
+            if pd.isna(criteria.close) or pd.isna(criteria.buy_1_price) or pd.isna(criteria.buy_2_price) or pd.isna(criteria.target_price):
                 continue
             rows_by_model[params.model_name].append(
                 {
@@ -324,10 +338,14 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             if date not in d["indicators"].index:
                 continue
             qs = d["quant_scores"].loc[date]
-            if pd.isna(qs):
+            close_value = d["ohlcv"].loc[date, "Close"]
+            if pd.isna(qs) or pd.isna(close_value):
+                # 2026-09-22: an isolated NaN Close (yfinance data gap) must
+                # never reach Portfolio.buy()/mark_to_market() -- see the
+                # matching guard in _generate_criteria_rows_for_day for why.
                 continue
             rows.append(
-                {"ticker": ticker, "close": float(d["ohlcv"].loc[date, "Close"]), "quant_score": float(qs), "news_score": None}
+                {"ticker": ticker, "close": float(close_value), "quant_score": float(qs), "news_score": None}
             )
         if rows:
             signals_df = pd.DataFrame(rows)
@@ -370,9 +388,27 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
     }
 
 
+def _sanitize_nan(value):
+    """Recursively replaces float('nan') with None so the output JSON is
+    always valid (allow_nan=False below is what enforces that at write
+    time). Last-resort safety net -- the real fix is not producing NaN in
+    the first place (see the Close-value guards in run_backtest() and
+    _generate_criteria_rows_for_day() above, added 2026-09-22 after a NaN
+    yfinance Close crashed this script the first time price_model_1/2
+    actually started trading), but this keeps one bad number from taking
+    down the whole run if some other path produces one."""
+    if isinstance(value, float) and value != value:  # NaN != NaN is the cheapest isnan check
+        return None
+    if isinstance(value, dict):
+        return {k: _sanitize_nan(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_nan(v) for v in value]
+    return value
+
+
 def main() -> int:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    result = run_backtest()
+    result = _sanitize_nan(run_backtest())
     OUTPUT_PATH.write_text(
         json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8"
     )
