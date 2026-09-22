@@ -100,6 +100,33 @@ def test_score_threshold_models_actually_trade_on_volatile_history(wired_script,
     assert total_trades > 0
 
 
+def test_isolated_nan_close_does_not_crash_the_run(wired_script, monkeypatch):
+    """2026-09-22 regression: real yfinance 3y history can carry a single
+    NaN Close on an isolated day (data-provider gap). Before the 1-day-lag
+    fix, price_model_1/2 never actually traded so a NaN close was never fed
+    into Portfolio.buy()/mark_to_market(); once they started trading, an
+    injected NaN like this one crashed the live workflow with
+    `ValueError: Out of range float values are not JSON compliant: nan`
+    from json.dumps(allow_nan=False). Reproduces that exact shape here with
+    mocked data and asserts main() degrades gracefully instead."""
+    def fetch_with_one_nan_close(ticker, period="3y"):
+        df = _fake_ohlcv(seed=abs(hash(ticker)) % 1000, vol=6.0)
+        df = df.copy()
+        df.iloc[len(df) // 2, df.columns.get_loc("Close")] = float("nan")
+        return df
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", fetch_with_one_nan_close)
+    rc = wired_script.main()
+    assert rc == 0
+
+    raw = wired_script.OUTPUT_PATH.read_text(encoding="utf-8")
+    assert "NaN" not in raw  # Python's json module spells a literal NaN this way if allow_nan slips through
+    output = json.loads(raw)
+    assert set(output["models"].keys()) == {
+        "baseline", "technical_only", "conservative", "price_model_1", "price_model_2",
+    }
+
+
 def test_one_ticker_failure_does_not_crash_the_run(wired_script, monkeypatch):
     def flaky_fetch(ticker, period="3y"):
         if ticker == "TSLA":
