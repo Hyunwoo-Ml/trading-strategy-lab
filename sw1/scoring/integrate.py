@@ -22,7 +22,25 @@ import pandas as pd
 @dataclass
 class ScoringWeights:
     """Weights for the four rule-based technical sub-scores (must sum to 1.0)
-    and for the quant-vs-news blend at the top level."""
+    and for the quant-vs-news blend at the top level.
+
+    2026-09-22 (합의+지배 혼합 / consensus+dominance blend): the four
+    sub-scores used to be combined ONLY as a straight weighted average
+    ("consensus"). The problem the user flagged: one indicator sitting at
+    a genuine extreme (e.g. RSI=10, deeply oversold) gets diluted down to
+    its 0.25 share of the total even though, on its own, it's a strong
+    signal -- and if the other three sub-scores sit near 0 that day, the
+    blended score never reaches a buy threshold at all. consensus_weight/
+    dominance_weight let the single most extreme sub-score (the "dominant"
+    one -- whichever of rsi/macd/bollinger/ma_cross has the largest
+    absolute value, sign preserved) count on its own terms alongside the
+    weighted-average "consensus" view, instead of being averaged away.
+    See compute_quant_score() for how these combine. Default 0.5/0.5 was
+    chosen so a single maxed-out indicator (dominant=+-1.0) alone can, on
+    its own, contribute up to +-0.5 to the raw score -- enough to clear
+    buy_1_score (0.30) by itself, which was impossible under the old
+    pure-consensus formula (max possible from one indicator was its own
+    weight, e.g. 0.25)."""
 
     rsi: float = 0.25
     macd: float = 0.25
@@ -32,6 +50,9 @@ class ScoringWeights:
     quant_blend: float = 0.6   # weight of the technical score in the final blend
     news_blend: float = 0.4    # weight of the news sentiment score
 
+    consensus_weight: float = 0.5   # weight of the weighted-average ("합의") view in quant_score
+    dominance_weight: float = 0.5   # weight of the single most-extreme sub-score ("지배") in quant_score
+
     def validate(self) -> None:
         technical_total = self.rsi + self.macd + self.bollinger + self.ma_cross
         if abs(technical_total - 1.0) > 1e-6:
@@ -39,6 +60,9 @@ class ScoringWeights:
         blend_total = self.quant_blend + self.news_blend
         if abs(blend_total - 1.0) > 1e-6:
             raise ValueError(f"quant_blend + news_blend must sum to 1.0, got {blend_total}")
+        dominance_total = self.consensus_weight + self.dominance_weight
+        if abs(dominance_total - 1.0) > 1e-6:
+            raise ValueError(f"consensus_weight + dominance_weight must sum to 1.0, got {dominance_total}")
 
 
 @dataclass
@@ -66,7 +90,9 @@ def _score_rsi(rsi: float) -> float:
 def _score_macd(macd_hist: float, scale: float = 1.0) -> float:
     """MACD histogram -> [-1, 1] via tanh so a big momentum spike saturates
     instead of dominating the blend. `scale` should be set relative to the
-    ticker's typical histogram magnitude; 1.0 is a placeholder default."""
+    ticker's typical histogram magnitude; 1.0 is a placeholder default,
+    used only as a fallback when a per-ticker scale (see
+    compute_quant_score's use of MACD_HIST_STD_60) isn't available yet."""
     import math
 
     return math.tanh(macd_hist / scale) if scale else 0.0
@@ -95,19 +121,40 @@ def _volume_confidence(vol_ratio: float | None, weak: float = 0.5, strong: float
 def compute_quant_score(indicator_row: pd.Series, weights: ScoringWeights = DEFAULT_WEIGHTS) -> float:
     """Takes one row from sw1.indicators.technical.compute_all_technical_indicators
     output (must have RSI, MACD_HIST, BB_PCT_B, MA_CROSS, VOL_RATIO) and
-    returns a single quant score in [-1, 1]."""
+    returns a single quant score in [-1, 1].
+
+    2026-09-22: MACD's sub-score now uses a per-ticker scale
+    (MACD_HIST_STD_60, a rolling stdev of the histogram -- see
+    sw1.indicators.technical.add_macd) instead of a fixed scale=1.0, so a
+    given histogram value means "big" or "small" relative to how much
+    THIS ticker's MACD histogram normally moves. Falls back to the old
+    fixed scale=1.0 when that column is missing/NaN/<=0 (short history,
+    or an indicators_df computed before this column existed).
+
+    The four sub-scores are combined two ways and blended (합의+지배 혼합,
+    see ScoringWeights docstring): `consensus` is the same weighted
+    average as before; `dominant` is the single sub-score with the
+    largest absolute value (sign preserved) -- whichever indicator is
+    currently making the strongest statement, on its own terms, gets a
+    direct say instead of being averaged down by the other three."""
+    macd_scale = indicator_row.get("MACD_HIST_STD_60")
+    macd_scale = float(macd_scale) if pd.notna(macd_scale) and macd_scale > 0 else 1.0
+
     sub_scores = {
         "rsi": _score_rsi(indicator_row["RSI"]) if pd.notna(indicator_row.get("RSI")) else 0.0,
-        "macd": _score_macd(indicator_row["MACD_HIST"]) if pd.notna(indicator_row.get("MACD_HIST")) else 0.0,
+        "macd": _score_macd(indicator_row["MACD_HIST"], scale=macd_scale) if pd.notna(indicator_row.get("MACD_HIST")) else 0.0,
         "bollinger": _score_bollinger(indicator_row["BB_PCT_B"]) if pd.notna(indicator_row.get("BB_PCT_B")) else 0.0,
         "ma_cross": _score_ma_cross(indicator_row.get("MA_CROSS")),
     }
-    raw = (
+    consensus = (
         sub_scores["rsi"] * weights.rsi
         + sub_scores["macd"] * weights.macd
         + sub_scores["bollinger"] * weights.bollinger
         + sub_scores["ma_cross"] * weights.ma_cross
     )
+    dominant = max(sub_scores.values(), key=abs)
+    raw = consensus * weights.consensus_weight + dominant * weights.dominance_weight
+
     confidence = _volume_confidence(indicator_row.get("VOL_RATIO"))
     return max(-1.0, min(1.0, raw * confidence))
 
