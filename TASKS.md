@@ -1130,3 +1130,38 @@ CodeMirror 문서 SHA-256을 커밋 직전 목표 해시와 정확히 일치시�
 **다음 세션이 할 일 갱신**: 남은 백로그는 기존과 동일하게 1번(KIS 연동, 사용자 재요청
 전까지 보류) + 위 신규 대기열 2건(사업화 파이프라인/포스팅 자동화, 사용자가 먼저 재개
 요청할 때까지 보류) + 위 "알려진 한계" 절의 후속 분석 아이디어(사용자 방향 확인 후 진행).
+
+---
+
+## 2026-09-22 세션 (자동 재개, 스케줄 실행): RISK_FRACTION 2배 인상 검증 마무리 (문서화는 이미 완료돼 있었음)
+
+**배경**: 스케줄 실행으로 재개해 raw.githubusercontent.com으로 TASKS.md를 먼저 읽었는데, 그 시점
+캐시가 직전 세션(바로 위 "벤치마크 격차 원인 조사 — 포지션 사이징 구조적 과소투자 진단·수정"
+세션)의 기록을 아직 반영하지 못한 구버전을 서빙하고 있어, 처음엔 "RISK_FRACTION 변경이 전혀
+문서화되지 않았다"고 잘못 판단함. GitHub 웹 에디터로 TASKS.md를 직접 열어보고 나서야 바로 위
+세션이 이미 배경·근거·수정 내용·검증 결과·후속 대기열까지 충분히 기록해두었음을 확인 — 잘못된
+전제로 작성했던 중복 섹션은 지우고, 이번 세션이 독자적으로 수행한 검증만 아래에 간단히 덧붙임
+(다음 세션 참고용: raw fetch만으로 "문서화 공백"을 단정하지 말고, 의심되면 GitHub 웹 에디터나
+Contents API로 실제 최신본을 한 번 더 확인할 것 — CDN 캐시 지연은 과거에도 여러 번 관찰된 패턴).
+
+**이번 세션이 독자적으로 확인한 것** (코드 변경 없음, 순수 검증):
+- 클라우드 샌드박스 `bash`에서 이번엔 `git clone https://github.com/Hyunwoo-Ml/trading-strategy-lab.git`
+  읽기 전용 클론이 그대로 성공(과거 세션 기록과 달리 최소 GitHub 호스트 읽기는 이번 세션 환경에서
+  열려 있었음). `git push`는 여전히 프록시 정책상 차단됨을 재확인 — 쓰기는 기존과 동일하게 GitHub
+  웹 에디터 브라우저 자동화만 유효.
+- 현재 main HEAD(RISK_FRACTION 2배 커밋들 포함, 커밋 `e47739d` 기준)를 로컬 클론해
+  `pip install -r requirements.txt` 후 `python -m pytest -q` 실행: **309 passed**, 회귀 없음.
+- GitHub Actions check-runs API로 `7f5e16d`(sizing 테스트 갱신 커밋)의 체크 5개
+  (`pytest`, `build`, `deploy`, `report-build-status`, `backtest`) 전부 `completed`/`success` 확인.
+- `data/backtest/results.json`(run_ts `2026-09-22T12:42:02+00:00`)을 raw fetch로 재확인: 직전
+  세션이 기록한 수치(technical_only +85.13%로 SPY +86.34% 거의 따라잡음, 나머지 모델도 SPY 대비
+  격차 큰 폭 축소, QQQ 대비로는 5개 모델 전부 여전히 열세)와 정확히 일치.
+- 라이브 대시보드(`https://hyunwoo-ml.github.io/trading-strategy-lab/` SW1,
+  `https://hyunwoo-ml.github.io/trading-strategy-lab/sw2.html` SW2) 둘 다 `get_page_text` +
+  `read_console_messages`로 재확인: 콘솔 에러 없음, SW2 백테스트 섹션에 새 수치와 "SPY 대비
+  ±X.X%p" 델타 배지가 정상 렌더링됨.
+
+**다음 세션이 할 일**: 변동 없음 — 직전 세션이 이미 정리해둔 대로 1번(KIS 연동, 사용자 재요청
+전까지 보류) + 사업화 파이프라인/포스팅 자동화 구상(사용자가 먼저 재개 요청할 때까지 보류) +
+"알려진 한계" 절의 후속 분석 아이디어(사용자 방향 확인 후 진행)뿐. 이번 세션은 여기에 아무것도
+추가하지 않음 — 순수 검증 세션.
