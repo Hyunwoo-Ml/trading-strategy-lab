@@ -73,6 +73,20 @@ def test_compute_all_indicators_adds_expected_columns(mock_ohlcv):
     assert len(out) == len(mock_ohlcv)
 
 
+def test_macd_hist_std_column_warms_up_then_stays_nonnegative(mock_ohlcv):
+    """2026-09-22: MACD_HIST_STD_60 backs the per-ticker MACD scale used by
+    sw1.scoring.integrate's dominance-blend quant score. NaN before
+    std_min_periods (default 20) histogram values exist, non-negative and
+    finite (a stdev) after warm-up."""
+    out = add_macd(mock_ohlcv)
+    assert "MACD_HIST_STD_60" in out.columns
+    assert out["MACD_HIST_STD_60"].iloc[:19].isna().all()
+    valid = out["MACD_HIST_STD_60"].dropna()
+    assert len(valid) > 0
+    assert (valid >= 0).all()
+    assert np.isfinite(valid).all()
+
+
 def test_missing_columns_raise_value_error():
     bad_df = pd.DataFrame({"Close": [1, 2, 3]})
     with pytest.raises(ValueError):
