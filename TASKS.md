@@ -689,3 +689,160 @@ compute_quant_score` 수식 자체가 여러 독립적인 시간 구간에서 �
 필요 시 후속 아이디어: (a) conservative/price_model_1/price_model_2가 실제
 3년 구간에서 거래가 0건인 것을 사용자가 원하면 임계값 재검토, (b) 매크로
 블랙아웃 날짜를 과거 연도까지 확장해 더 정확한 과거 재현.
+
+---
+
+## 2026-09-22 세션: price_model 무거래 버그 / 스코어링 희석 / MACD 고정 스케일 수정 + NaN Close 크래시 신규 발견·수정
+
+**배경**: 직전 세션(3년 역사적 백테스트 도입)에서 "필요 시 후속 아이디어"로
+남겨둔 conservative/price_model_1/price_model_2의 3년 구간 0건 거래 이슈를
+이번 세션에서 진단. 조사 결과 서로 독립적인 원인 세 가지가 겹쳐 있었음을
+확인하고, 사용자가 `AskUserQuestion`으로 각각의 설계안을 확인한 뒤 순서대로
+수정.
+
+**1) price_model_1/2 무거래 버그 — 진입 기준 자기참조 문제**
+
+- **근본 원인**: `sw1/criteria/generator.py::generate_price_criteria()`가
+  매일 "오늘" 종가/지표로 지지선(`bb_lower`/`ma50`/`lookback_low`)을 계산한
+  뒤, 그 지지선을 같은 날 종가와 비교해 매수 여부를 판단하고 있었음. 지지선
+  자체가 오늘 종가를 포함해 계산되므로, 종가가 지지선을 하향 돌파하는 일이
+  구조적으로 거의 발생하지 않음(자기참조적 기준).
+- **수정 (사용자 확인: "매일 재계산 하고, 어제 종가를 기준으로 지지선을
+  뽑아서 오늘 종가와 비교하는, 하루 지연을 주는 방식으로 가자")**:
+  `generate_price_criteria()`가 이제 `indicators_df.iloc[-2]`("어제")를
+  기준으로 `bb_lower`/`ma50`/`lookback_low`와 `buy_1_price`/`buy_2_price`를
+  계산하고, `indicators_df.iloc[-1]`("오늘")의 종가만 `PriceCriteria.close`
+  로 저장 — `decide()`가 실제로 비교하는 값은 오늘 종가 vs 어제 기준
+  지지선이 되어 실제로 하향 돌파가 발생할 수 있게 됨. 히스토리가 1일뿐이면
+  기존처럼 당일 기준으로 안전하게 폴백. `basis` 문자열에 "(전일 종가 기준)"
+  표기를 추가해 대시보드에서도 기준일이 드러나도록 함.
+- `tests/test_price_criteria_generator.py`: 폴백 테스트를 "우연히 통과"하던
+  기존 어서션에서 실제로 보장되는 불변식(전일 종가 기준)으로 재작성,
+  신규 테스트 2건 추가(오늘 종가를 인위적으로 크게 흔들어도 buy_1/buy_2/
+  target_price가 불변임을 확인, 히스토리 1행일 때 당일 기준 폴백 확인).
+
+**2) 스코어링 희석 문제 — 순수 가중평균의 구조적 한계**
+
+- **근본 원인**: `sw1/scoring/integrate.py::compute_quant_score()`가 4개
+  서브스코어(RSI/MACD/볼린저/MA크로스)를 단순 가중평균(각 0.25)만으로
+  합산 — 지표 하나가 극단값(+-1.0)을 찍어도 그 지표의 가중치만큼만
+  (예: 0.25) 기여해 매수 임계값(0.30)을 넘기 어려웠음. 강한 단일 신호가
+  다른 3개의 약한/중립 신호에 항상 희석되는 구조.
+- **수정 (사용자 확인: 제가 제안한 "A안: 합의+지배 혼합" 채택)**: "합의"
+  (기존 가중평균)와 "지배"(절대값 기준 가장 강한 단일 서브스코어)를 각각
+  0.5/0.5로 블렌딩하는 방식으로 교체 — `consensus_weight`/`dominance_weight`
+  를 `ScoringWeights`에 신규 필드로 추가(합이 1.0이어야 함, `validate()`에서
+  강제). 기본값 0.5/0.5는 극단값 하나만으로도 최대 0.5까지 기여할 수 있게
+  해(기존엔 지표 하나로 최대 0.25까지만 가능) 매수 임계값을 단독으로 넘을
+  수 있도록 설계.
+- `tests/test_scoring_integrate.py`: 신규 테스트 4건 — 극단 서브스코어
+  하나만으로 임계값을 넘을 수 있는지, 지배 서브스코어가 절대값 기준 signed
+  max와 일치하는지, consensus/dominance 가중치가 0/1 극단으로도 정확히
+  튜닝 가능한지, 가중치 합이 1.0이 아니면 `validate()`가 거부하는지.
+
+**3) MACD 고정 스케일 플레이스홀더 수정**
+
+- **근본 원인**: `_score_macd()` 호출 시 `scale=1.0`이 하드코딩돼 있어
+  종목별 변동성(주가 절대수준, 평균 MACD 히스토그램 크기)을 전혀 반영하지
+  못함 — 저변동성 종목은 거의 항상 점수 포화, 고변동성 종목은 거의 항상
+  0에 가까운 점수.
+- **수정 (사용자 확인: "예, 같이 고치기" — MACD 히스토그램의 종목별 롤링
+  표준편차로 정규화)**: `sw1/indicators/technical.py::add_macd()`가
+  이미 계산해두고 있던 `MACD_HIST_STD_60`(60일 롤링 표준편차) 컬럼을
+  소비하도록 `compute_quant_score()`를 연결 — 값이 있고 양수면 그 값을
+  스케일로 사용, 없거나 NaN이거나 0/음수면 기존처럼 `scale=1.0`으로 안전
+  폴백.
+- `tests/test_scoring_integrate.py`: 신규 테스트 3건 — 표준편차 컬럼이
+  있을 때 실제로 사용되는지, 없거나 NaN이면 1.0으로 폴백하는지, 0/음수면
+  1.0으로 폴백하는지.
+- `tests/test_technical_indicators.py`: 신규 테스트 1건 — `MACD_HIST_STD_60`
+  컬럼이 워밍업 기간(처음 19개 행) 동안 NaN이었다가 이후 항상 0 이상의
+  유한값인지 확인.
+
+**4) NaN Close 크래시 — 이번 세션에서 새로 발견한 버그 (사용자 요청 범위
+밖이지만, 위 수정들을 완성하기 위해 필요해 진단 후 수정)**
+
+- **발견 경위**: 위 세 가지 수정을 로컬 테스트(전부 통과) 후 GitHub에
+  커밋하고 `historical-backtest` 워크플로를 재실행했더니(run
+  #35672107593) 처음으로 실패: `ValueError: Out of range float values
+  are not JSON compliant: nan` (`scripts/run_historical_backtest.py`의
+  `json.dumps(..., allow_nan=False)`에서 발생).
+- **근본 원인**: 실제 yfinance 3년치 시세에는 간헐적으로 특정 종목의 특정
+  하루에 `Close`가 NaN인 데이터 공백이 존재함. 1번 수정 전에는
+  price_model_1/2가 애초에 한 번도 거래를 하지 않았기 때문에 이 NaN이
+  `Portfolio.buy()`/`mark_to_market()`에 들어갈 일이 없어 지금까지 드러나지
+  않았던 잠재 버그 — 1번 수정으로 실제 거래가 발생하기 시작하면서 처음으로
+  표면화됨. NaN Close가 그날의 `equity`를 오염시키고, 그 값이 분기의
+  마지막 거래일에 걸리면 `bucket_equity_by_period()`/`total_return()`을
+  거쳐 최종 JSON까지 NaN으로 전파되어 `allow_nan=False`에 걸려 전체 실행이
+  크래시. (샌드박스에서 yfinance 접근이 불가해 로컬 합성 데이터에 NaN을
+  인위적으로 주입해 동일한 크래시를 재현·확인함.)
+- **수정**: `scripts/run_historical_backtest.py`의 점수기반 모델 루프와
+  가격기준 모델 루프(`_generate_criteria_rows_for_day`) 양쪽에 "해당 종목의
+  Close가 NaN인 날은 그 종목만 건너뛴다" 가드를 추가(기존 파이프라인 전체에
+  일관된 graceful-degradation 패턴과 동일), 그리고 `main()`에 마지막 방어선
+  `_sanitize_nan()`(결과 dict를 재귀 순회하며 NaN을 `None`으로 치환)을 추가.
+- `tests/test_run_historical_backtest.py`: 신규 회귀 테스트
+  `test_isolated_nan_close_does_not_crash_the_run` — 합성 OHLCV 중앙에
+  NaN Close를 주입해 정확히 동일한 크래시 조건을 재현하고, `main()`이
+  `rc == 0`으로 정상 완료하며 출력 JSON에 리터럴 `NaN` 토큰이 전혀 없음을
+  확인.
+
+**검증**:
+- 로컬 `python -m pytest -q`: 297 passed, 회귀 없음 (신규 10건: 1번 3건 +
+  2번 4건 + 3번 4건... 정확히는 위 각 섹션에 기재된 테스트 전부 포함).
+- 7개 파일(`sw1/criteria/generator.py`, `sw1/scoring/integrate.py`,
+  `sw1/indicators/technical.py`, `tests/test_price_criteria_generator.py`,
+  `tests/test_scoring_integrate.py`, `tests/test_technical_indicators.py`,
+  `scripts/run_historical_backtest.py`, `tests/test_run_historical_backtest.py`
+  — 총 8개) 전부 GitHub 웹 에디터 브라우저 자동화로 커밋, 전부 SHA-256
+  해시로 삽입 내용을 커밋 직전 CodeMirror 단계에서 검증하고, 커밋 후
+  GitHub Contents API로 재검증.
+  - 커밋 도중 두 가지 사고 발생 및 복구: (a) `tests/test_scoring_integrate.py`
+    커밋 시 "Commit changes" 클릭이 화면 재렌더링 중 좌표가 밀려 "새 브랜치
+    생성"으로 잘못 들어갔던 것을 스크린샷으로 즉시 발견해 "main 브랜치에
+    직접 커밋" 라디오를 다시 선택 후 정상 커밋 — 이후 raw fetch로 실제
+    반영 확인. (b) `tests/test_technical_indicators.py` 커밋 버튼 클릭
+    직후 브라우저 창이 일시적으로 끊겨(disconnect) 커밋이 실제로는
+    반영되지 않았던 것을 재확인 후 전체 시퀀스를 처음부터 재실행해 정상
+    커밋. 이후부터는 커밋 버튼 클릭마다 스크린샷으로 "main 브랜치" 라디오
+    선택 상태를 매번 확인하는 방식으로 전환.
+- `historical-backtest` 워크플로 재실행: 1차(run #35672107593)는 위
+  NaN Close 버그로 실패 → NaN 가드 추가 후 2차(run #35673359295, run_number
+  3) 성공.
+- 라이브 대시보드(`https://hyunwoo-ml.github.io/trading-strategy-lab/sw2.html`)
+  직접 확인: "3년 역사적 백테스트" 섹션이 새 수치로 정상 렌더링, 콘솔
+  에러 없음, 마지막 실행 시각이 `2026-09-22T00:47:44+00:00`로 갱신됨.
+
+**3년 백테스트 결과 비교 (이전 세션 → 이번 세션, run #1 → run #3)**:
+
+| 모델 | 이전: 수익률 (거래) | 이번: 수익률 (거래) |
+|---|---|---|
+| baseline | +1.63% (16건) | +19.79% (245건) |
+| technical_only | +4.58% (60건) | +41.42% (324건) |
+| conservative | 0.00% (0건) | +23.93% (145건) |
+| price_model_1 | 0.00% (0건) | +28.00% (123건) |
+| price_model_2 | 0.00% (0건) | +34.92% (167건) |
+
+price_model_1/2가 목표대로 무거래 상태를 벗어났고(각각 123건/167건),
+conservative도 함께 거래가 발생하기 시작함(스코어링 희석 수정의 영향 —
+conservative도 동일한 `compute_quant_score()`를 사용하므로). baseline/
+technical_only도 거래 건수와 수익률이 크게 늘었는데, 이는 세 가지 수정
+전부가 점수 기반 모델(baseline/technical_only/conservative) 모두에
+동일하게 적용되는 `compute_quant_score()`를 공유하기 때문 — 의도된
+전파이며 버그 아님. 수익률이 대체로 큰 폭으로 상승한 것은 신호 발생
+빈도 자체가 늘어난 결과이지, 개별 거래의 승률이나 리스크 관리가
+검증되었다는 의미는 아님(이 백테스트의 기존 한계 — 뉴스/실적발표
+블랙아웃 미반영 등 — 는 그대로 유효).
+
+**알려진 한계 / 후속 고려사항**:
+- 이번 수정으로 거래 빈도와 수익률이 전반적으로 크게 상승했으므로, 다음
+  기회에 사용자가 원하면 (a) 새 매매 빈도가 과도한지(과최적화/노이즈
+  거래 여부) walk-forward IC 재점검, (b) 지배 가중치(0.5)가 너무 공격적인지
+  재검토, (c) NaN Close가 실제로 얼마나 자주 발생하는지(현재 가드는
+  건너뛰기만 할 뿐 빈도를 로깅하지 않음) 파악을 위한 로깅 추가를 고려할
+  수 있음. 사용자 지시 없이 임의로 진행하지 말 것.
+
+**다음 세션이 할 일 갱신**: 이번 세션에서 확인된 이슈 3건 + 신규 발견
+NaN 버그까지 전부 수정 완료. 남은 항목은 기존과 동일하게 1번(KIS 연동,
+여전히 사용자 재요청 전까지 보류)뿐.
