@@ -54,9 +54,11 @@ so the dashboard can show them next to the numbers):
     is forward-looking only (sw1.calendar.events.fetch_next_earnings_date),
     there is no reliable multi-year historical archive to replay.
   - FOMC/CPI macro blackout dates (sw1.calendar.events.MACRO_EVENT_DATES)
-    are currently only hand-entered for 2026, so that filter is
-    effectively a no-op for earlier years -- add prior years' dates there
-    if a more accurate historical read is needed later.
+    are hand-entered for 2023-2026 (2026-09-22: extended back from
+    2026-only to cover this script's full 3-year FETCH_PERIOD window), so
+    this filter is applied faithfully across the whole replay -- add a new
+    year's dates there once that year's schedules are published if
+    FETCH_PERIOD is ever widened past 2023.
   - Volume confirmation, weekly-trend confirmation, market regime (QQQ),
     transaction costs (10bps), and risk-based position sizing ARE all
     replayed faithfully against real historical data, identically to the
@@ -104,9 +106,9 @@ SCOPE_NOTES = [
     "뉴스 비중이 있는 모델(baseline 등)도 이 기간에는 사실상 기술적 지표만으로 판단합니다.",
     "실적 발표일 블랙아웃은 yfinance가 과거 실적 발표일을 안정적으로 제공하지 않아 이 백테스트에는 "
     "반영되지 않습니다 (라이브 파이프라인에는 반영됨).",
-    "FOMC/CPI 매크로 이벤트 블랙아웃 날짜는 현재 2026년 일정만 등록되어 있어, 그 이전 기간에는 사실상 적용되지 않습니다.",
-    "거래량 확인, 주봉 추세, 시장 레짐(QQQ 기준), 거래비용(수수료+슬리피지 10bps), 리스크 기반 포지션 사이징은 "
-    "라이브 파이프라인과 동일한 규칙으로 전 기간에 반영됩니다.",
+    "거래량 확인, 주봉 추세, 시장 레짐(QQQ 기준), 거래비용(수수료+슬리피지 10bps), 리스크 기반 포지션 사이징, "
+    "FOMC/CPI 매크로 이벤트 블랙아웃(2023~2026년 실제 발표일 기준)은 라이브 파이프라인과 동일한 규칙으로 "
+    "전 기간에 반영됩니다.",
     "라이브 페이퍼 트레이딩 포트폴리오(data/sw2/portfolios/*.json)와는 완전히 별개 -- 이 백테스트는 "
     "$100,000 짜리 새 가상 포트폴리오 5개로 과거를 재생할 뿐, 실시간 진행 중인 매매 기록은 전혀 건드리지 않습니다.",
 ]
