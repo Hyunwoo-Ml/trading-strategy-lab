@@ -63,10 +63,48 @@ def test_generate_price_criteria_falls_back_with_short_history():
     short_df = compute_all_technical_indicators(make_mock_ohlcv(n=10))
     params = PriceCriteriaParams(model_name="model_1")
     criteria = generate_price_criteria("AAPL", short_df, params)
-    # BB_LOWER/MA_50 are all NaN with only 10 rows -- must fall back, not crash
-    assert criteria.buy_1_price < criteria.close
+    # BB_LOWER/MA_50 are all NaN with only 10 rows -- must fall back, not crash.
+    # 2026-09-22 (1-day lag): the fallback (reference_close * 0.97) is anchored
+    # to YESTERDAY's close, not to criteria.close (today's) -- so the only
+    # invariant guaranteed by construction is against the reference close.
+    reference_close = float(short_df["Close"].iloc[-2])
+    assert criteria.buy_1_price < reference_close
     assert criteria.buy_2_price <= criteria.buy_1_price
     assert "폴백" in criteria.basis["buy_1"]
+    assert "전일 종가 기준" in criteria.basis["buy_1"]
+
+
+def test_generate_price_criteria_anchors_support_levels_to_reference_day(indicators_df):
+    """The 1-day-lag fix (2026-09-22): buy_1_price/buy_2_price must come from
+    data through YESTERDAY (iloc[-2]), not from today's own row -- otherwise
+    buy_1_price is mathematically always below today's close and a
+    `close <= buy_1_price` entry check can (almost) never fire. Regenerating
+    criteria from indicators_df with today's row perturbed should NOT change
+    buy_1_price/buy_2_price/target_price at all, since none of them should
+    read today's row."""
+    params = PriceCriteriaParams(model_name="model_1", stop_loss_pct=-0.08, reward_risk_ratio=2.0)
+    baseline = generate_price_criteria("AAPL", indicators_df, params)
+
+    perturbed_df = indicators_df.copy()
+    perturbed_df.iloc[-1, perturbed_df.columns.get_loc("Close")] = float(indicators_df["Close"].iloc[-1]) * 1.5
+    perturbed = generate_price_criteria("AAPL", perturbed_df, params)
+
+    assert perturbed.buy_1_price == baseline.buy_1_price
+    assert perturbed.buy_2_price == baseline.buy_2_price
+    assert perturbed.target_price == baseline.target_price
+    # ...but criteria.close itself DOES track today's (perturbed) row, since
+    # that's the value actually compared against buy_1_price/buy_2_price.
+    assert perturbed.close == pytest.approx(float(indicators_df["Close"].iloc[-1]) * 1.5)
+
+
+def test_generate_price_criteria_single_row_falls_back_to_same_day():
+    """With < 2 rows there is no "yesterday" to anchor to -- must degrade to
+    the old same-day behavior instead of crashing (e.g. iloc[-2])."""
+    one_row_df = compute_all_technical_indicators(make_mock_ohlcv(n=1))
+    params = PriceCriteriaParams(model_name="model_1")
+    criteria = generate_price_criteria("AAPL", one_row_df, params)
+    assert criteria.buy_1_price < criteria.close
+    assert "전일 종가 기준" not in criteria.basis["buy_1"]
 
 
 def test_generate_price_criteria_rejects_empty_df():
