@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import pandas as pd
 import pytest
 
-from sw1.validation.backtest import PeriodReturn, bucket_equity_by_period, total_return
+from sw1.validation.backtest import DrawdownResult, PeriodReturn, bucket_equity_by_period, max_drawdown, total_return
 
 
 def _equity_df(rows: list[tuple[str, float]]) -> pd.DataFrame:
@@ -108,3 +108,104 @@ def test_total_return_basic():
 def test_total_return_zero_start_is_none():
     df = _equity_df([("2021-01-04", 0.0), ("2023-12-29", 500.0)])
     assert total_return(df) is None
+
+
+# -- max_drawdown --
+
+
+def test_empty_equity_df_gives_all_none_drawdown():
+    result = max_drawdown(pd.DataFrame(columns=["equity"]))
+    assert result == DrawdownResult(
+        max_drawdown_pct=None, peak_date=None, trough_date=None, peak_equity=None, trough_equity=None
+    )
+
+
+def test_single_row_has_zero_drawdown():
+    df = _equity_df([("2024-01-02", 100_000.0)])
+    result = max_drawdown(df)
+    assert result.max_drawdown_pct == pytest.approx(0.0)
+    assert result.peak_date == result.trough_date == "2024-01-02"
+    assert result.peak_equity == result.trough_equity == 100_000.0
+
+
+def test_flat_curve_has_zero_drawdown():
+    df = _equity_df([("2024-01-02", 100_000.0), ("2024-01-03", 100_000.0), ("2024-01-04", 100_000.0)])
+    result = max_drawdown(df)
+    assert result.max_drawdown_pct == pytest.approx(0.0)
+
+
+def test_monotonic_increase_has_zero_drawdown():
+    df = _equity_df([("2024-01-02", 100_000.0), ("2024-01-03", 110_000.0), ("2024-01-04", 130_000.0)])
+    result = max_drawdown(df)
+    assert result.max_drawdown_pct == pytest.approx(0.0)
+    # every day ties at a 0.0 decline (the running peak is always today's
+    # own equity) -- the tie resolves to the FIRST such day, same as
+    # pandas' idxmin default. Not a meaningful "peak" in a rising curve,
+    # just a deterministic, documented tie-break.
+    assert result.peak_date == "2024-01-02"
+    assert result.trough_date == "2024-01-02"
+
+
+def test_simple_peak_then_trough(monkeypatch=None):
+    df = _equity_df(
+        [
+            ("2024-01-02", 100_000.0),
+            ("2024-01-03", 120_000.0),  # peak
+            ("2024-01-04", 90_000.0),   # trough: -25% off the peak
+            ("2024-01-05", 100_000.0),  # partial recovery, still below peak
+        ]
+    )
+    result = max_drawdown(df)
+    assert result.max_drawdown_pct == pytest.approx(-0.25)
+    assert result.peak_date == "2024-01-03"
+    assert result.peak_equity == 120_000.0
+    assert result.trough_date == "2024-01-04"
+    assert result.trough_equity == 90_000.0
+
+
+def test_worse_earlier_drawdown_beats_a_milder_later_one():
+    # two separate drawdown episodes -- the function must report the WORSE
+    # one (episode 1: -40%), not just the most recent or the final dip.
+    df = _equity_df(
+        [
+            ("2024-01-01", 100_000.0),
+            ("2024-02-01", 60_000.0),   # episode 1 trough: -40% off 100k
+            ("2024-03-01", 150_000.0),  # new all-time high
+            ("2024-04-01", 120_000.0),  # episode 2 trough: -20% off 150k -- milder
+        ]
+    )
+    result = max_drawdown(df)
+    assert result.max_drawdown_pct == pytest.approx(-0.40)
+    assert result.peak_date == "2024-01-01"
+    assert result.trough_date == "2024-02-01"
+
+
+def test_peak_date_is_the_last_day_the_peak_actually_held_not_the_first():
+    df = _equity_df(
+        [
+            ("2024-01-01", 100_000.0),
+            ("2024-01-02", 100_000.0),  # peak repeats -- record holds without a new high
+            ("2024-01-03", 100_000.0),
+            ("2024-01-04", 80_000.0),   # trough: -20%
+        ]
+    )
+    result = max_drawdown(df)
+    assert result.max_drawdown_pct == pytest.approx(-0.20)
+    assert result.peak_date == "2024-01-03"  # last day equity == the peak, not 01-01
+
+
+def test_zero_or_negative_running_peak_does_not_raise():
+    df = _equity_df([("2024-01-01", 0.0), ("2024-01-02", 500.0), ("2024-01-03", 200.0)])
+    result = max_drawdown(df)
+    # first day's running peak is 0 -> guarded to a 0.0 drawdown rather than
+    # dividing by zero; the real decline (500 -> 200, -60%) is still found.
+    assert result.max_drawdown_pct == pytest.approx(-0.60)
+
+
+def test_to_dict_has_expected_keys():
+    result = DrawdownResult(
+        max_drawdown_pct=-0.25, peak_date="2024-01-03", trough_date="2024-01-04",
+        peak_equity=120_000.0, trough_equity=90_000.0,
+    )
+    d = result.to_dict()
+    assert set(d.keys()) == {"max_drawdown_pct", "peak_date", "trough_date", "peak_equity", "trough_equity"}
