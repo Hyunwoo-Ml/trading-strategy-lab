@@ -321,6 +321,21 @@ def _config(period_freq: str) -> dict:
     }
 
 
+def _nan_close_count(ohlcv: pd.DataFrame) -> int:
+    """2026-09-23 follow-up to the NaN-Close guards added 2026-09-22 (see
+    _generate_criteria_rows_for_day / run_backtest's score-model loop /
+    _buy_and_hold_payload docstrings): those guards silently SKIP a
+    ticker-day with a missing yfinance Close so the run never crashes, but
+    nothing recorded how OFTEN that actually happens. Counting it directly
+    off the raw fetched Close column (rather than trying to thread a
+    shared counter through every skip call-site above, which are scattered
+    across three different loops with different shapes) is both simpler
+    and more accurate -- it measures the underlying data-provider gap
+    itself, independent of which code path happened to touch it."""
+    if "Close" not in ohlcv.columns:
+        return 0
+    return int(ohlcv["Close"].isna().sum())
+
 def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> dict:
     """Turns a raw OHLCV history into the same {starting_cash, final_equity,
     total_return, max_drawdown, n_trades, n_trading_days, periods} shape a
@@ -357,10 +372,12 @@ def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> 
 def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
     ticker_data: dict[str, dict] = {}
     failures: list[tuple[str, str]] = []
+    nan_close_days_by_ticker: dict[str, int] = {}
 
     for ticker in M7_TICKERS:
         try:
             ohlcv = fetch_ohlcv(ticker, period=FETCH_PERIOD)
+            nan_close_days_by_ticker[ticker] = _nan_close_count(ohlcv)
             indicators = compute_all_technical_indicators(ohlcv)
             quant_scores = indicators.apply(compute_quant_score, axis=1)
             weekly_trend = _weekly_trend_series(ohlcv)
@@ -380,11 +397,16 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "models": {},
             "benchmarks": {},
             "failures": failures,
+            "data_quality": {
+                "nan_close_days_by_ticker": nan_close_days_by_ticker,
+                "total_nan_close_days": sum(nan_close_days_by_ticker.values()),
+            },
         }
 
     qqq_ohlcv = pd.DataFrame()
     try:
         qqq_ohlcv = fetch_ohlcv(MARKET_INDEX_TICKER, period=FETCH_PERIOD)
+        nan_close_days_by_ticker[MARKET_INDEX_TICKER] = _nan_close_count(qqq_ohlcv)
         qqq_indicators = compute_all_technical_indicators(qqq_ohlcv)
         regime_by_date = _regime_series(qqq_indicators)
     except Exception as exc:  # noqa: BLE001 -- missing market regime just means "no filter", not a crash
@@ -414,6 +436,11 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
                 # 2026-09-22: an isolated NaN Close (yfinance data gap) must
                 # never reach Portfolio.buy()/mark_to_market() -- see the
                 # matching guard in _generate_criteria_rows_for_day for why.
+                # (Frequency of this is measured up front in
+                # nan_close_days_by_ticker via _nan_close_count -- this
+                # branch itself also fires on NaN quant_score, e.g. during
+                # an indicator's warm-up window, which is normal and not
+                # counted as a data-quality issue.)
                 continue
             rows.append(
                 {"ticker": ticker, "close": float(close_value), "quant_score": float(qs), "news_score": None}
@@ -462,6 +489,7 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
                 bench_ohlcv = qqq_ohlcv
             else:
                 bench_ohlcv = fetch_ohlcv(ticker, period=FETCH_PERIOD)
+                nan_close_days_by_ticker[ticker] = _nan_close_count(bench_ohlcv)
             benchmarks_output[ticker] = _buy_and_hold_payload(bench_ohlcv, label, period_freq)
         except Exception as exc:  # noqa: BLE001 -- one bad benchmark ticker must not crash the whole run
             failures.append((ticker, str(exc)))
@@ -472,6 +500,10 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
         "models": models_output,
         "benchmarks": benchmarks_output,
         "failures": failures,
+        "data_quality": {
+            "nan_close_days_by_ticker": nan_close_days_by_ticker,
+            "total_nan_close_days": sum(nan_close_days_by_ticker.values()),
+        },
     }
 
 
@@ -515,6 +547,15 @@ def main() -> int:
         tr = payload["total_return"]
         tr_str = f"{tr:.1%}" if tr is not None else "n/a"
         print(f"  [benchmark] {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, final_equity={payload['final_equity']:.2f}")
+
+    data_quality = result.get("data_quality", {})
+    total_nan_days = data_quality.get("total_nan_close_days", 0)
+    if total_nan_days:
+        nonzero = {t: c for t, c in data_quality.get("nan_close_days_by_ticker", {}).items() if c}
+        breakdown = ", ".join(f"{t}={c}" for t, c in sorted(nonzero.items()))
+        print(f"[backtest] data quality: {total_nan_days} isolated NaN Close day(s) skipped ({breakdown})")
+    else:
+        print("[backtest] data quality: no NaN Close days found in fetched history")
 
     if result["failures"]:
         for ticker, err in result["failures"]:
