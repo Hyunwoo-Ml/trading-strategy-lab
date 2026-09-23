@@ -2,13 +2,20 @@
   "model_name": "price_model_1",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 90000.0,
+  "cash": 80000.0,
   "positions": {
     "AMZN": {
       "ticker": "AMZN",
       "shares": 39.17954415010225,
       "entry_price": 254.97999572753903,
       "entry_date": "2026-09-22",
+      "tranche_count": 1
+    },
+    "GOOGL": {
+      "ticker": "GOOGL",
+      "shares": 29.571087224558816,
+      "entry_price": 337.8299865722656,
+      "entry_date": "2026-09-23",
       "tranche_count": 1
     }
   },
@@ -19,6 +26,15 @@
       "action": "buy_1",
       "shares": 39.17954415010225,
       "price": 254.97999572753903,
+      "cash_delta": -10000.0,
+      "fee": 10.0
+    },
+    {
+      "date": "2026-09-23",
+      "ticker": "GOOGL",
+      "action": "buy_1",
+      "shares": 29.571087224558816,
+      "price": 337.8299865722656,
       "cash_delta": -10000.0,
       "fee": 10.0
     }
@@ -79,6 +95,10 @@
     {
       "date": "2026-09-22",
       "equity": 99990.0
+    },
+    {
+      "date": "2026-09-23",
+      "equity": 99756.28513768906
     }
   ]
 }
