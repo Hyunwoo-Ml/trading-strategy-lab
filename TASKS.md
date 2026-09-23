@@ -1165,3 +1165,78 @@ Contents API로 실제 최신본을 한 번 더 확인할 것 — CDN 캐시 지
 전까지 보류) + 사업화 파이프라인/포스팅 자동화 구상(사용자가 먼저 재개 요청할 때까지 보류) +
 "알려진 한계" 절의 후속 분석 아이디어(사용자 방향 확인 후 진행)뿐. 이번 세션은 여기에 아무것도
 추가하지 않음 — 순수 검증 세션.
+
+---
+
+## 2026-09-22 ~ 09-23 세션 (자동 재개, 스케줄 실행): Max Drawdown(MDD) 지표 추가
+
+**배경**: 직전 세션(RISK_FRACTION 2배 인상)이 남긴 "알려진 한계" 중 "이번 변경은 손절 발동 시
+손실 금액도 함께 커진다는 트레이드오프가 있음 ... MDD 절대값 자체는 커졌을 것 -- 아직 별도로
+확인하지 않음"이라는 미확인 항목을 이번 세션에서 마무리함. KIS 연동/사업화 파이프라인 등 나머지
+백로그 항목은 여전히 사용자 재요청 전까지 보류 상태라, 정책 판단이 필요 없는 순수 분석/진단
+지표 추가로 판단해 사용자 확인 없이 진행(전략 파라미터는 전혀 건드리지 않음).
+
+**구현**:
+- `sw1/validation/backtest.py`: `DrawdownResult` 데이터클래스 + `max_drawdown(equity_df)` 함수
+  신규 추가. 기존 `bucket_equity_by_period`/`total_return`과 동일한 입력 형태(`equity` 컬럼을
+  가진 DatetimeIndex DataFrame)를 받아, 전체 구간 중 "이전 고점 대비 가장 크게 하락한 지점"을
+  계산(단순히 마지막 값과 최고점 비교가 아니라, 회복 이후에도 과거 최악의 하락폭을 계속 추적).
+  고점이 0 이하인 예외 케이스는 0.0으로 안전 폴백. `peak_date`는 해당 고점 값이 마지막으로
+  유지된 날짜(처음 도달한 날이 아님)로 정의.
+- `tests/test_backtest.py`: `max_drawdown` 단위 테스트 10건 추가(빈 입력, 단일 행, 평탄한
+  곡선, 단조 증가, 전형적 고점-저점 케이스, 더 이른 큰 하락이 이후 작은 하락보다 우선 선택되는지,
+  고점 날짜가 마지막 유지일로 잡히는지, 0/음수 고점 가드, `to_dict()` 키 확인).
+- `scripts/run_historical_backtest.py`: `max_drawdown` import 및 5개 트레이딩 모델
+  (`models_output`)과 3개 벤치마크(`benchmarks_output`, `_buy_and_hold_payload`) 양쪽에
+  `"max_drawdown": max_drawdown(equity_df).to_dict()` 필드 추가. `main()`의 콘솔 로그에도
+  `max_drawdown` 값을 함께 출력하도록 `_mdd_str()` 헬퍼 추가.
+- `tests/test_run_historical_backtest.py`: 신규 테스트 2건(`test_each_model_has_max_drawdown_
+  with_expected_shape`, `test_each_benchmark_has_max_drawdown` -- 5개 모델 + 3개 벤치마크 전부
+  `max_drawdown` 필드가 기대 shape로 채워지고 0 이하인지 확인), 기존
+  `test_buy_and_hold_payload_pure_function`에 MDD 값 자체가 정확한 하락 구간(110->105, 130이
+  아니라)을 골라내는지 검증하는 어서션 1건 추가.
+- `docs/sw2.html`: "3년 역사적 백테스트" 섹션의 모델/벤치마크 카드에 "최대 낙폭(MDD)" 줄 추가
+  (고점/저점 날짜는 마우스오버 툴팁으로 노출), 섹션 하단에 MDD가 무엇을 의미하는지 설명하는
+  안내 박스(`mddNoteHtml`) 신규 추가. 기존 카드/노트 렌더링 흐름에 자연스럽게 끼워 넣음(전략
+  판단 로직에는 전혀 손대지 않음).
+
+**푸시 경위 (다음 세션 참고용, 중요)**: `scripts/run_historical_backtest.py`와 `docs/sw2.html`을
+처음에는 기존 확립된 "전체 파일 base64 인코딩 후 청크 삽입" 방식으로 시도했으나, 두 파일 모두
+한글이 포함된 구간에서 브라우저에 붙여넣은 base64 문자열이 로컬 원본과 다른 해시로 검증됨(같은
+자리를 재시도해도 동일하게 틀린 문자로 재현됨 -- 단순 실수가 아니라 특정 한글 음절을 다른
+음절로 잘못 재현하는 패턴). 원인은 수만 자 길이의 base64/한글 텍스트를 통째로 "다시 타이핑"하는
+과정 자체의 신뢰도 문제로 파악. **해결책**: 전체 파일을 다시 인코딩하는 대신, CodeMirror에
+이미 로드되어 있는 원본 문서 텍스트를 그대로 가져와(재입력 없이) 실제로 바뀐 부분만 anchor 기반
+`String.replace()`로 교체하는 방식으로 전환 -- (1) 원본 문서 해시를 GitHub HEAD의 실제 파일
+해시와 먼저 대조해 CodeMirror 내용이 최신임을 확인, (2) 삽입할 한글 조각은 로컬에서 별도로
+base64 인코딩해 브라우저에서 개별적으로 디코딩+해시 검증 후 변수로만 사용(직접 타이핑하지
+않음), (3) 나머지 anchor 텍스트는 전부 영문/ASCII만 사용하거나 CodeMirror에서 방금 읽어온
+텍스트를 그대로 재사용, (4) 모든 교체 적용 후 전체 문서 해시를 로컬에서 사전 계산한 목표
+해시와 대조. 두 파일 모두 이 방식으로 첫 시도에 정확히 일치 확인 후 커밋함. **다음 세션이
+한글이 포함된 대용량 파일을 편집할 때는 처음부터 이 anchor 기반 방식을 기본으로 사용할 것**
+-- 전체 재인코딩은 변경 범위가 작을 때 오히려 불필요한 위험을 늘림.
+
+**검증**:
+- 로컬 `python -m pytest -q`: 319 passed (기존 309 + 신규 10), 회귀 없음.
+- 5개 파일 전부 GitHub Contents API로 `size` 바이트 일치 확인(`sw1/validation/backtest.py`
+  8957, `tests/test_backtest.py` 7964, `scripts/run_historical_backtest.py` 27072,
+  `tests/test_run_historical_backtest.py` 16866, `docs/sw2.html` 64150).
+- `tests` CI 커밋 5건 전부(`pytest`/`build`/`deploy`/`report-build-status` 등) "success" 확인
+  (마지막 `docs/sw2.html` 커밋 기준 4개 체크 전부 success).
+- `historical-backtest` 워크플로 수동 재실행(run #6, run_ts 2026-09-23T01:01:19Z) 성공,
+  `failures: []`. `data/backtest/results.json`을 raw fetch로 직접 확인 -- 5개 모델 +
+  3개 벤치마크 전부 `max_drawdown` 필드가 정상적으로 채워짐: baseline MDD -13.8%, technical_only
+  -19.8%, conservative -9.8%(5개 모델 중 가장 낮음 -- 보수적 설계 그대로 반영), price_model_1
+  -17.8%, price_model_2 -17.9%. 벤치마크는 SPY -18.8%, QQQ -22.8%, TLT -14.8%. 5개 트레이딩
+  모델 전부 QQQ보다 낙폭이 작고, baseline/conservative는 SPY보다도 낙폭이 작음 -- 낙폭 측면에서는
+  현재 모델들이 벤치마크보다 나쁘지 않다는 것이 처음으로 수치로 확인됨(수익률 측면의 격차는
+  기존에 이미 알려진 대로 여전히 존재). 참고: 이번 실행은 3년 트레일링 윈도우가 오늘 날짜
+  기준으로 다시 계산되어 총수익률 수치 자체는 직전 세션(run #5) 기록과 자연스럽게 달라짐(코드
+  변경 때문이 아님) -- baseline +48.3%, technical_only +83.2%, conservative +51.1%,
+  price_model_1 +52.3%, price_model_2 +59.7%, SPY +85.6%, QQQ +109.7%, TLT +4.1%.
+
+**다음 세션이 할 일**: 변동 없음 -- 1번(KIS 연동, 사용자 재요청 전까지 보류) + 사업화
+파이프라인/포스팅 자동화 구상(사용자 재개 요청 전까지 보류)뿐. MDD 수치 자체(예: RISK_FRACTION
+2배 인상 이후 실제 낙폭이 얼마나 커졌는지)를 사용자가 검토하고 싶어하면, 이번에 노출된 수치를
+근거로 사이징 재조정 여부를 사용자와 논의할 것 -- 임의로 파라미터를 되돌리거나 추가로 바꾸지
+말 것.
