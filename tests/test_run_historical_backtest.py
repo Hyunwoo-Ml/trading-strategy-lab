@@ -88,6 +88,37 @@ def test_each_model_has_periods_and_summary_fields(wired_script, monkeypatch):
             assert set(p.keys()) == {"period", "start_date", "end_date", "start_equity", "end_equity", "period_return"}
 
 
+# -- max_drawdown wiring (2026-09-22 follow-up: quantify the RISK_FRACTION
+# 2x sizing change's known trade-off -- bigger position sizes mean bigger
+# equity swings on a stop-loss hit, not just bigger gains) --
+
+
+def test_each_model_has_max_drawdown_with_expected_shape(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script, seed_offset=42)  # volatile enough to guarantee some decline somewhere
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    for name, payload in output["models"].items():
+        assert "max_drawdown" in payload, name
+        mdd = payload["max_drawdown"]
+        assert set(mdd.keys()) == {"max_drawdown_pct", "peak_date", "trough_date", "peak_equity", "trough_equity"}
+        # a real (even if empty-trade) equity curve is never truly empty here
+        # -- mark_to_market runs every day regardless of trades -- so this
+        # should never fall back to the all-None empty-curve case.
+        assert mdd["max_drawdown_pct"] is not None
+        assert mdd["max_drawdown_pct"] <= 0.0  # a decline from a peak is never positive
+
+
+def test_each_benchmark_has_max_drawdown(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script, seed_offset=7)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    for name, payload in output["benchmarks"].items():
+        assert "max_drawdown" in payload, name
+        mdd = payload["max_drawdown"]
+        assert set(mdd.keys()) == {"max_drawdown_pct", "peak_date", "trough_date", "peak_equity", "trough_equity"}
+        assert mdd["max_drawdown_pct"] <= 0.0
+
+
 def test_score_threshold_models_actually_trade_on_volatile_history(wired_script, monkeypatch):
     # sanity check that the score-threshold path (baseline/technical_only)
     # is genuinely wired to sw2.ledger.Portfolio, not just producing an
@@ -325,3 +356,7 @@ def test_buy_and_hold_payload_pure_function(wired_script):
     assert payload["starting_cash"] == wired_script.STARTING_CASH
     assert payload["final_equity"] == pytest.approx(wired_script.STARTING_CASH * 130.0 / 100.0)
     assert payload["total_return"] == pytest.approx(0.3)
+    # peak 100 -> trough 105 dip is never the worst: 110 -> 105 is a -4.5%
+    # decline, smaller in magnitude than the swing off the actual peak (130
+    # is the final value here, so the only real drawdown is 110 -> 105).
+    assert payload["max_drawdown"]["max_drawdown_pct"] == pytest.approx(105.0 / 110.0 - 1.0)
