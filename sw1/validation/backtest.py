@@ -115,3 +115,98 @@ def total_return(equity_df: pd.DataFrame) -> float | None:
     if start_equity == 0:
         return None
     return end_equity / start_equity - 1.0
+
+
+@dataclass
+class DrawdownResult:
+    """The single worst peak-to-trough decline in an equity curve (Max
+    Drawdown / MDD) -- 2026-09-22 follow-up to the RISK_FRACTION 2x sizing
+    change (see TASKS.md): that change was known to make any stop-loss hit
+    bigger in dollar terms (same loss PERCENTAGE of starting cash, but a
+    bigger overall equity swing since positions are now larger), and MDD is
+    the standard way to make "how much bigger" a concrete, comparable
+    number instead of a hand-wave. Deliberately kept in this module (not a
+    new one) since it answers the same kind of question as
+    bucket_equity_by_period/total_return -- summarizing an
+    already-simulated equity curve -- and takes the identical input shape.
+    """
+
+    max_drawdown_pct: float | None  # e.g. -0.23 == a 23% peak-to-trough decline. None only if equity_df is empty.
+    peak_date: str | None
+    trough_date: str | None
+    peak_equity: float | None
+    trough_equity: float | None
+
+    def to_dict(self) -> dict:
+        return {
+            "max_drawdown_pct": self.max_drawdown_pct,
+            "peak_date": self.peak_date,
+            "trough_date": self.trough_date,
+            "peak_equity": self.peak_equity,
+            "trough_equity": self.trough_equity,
+        }
+
+
+def max_drawdown(equity_df: pd.DataFrame) -> DrawdownResult:
+    """Computes the maximum drawdown over the whole equity curve: the
+    largest percentage decline from any running peak to a subsequent
+    trough (not just the final value vs. the all-time high -- a curve that
+    recovers after its worst decline still reports that earlier, deeper
+    decline, since that's the actual worst-case swing an investor living
+    through the whole period would have felt).
+
+    `equity_df` must have a DatetimeIndex and an "equity" column (the same
+    shape sw2.ledger.Portfolio.equity_df() produces, and the same shape
+    bucket_equity_by_period/total_return already take).
+
+    A flat or monotonically-increasing curve has a max drawdown of exactly
+    0.0 (never negative) -- the running peak never gets outrun by a lower
+    equity value. `peak_date` is the actual day the running peak used for
+    the worst decline was SET (the last day at-or-before the trough that
+    equity actually equaled that peak value), not merely the first day the
+    curve happened to be at-or-above it.
+
+    Returns a DrawdownResult with every field None if `equity_df` is empty.
+    """
+    if equity_df.empty:
+        return DrawdownResult(
+            max_drawdown_pct=None, peak_date=None, trough_date=None, peak_equity=None, trough_equity=None
+        )
+
+    df = equity_df.sort_index()
+    equity = df["equity"].astype(float)
+    running_max = equity.cummax()
+
+    # drawdown[i] = how far equity[i] sits below the highest equity seen up
+    # to and including day i, as a (non-positive) fraction of that peak.
+    # Guarded against a zero-or-negative running peak (no realistic
+    # portfolio starts there, but dividing by it would raise/±inf instead
+    # of degrading gracefully like the rest of this module does).
+    drawdown = pd.Series(
+        [(e / rm - 1.0) if rm > 0 else 0.0 for e, rm in zip(equity, running_max)],
+        index=equity.index,
+    )
+
+    trough_idx = drawdown.idxmin()
+    trough_equity = float(equity.loc[trough_idx])
+    max_dd = float(drawdown.loc[trough_idx])
+    peak_equity = float(running_max.loc[trough_idx])
+
+    # The running peak can hold the same value across many days before a
+    # new high is set -- walk back from the trough to the LAST day equity
+    # actually equaled that peak (exact match is safe here: peak_equity was
+    # read directly off some prior equity value via cummax, never
+    # recomputed by arithmetic, so it compares bit-for-bit equal).
+    equity_up_to_trough = equity.loc[:trough_idx]
+    peak_idx = equity_up_to_trough[equity_up_to_trough == peak_equity].index[-1]
+
+    def _date_str(idx) -> str:
+        return idx.date().isoformat() if hasattr(idx, "date") else str(idx)
+
+    return DrawdownResult(
+        max_drawdown_pct=max_dd,
+        peak_date=_date_str(peak_idx),
+        trough_date=_date_str(trough_idx),
+        peak_equity=peak_equity,
+        trough_equity=trough_equity,
+    )
