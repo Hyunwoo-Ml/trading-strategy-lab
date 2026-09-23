@@ -360,3 +360,80 @@ def test_buy_and_hold_payload_pure_function(wired_script):
     # decline, smaller in magnitude than the swing off the actual peak (130
     # is the final value here, so the only real drawdown is 110 -> 105).
     assert payload["max_drawdown"]["max_drawdown_pct"] == pytest.approx(105.0 / 110.0 - 1.0)
+
+
+# -- data_quality / NaN Close frequency (2026-09-23 follow-up) --
+#
+# The 2026-09-22 guards above (test_isolated_nan_close_does_not_crash_the_run,
+# test_benchmark_nan_close_is_dropped_not_crashed) only prove a NaN Close is
+# safely SKIPPED, not how often it actually happens. These tests cover the
+# separate _nan_close_count() measurement and the "data_quality" field it
+# feeds, added so a future session (or 현우) can see the underlying
+# yfinance data-gap frequency directly instead of it being silently
+# swallowed by the skip guards.
+
+def test_nan_close_count_helper():
+    idx = pd.bdate_range("2024-01-01", periods=5)
+    clean = pd.DataFrame({"Close": [100.0, 101.0, 102.0, 103.0, 104.0]}, index=idx)
+    assert script._nan_close_count(clean) == 0
+
+    with_gaps = pd.DataFrame({"Close": [100.0, np.nan, 102.0, np.nan, 104.0]}, index=idx)
+    assert script._nan_close_count(with_gaps) == 2
+
+    no_close_column = pd.DataFrame({"Open": [1.0, 2.0]})
+    assert script._nan_close_count(no_close_column) == 0
+
+
+def test_data_quality_reports_zero_when_history_is_clean(wired_script, monkeypatch):
+    # Clean synthetic history still has NaN quant_score/indicator values
+    # during each ticker's warm-up window (rolling windows need lookback) --
+    # data_quality must report zero regardless, since it measures NaN
+    # *Close* prices specifically, not warm-up NaNs in derived indicators.
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+
+    dq = output["data_quality"]
+    assert dq["total_nan_close_days"] == 0
+    assert set(dq["nan_close_days_by_ticker"].keys()) == {
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "QQQ", "SPY", "TLT",
+    }
+    assert all(count == 0 for count in dq["nan_close_days_by_ticker"].values())
+
+
+def test_data_quality_counts_isolated_nan_close_days(wired_script, monkeypatch):
+    # Same NaN-injection shape as test_isolated_nan_close_does_not_crash_
+    # the_run: every fetched ticker (7 M7 names + QQQ for the market-regime
+    # fetch + SPY/TLT for the benchmarks -- QQQ's own benchmark entry
+    # reuses the regime fetch rather than fetching again) gets exactly one
+    # NaN Close planted at the same relative position, so each should be
+    # counted exactly once and the total should be exactly 10.
+    def fetch_with_one_nan_close(ticker, period="3y"):
+        df = _fake_ohlcv(seed=abs(hash(ticker)) % 1000, vol=6.0)
+        df = df.copy()
+        df.iloc[len(df) // 2, df.columns.get_loc("Close")] = float("nan")
+        return df
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", fetch_with_one_nan_close)
+    rc = wired_script.main()
+    assert rc == 0
+
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    dq = output["data_quality"]
+    assert dq["total_nan_close_days"] == 10
+    assert all(count == 1 for count in dq["nan_close_days_by_ticker"].values())
+    assert set(dq["nan_close_days_by_ticker"].keys()) == {
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "QQQ", "SPY", "TLT",
+    }
+
+
+def test_data_quality_present_even_when_all_tickers_fail(wired_script, monkeypatch):
+    # run_backtest()'s early-return path (no ticker_data at all) must still
+    # produce a well-formed data_quality field so dashboard/consumer code
+    # never has to special-case a totally-failed run.
+    def always_fails(ticker, period="3y"):
+        raise RuntimeError("simulated total outage")
+
+    monkeypatch.setattr(wired_script, "fetch_ohlcv", always_fails)
+    result = wired_script.run_backtest()
+    assert result["data_quality"] == {"nan_close_days_by_ticker": {}, "total_nan_close_days": 0}
