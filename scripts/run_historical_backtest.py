@@ -93,7 +93,7 @@ from sw1.indicators.technical import compute_all_technical_indicators  # noqa: E
 from sw1.indicators.weekly import resample_to_weekly  # noqa: E402
 from sw1.market.regime import MARKET_INDEX_TICKER  # noqa: E402
 from sw1.scoring.integrate import compute_quant_score  # noqa: E402
-from sw1.validation.backtest import bucket_equity_by_period, total_return  # noqa: E402
+from sw1.validation.backtest import bucket_equity_by_period, max_drawdown, total_return  # noqa: E402
 from sw2.ledger import Portfolio  # noqa: E402
 from sw2.models import default_registry  # noqa: E402
 from sw2.price_criteria_model import MarketContext, PriceCriteriaModel  # noqa: E402
@@ -323,11 +323,11 @@ def _config(period_freq: str) -> dict:
 
 def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> dict:
     """Turns a raw OHLCV history into the same {starting_cash, final_equity,
-    total_return, n_trades, n_trading_days, periods} shape a real model
-    produces, so the dashboard's existing per-model rendering code can
-    treat a benchmark exactly like a model without a parallel code path.
-    n_trades is always 1 -- the single day-one purchase -- there is no
-    selling, rebalancing, or re-entry.
+    total_return, max_drawdown, n_trades, n_trading_days, periods} shape a
+    real model produces, so the dashboard's existing per-model rendering
+    code can treat a benchmark exactly like a model without a parallel code
+    path. n_trades is always 1 -- the single day-one purchase -- there is
+    no selling, rebalancing, or re-entry.
 
     2026-09-22: a benchmark's Close can carry the same isolated NaN gaps a
     stock ticker's can (see _generate_criteria_rows_for_day's docstring for
@@ -347,6 +347,7 @@ def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> 
         "starting_cash": STARTING_CASH,
         "final_equity": float(equity_df["equity"].iloc[-1]),
         "total_return": total_return(equity_df),
+        "max_drawdown": max_drawdown(equity_df).to_dict(),
         "n_trades": 1,
         "n_trading_days": len(equity_df),
         "periods": [p.to_dict() for p in periods],
@@ -445,6 +446,7 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "starting_cash": portfolio.starting_cash,
             "final_equity": float(equity_df["equity"].iloc[-1]) if not equity_df.empty else portfolio.starting_cash,
             "total_return": total_return(equity_df),
+            "max_drawdown": max_drawdown(equity_df).to_dict(),
             "n_trades": len(portfolio.trades),
             "n_trading_days": len(equity_df),
             "periods": [p.to_dict() for p in periods],
@@ -498,17 +500,21 @@ def main() -> int:
         json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8"
     )
 
+    def _mdd_str(payload: dict) -> str:
+        mdd = payload.get("max_drawdown", {}).get("max_drawdown_pct")
+        return f"{mdd:.1%}" if mdd is not None else "n/a"
+
     n_models = len(result["models"])
     n_benchmarks = len(result.get("benchmarks", {}))
     print(f"[backtest] {n_models} models + {n_benchmarks} benchmarks backtested over {FETCH_PERIOD} history ({PERIOD_FREQ} periods)")
     for name, payload in result["models"].items():
         tr = payload["total_return"]
         tr_str = f"{tr:.1%}" if tr is not None else "n/a"
-        print(f"  {name}: total_return={tr_str}, final_equity={payload['final_equity']:.2f}, trades={payload['n_trades']}")
+        print(f"  {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, final_equity={payload['final_equity']:.2f}, trades={payload['n_trades']}")
     for name, payload in result.get("benchmarks", {}).items():
         tr = payload["total_return"]
         tr_str = f"{tr:.1%}" if tr is not None else "n/a"
-        print(f"  [benchmark] {name}: total_return={tr_str}, final_equity={payload['final_equity']:.2f}")
+        print(f"  [benchmark] {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, final_equity={payload['final_equity']:.2f}")
 
     if result["failures"]:
         for ticker, err in result["failures"]:
