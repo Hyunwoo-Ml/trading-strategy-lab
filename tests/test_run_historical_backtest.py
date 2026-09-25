@@ -399,6 +399,9 @@ def test_data_quality_reports_zero_when_history_is_clean(wired_script, monkeypat
         "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "QQQ", "SPY", "TLT",
     }
     assert all(count == 0 for count in dq["nan_close_days_by_ticker"].values())
+    # 2026-09-25: no NaN Close anywhere -> the dates breakdown should be
+    # empty too (not populated with empty-list entries for every ticker).
+    assert dq["nan_close_dates_by_ticker"] == {}
 
 
 def test_data_quality_counts_isolated_nan_close_days(wired_script, monkeypatch):
@@ -425,6 +428,30 @@ def test_data_quality_counts_isolated_nan_close_days(wired_script, monkeypatch):
     assert set(dq["nan_close_days_by_ticker"].keys()) == {
         "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "QQQ", "SPY", "TLT",
     }
+    # 2026-09-25: every ticker got exactly one NaN Close planted at the same
+    # relative row index -- but each ticker's own bdate_range starts fresh
+    # from "2023-01-02", so with an IDENTICAL length/offset the resulting
+    # calendar date lands on the same day for every one of the 10 sources.
+    dates_by_ticker = dq["nan_close_dates_by_ticker"]
+    assert set(dates_by_ticker.keys()) == {
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "QQQ", "SPY", "TLT",
+    }
+    assert all(len(ds) == 1 for ds in dates_by_ticker.values())
+    all_dates = {ds[0] for ds in dates_by_ticker.values()}
+    assert len(all_dates) == 1  # same synthetic date across every source, as expected
+
+
+def test_nan_close_dates_helper():
+    idx = pd.bdate_range("2024-01-01", periods=5)
+    clean = pd.DataFrame({"Close": [100.0, 101.0, 102.0, 103.0, 104.0]}, index=idx)
+    assert script._nan_close_dates(clean) == []
+
+    with_gaps = pd.DataFrame({"Close": [100.0, np.nan, 102.0, np.nan, 104.0]}, index=idx)
+    dates = script._nan_close_dates(with_gaps)
+    assert dates == [idx[1].date().isoformat(), idx[3].date().isoformat()]
+
+    no_close_column = pd.DataFrame({"Open": [1.0, 2.0]})
+    assert script._nan_close_dates(no_close_column) == []
 
 
 def test_data_quality_present_even_when_all_tickers_fail(wired_script, monkeypatch):
@@ -436,4 +463,8 @@ def test_data_quality_present_even_when_all_tickers_fail(wired_script, monkeypat
 
     monkeypatch.setattr(wired_script, "fetch_ohlcv", always_fails)
     result = wired_script.run_backtest()
-    assert result["data_quality"] == {"nan_close_days_by_ticker": {}, "total_nan_close_days": 0}
+    assert result["data_quality"] == {
+        "nan_close_days_by_ticker": {},
+        "nan_close_dates_by_ticker": {},
+        "total_nan_close_days": 0,
+    }
