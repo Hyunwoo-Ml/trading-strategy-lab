@@ -79,3 +79,18 @@ def filter_recent_entries(
             kept.append(entry)
     kept.sort(key=lambda e: e["date"])
     return kept
+
+
+def latest_entry_date(entries: list[dict]) -> date | None:
+    """2026-09-25: returns the most recent parseable date among `entries`
+    (the {"date", "text"} dicts read_log() returns), or None if none of them
+    have a parseable date (including an empty list).
+
+    Unlike filter_recent_entries, this deliberately ignores the scoring
+    window -- it's for staleness reporting ("N days since the last news
+    input"), which needs to keep working even after every entry has aged
+    out of the window (that's exactly when a "no news yet" reminder is most
+    useful). Callers pass the FULL unfiltered log here, not the output of
+    filter_recent_entries."""
+    dates = [d for d in (_parse_date(e.get("date", "")) for e in entries) if d is not None]
+    return max(dates) if dates else None
