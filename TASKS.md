@@ -1534,3 +1534,51 @@ NaN Close가 다시 나타나면 `nan_close_dates_by_ticker`에서 바로 날짜
 판단 필요. NaN Close 데이터 품질 건은 로깅 확장(지난 세션)과 대시보드 노출(이번 세션)
 양쪽 다 완료 — 이 항목은 백로그에서 제거 가능. 재발 시 자동으로 화면에 뜨므로 별도
 모니터링 불필요.
+
+## 2026-09-25 세션 (이어서 3): SW1 대시보드에 뉴스/시황 입력 최신성(staleness) 안내 추가
+
+**배경**: 수동 뉴스/시황 입력(`sw1/news/input/{TICKER}.jsonl`, `market/GENERAL.jsonl`)은
+14일 스코어링 윈도우가 지나면 `news_score`가 조용히 `None`으로 돌아가고, 화면에는 "데이터
+없음"만 보일 뿐 "입력한 지 며칠이나 지났는지"는 어디에도 남지 않았음. 스코어링 로직이나
+전략 파라미터는 전혀 건드리지 않는 순수 진단용 정보라 정책 판단 없이 바로 진행.
+
+**변경 내용**: 5개 파일, 총 5커밋.
+- `sw1/news/log.py`: `latest_entry_date()` 추가 — `read_log()`가 반환한 항목들 중 파싱 가능한
+  최신 날짜를 반환 (없으면 `None`). `filter_recent_entries()`와 달리 14일 윈도우를 의도적으로
+  무시함 — 윈도우를 벗어나 `news_score`가 `None`으로 돌아간 직후가 바로 "새 입력이 필요하다"는
+  안내가 가장 유용한 시점이기 때문.
+- `tests/test_news_log.py`: 위 함수에 대한 테스트 5건 추가 (빈 리스트, 순서 무관 최댓값,
+  윈도우 무시 확인, 파싱 불가 항목 스킵, 전부 파싱 불가 시 `None`).
+- `scripts/collect_daily_data.py`: `_collect_news_staleness()` 추가 — M7 티커별로 자신의 로그와
+  공용 GENERAL 로그 중 더 최근 날짜를 기준으로 "오늘 - 최신 입력일" 일수를 계산. 한 번도 입력이
+  없었던 티커는 `None` (화면의 "준비 중" 상태와 구분). `_collect_news_scores()`와 완전히
+  독립적으로 동작하며 `main()`에서 `data/signals/latest.csv`에 `news_days_ago` 컬럼으로 추가.
+- `tests/test_collect_daily_data.py`: 위 함수에 대한 테스트 6건 추가 (미입력 시 None, 자기 로그
+  기준 계산, 14일 윈도우 무시 확인, 두 로그 중 최신 것 사용, GENERAL만 있어도 전 티커에 적용,
+  당일 입력 시 0일).
+- `docs/index.html`: `NEWS_WINDOW_DAYS`(=14, `sw1/news/log.py`와 동일 값을 미러링) 상수와
+  `newsStalenessNote()` 함수 추가. `buildM7Card()`의 카드 푸터 바로 아래에 삽입. SW2 대시보드의
+  NaN Close 안내와 동일한 설계 원칙 적용 — `news_days_ago`가 14일을 초과할 때만 노출, 그 외에는
+  완전히 침묵 (매 카드마다 항상 일수를 보여주면 시각적 소음만 늘어남).
+
+**검증**:
+- 로컬 `python -m pytest` 전체 그린 (308 passed).
+- `docs/index.html` 변경분은 jsdom으로 별도 렌더링 테스트 — 미입력/신선(5일)/경계값(14일)/
+  경과(21일)/7종목 중 1종목만 경과, 5가지 시나리오 모두 의도대로 통과.
+- 5커밋 전부 원본 대비 SHA-256 완전 일치 확인 후 push, 이후 `raw.githubusercontent.com`에서
+  커밋 SHA로 재확인 (byte-exact): `ea6a59e`(log.py), `d1a103e`(test_news_log.py),
+  `2b99ec0`(collect_daily_data.py), `f9060d2`(test_collect_daily_data.py), `080fe89`(index.html).
+- 5커밋 전부 GitHub Actions 체크 4종(`pytest`, `build`, `deploy`, `report-build-status`) 모두
+  `success` 확인.
+- 실 배포 대시보드(`https://hyunwoo-ml.github.io/trading-strategy-lab/`) 접속 확인 — 콘솔
+  에러 없음, 예상대로 경고 문구 미노출. 이유: 이번 변경 전 마지막 `collect-daily-data` 실행
+  (09-24 22:06 UTC)의 `data/signals/latest.csv`에는 아직 `news_days_ago` 컬럼이 없음 —
+  `newsStalenessNote()`가 `undefined`를 `parseNumOrNull()`로 안전하게 `null` 처리해 조용히
+  아무것도 렌더링하지 않는 것으로, 설계대로 동작. 다음 `collect-daily-data.yml` 스케줄 실행부터
+  실제 컬럼 값이 채워짐.
+
+**다음 세션이 할 일**: 변동 없음 — 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화)은 여전히
+사용자 지시 대기. 3번(지배 가중치 재검토)도 여전히 스코어링 로직 변경이라 사용자 판단 필요.
+뉴스 최신성 안내 기능은 이번 세션에 백엔드+테스트+대시보드까지 전부 완료 — 다음
+`collect-daily-data` 실행 후 실제 데이터로 한 번 더 육안 확인해볼 것 (경고가 뜰 일이 없는 게
+정상이지만, 혹시 며칠간 입력이 없었던 티커가 있다면 이번에 처음으로 화면에 노출될 수 있음).
