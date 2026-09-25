@@ -1,6 +1,12 @@
 from datetime import date
 
-from sw1.news.log import NEWS_WINDOW_DAYS, append_entry, filter_recent_entries, read_log
+from sw1.news.log import (
+    NEWS_WINDOW_DAYS,
+    append_entry,
+    filter_recent_entries,
+    latest_entry_date,
+    read_log,
+)
 
 
 def test_read_log_missing_file_returns_empty_list(tmp_path):
@@ -87,3 +93,37 @@ def test_filter_recent_entries_returns_sorted_oldest_first():
 
 def test_default_window_days_is_14():
     assert NEWS_WINDOW_DAYS == 14
+
+
+def test_latest_entry_date_empty_list_returns_none():
+    assert latest_entry_date([]) is None
+
+
+def test_latest_entry_date_picks_max_regardless_of_order():
+    entries = [
+        {"date": "2026-09-10", "text": "a"},
+        {"date": "2026-09-15", "text": "c"},
+        {"date": "2026-09-12", "text": "b"},
+    ]
+    assert latest_entry_date(entries) == date(2026, 9, 15)
+
+
+def test_latest_entry_date_ignores_the_scoring_window():
+    # A date far older than any 14-day window is still a valid "latest" if
+    # it's the only entry -- staleness reporting must not depend on
+    # filter_recent_entries having been applied first.
+    entries = [{"date": "2025-01-01", "text": "very old"}]
+    assert latest_entry_date(entries) == date(2025, 1, 1)
+
+
+def test_latest_entry_date_skips_unparseable_dates():
+    entries = [
+        {"date": "not-a-date", "text": "bad"},
+        {"date": "2026-09-10", "text": "good"},
+    ]
+    assert latest_entry_date(entries) == date(2026, 9, 10)
+
+
+def test_latest_entry_date_all_unparseable_returns_none():
+    entries = [{"date": "not-a-date", "text": "bad"}]
+    assert latest_entry_date(entries) is None
