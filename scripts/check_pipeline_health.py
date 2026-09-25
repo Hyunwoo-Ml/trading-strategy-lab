@@ -181,8 +181,16 @@ def build_report(
 
 def main() -> int:
     now = datetime.now(timezone.utc)
-    sw1 = check_sw1_freshness(now=now)
-    sw2 = check_sw2_freshness(now=now)
+    # Pass the module-level constants explicitly (rather than relying on
+    # check_sw1_freshness/check_sw2_freshness's own default parameter
+    # values) so that tests can monkeypatch script.SIGNALS_CSV / EQUITY_DIR
+    # and have main() actually see the patched paths -- a default
+    # parameter value (`csv_path: Path = SIGNALS_CSV`) is bound once at
+    # function-definition time, so monkeypatching the module attribute
+    # later has no effect on it unless the caller re-reads the current
+    # global value like this.
+    sw1 = check_sw1_freshness(csv_path=SIGNALS_CSV, now=now)
+    sw2 = check_sw2_freshness(equity_dir=EQUITY_DIR, models=MODELS, now=now)
     report = build_report(sw1, sw2)
 
     print(f"SW1: ok={sw1.ok} last_date={sw1.last_date} days_stale={sw1.days_stale} error={sw1.error}")
