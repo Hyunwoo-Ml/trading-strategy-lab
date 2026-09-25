@@ -35,12 +35,18 @@ Output layout (all under data/, gitignored patterns updated to allow these):
                                       (sw1.calendar.events), for SW2's event blackout
   data/news/cache.json           -- per-ticker {entries_hash, news_score, items} so an
                                      unchanged windowed view isn't re-billed every weekday
+
+2026-09-25: `data/signals/latest.csv` also gets a `news_days_ago` column now
+(see _collect_news_staleness below) -- a read-only staleness signal so the
+dashboard can flag "N일간 뉴스 입력 없음" instead of the manual news-input
+workflow silently going stale with no visible reminder. Purely diagnostic;
+never affects news_score or any trading decision.
 """
 from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -51,7 +57,7 @@ from sw1.calendar.events import fetch_next_earnings_date  # noqa: E402
 from sw1.data.yahoo import M7_TICKERS, fetch_m7_snapshot, fetch_ohlcv  # noqa: E402
 from sw1.indicators.technical import compute_all_technical_indicators  # noqa: E402
 from sw1.market.regime import MARKET_INDEX_TICKER, compute_market_regime  # noqa: E402
-from sw1.news.log import filter_recent_entries, read_log  # noqa: E402
+from sw1.news.log import filter_recent_entries, latest_entry_date, read_log  # noqa: E402
 from sw1.news.scorer import AnthropicKeyMissing, score_ticker_if_changed  # noqa: E402
 from sw1.scoring.integrate import compute_quant_score  # noqa: E402
 
@@ -166,6 +172,34 @@ def _collect_news_scores() -> dict[str, float | None]:
     return news_scores
 
 
+def _collect_news_staleness(today: date) -> dict[str, int | None]:
+    """2026-09-25: for each M7 ticker, how many days ago the most recent
+    commentary entry was made -- from that ticker's own log OR the shared
+    market-wide GENERAL log, whichever is more recent.
+
+    Deliberately independent of _collect_news_scores() and of the 14-day
+    scoring window: an entry that has aged out of the window and made
+    news_score go back to None is exactly the case where 현우 most needs a
+    "you haven't added news in a while" reminder, so this keeps counting
+    past the window instead of resetting to "no data" the moment scoring
+    stops using it.
+
+    None means neither log has ever had a single parseable-date entry for
+    that ticker (i.e. genuinely nothing has ever been submitted) -- the
+    dashboard already has a separate "준비 중" state for that case and
+    doesn't need a day count. Read-only / diagnostic, like
+    scripts/run_historical_backtest.py's data_quality fields -- never
+    affects any score or trading decision."""
+    general_latest = latest_entry_date(read_log(NEWS_GENERAL_LOG_PATH))
+
+    staleness: dict[str, int | None] = {}
+    for ticker in M7_TICKERS:
+        ticker_latest = latest_entry_date(read_log(NEWS_INPUT_DIR / f"{ticker}.jsonl"))
+        candidates = [d for d in (ticker_latest, general_latest) if d is not None]
+        staleness[ticker] = (today - max(candidates)).days if candidates else None
+    return staleness
+
+
 def main() -> int:
     for d in (OHLCV_DIR, INDICATORS_DIR, SIGNALS_DIR, MARKET_DIR):
         d.mkdir(parents=True, exist_ok=True)
@@ -173,6 +207,7 @@ def main() -> int:
     _collect_market_regime()
     _collect_earnings_dates()
     news_scores = _collect_news_scores()
+    news_days_ago = _collect_news_staleness(datetime.now(timezone.utc).date())
 
     run_ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
     snapshot = fetch_m7_snapshot()
@@ -206,6 +241,7 @@ def main() -> int:
                 "ma_cross": last_row.get("MA_CROSS"),
                 "quant_score": quant_score,
                 "news_score": news_score,  # None until sw1/news/input/{ticker}.txt has real commentary
+                "news_days_ago": news_days_ago.get(ticker),  # None if never submitted; see _collect_news_staleness
             }
         )
 
