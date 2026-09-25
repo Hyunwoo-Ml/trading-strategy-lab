@@ -128,6 +128,15 @@
     animation:pulse-dot 2.2s ease-in-out infinite;
     flex-shrink:0;
   }
+  .status-dot.stale{
+    background:var(--amber);
+    box-shadow:0 0 8px var(--amber);
+  }
+  .status-dot.error{
+    background:var(--red);
+    box-shadow:0 0 8px var(--red);
+    animation:none;
+  }
   @keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
   .desc{
     font-size:var(--fs-base);
@@ -584,7 +593,7 @@
           <div class="brand-name">Trading Strategy Lab<span class="mono-tag">SW1 · QUANT SIGNALS</span></div>
         </div>
       </div>
-      <div class="status-pill"><span class="status-dot"></span><span id="last-updated">데이터 불러오는 중…</span></div>
+      <div class="status-pill"><span class="status-dot" id="status-dot"></span><span id="last-updated">데이터 불러오는 중…</span></div>
     </div>
     <div class="desc">기술적 지표(RSI · MACD · Bollinger Bands · 이동평균 교차)와 뉴스 감성 점수를 결합한 퀀트 신호로 NASDAQ 대형 기술주 7종목을 평가하고, 종목별 사용자 정의 매수/목표가 기준을 매일 재계산합니다.</div>
     <div class="meta-row">
@@ -649,6 +658,26 @@
   // decide when scripts/collect_daily_data.py's news_days_ago column
   // (added same date) is worth flagging as "stale" on the dashboard.
   var NEWS_WINDOW_DAYS = 14;
+
+  // 2026-09-25: collect-daily-data.yml runs Mon-Fri at 22:00 UTC, so the
+  // normal maximum gap between two successful runs is the Fri->Mon weekend
+  // (3 calendar days). STALE_THRESHOLD_DAYS adds 1 day of slack for holiday
+  // timing / CI scheduling jitter before the status pill flags the pipeline
+  // as stuck -- this is purely a "has the automation silently stopped
+  // running" indicator (현우 previously had no way to notice a broken
+  // scheduled workflow short of manually checking dates), never a trading
+  // signal.
+  var STALE_THRESHOLD_DAYS = 4;
+
+  function pipelineDaysStale(lastRunDate){
+    // whole calendar days between lastRunDate and "now", using UTC
+    // date-only components so time-of-day differences don't cause
+    // off-by-one flapping right around midnight.
+    var a = Date.UTC(lastRunDate.getUTCFullYear(), lastRunDate.getUTCMonth(), lastRunDate.getUTCDate());
+    var now = new Date();
+    var b = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    return Math.round((b - a) / 86400000);
+  }
 
   var TICKER_NAMES = {
     AAPL: "Apple Inc.",
@@ -968,17 +997,22 @@
       // last-updated timestamp from run_ts
       var runTs = rows[0].run_ts;
       var lu = document.getElementById("last-updated");
+      var statusDot = document.getElementById("status-dot");
       if(runTs){
         var d = new Date(runTs);
         if(!isNaN(d.getTime())){
+          var staleDays = pipelineDaysStale(d);
+          var isStale = staleDays > STALE_THRESHOLD_DAYS;
+          if(statusDot) statusDot.classList.toggle("stale", isStale);
+          var stalePrefix = isStale ? "⚠ 데이터 갱신 " + staleDays + "일째 지연 — " : "";
           try{
             var formatted = new Intl.DateTimeFormat("ko-KR", {
               year:"numeric", month:"long", day:"numeric", weekday:"short",
               hour:"2-digit", minute:"2-digit", timeZone:"Asia/Seoul"
             }).format(d);
-            lu.textContent = formatted + " (KST) 기준 최신 데이터";
+            lu.textContent = stalePrefix + formatted + " (KST) 기준 " + (isStale ? "데이터" : "최신 데이터");
           }catch(e){
-            lu.textContent = runTs + " 기준 최신 데이터";
+            lu.textContent = stalePrefix + runTs + " 기준 " + (isStale ? "데이터" : "최신 데이터");
           }
         } else {
           lu.textContent = runTs + " 기준 최신 데이터";
@@ -997,6 +1031,8 @@
       document.getElementById("signals-content").innerHTML = html;
     }).catch(function(err){
       document.getElementById("last-updated").textContent = "업데이트 시각 확인 불가";
+      var errDot = document.getElementById("status-dot");
+      if(errDot){ errDot.classList.remove("stale"); errDot.classList.add("error"); }
       document.getElementById("signals-content").innerHTML = stateBox(
         "시그널 데이터를 불러올 수 없습니다",
         "data/signals/latest.csv 를 확인해 주세요 (" + err.message + ")",
