@@ -1427,3 +1427,64 @@ walk-forward IC는 다른 것을 측정하며, IC 하락이 소폭이고 부호 
 갱신되었으므로, 사용자가 원하면 AAPL/NVDA/TSLA IC 하락 원인을 dominance_weight 관점에서
 더 파고들 수 있음 — 역시 사용자 지시 전까지는 임의로 스코어링 로직을 변경하지 않음. "특정
 하루에 10개 티커 전부 NaN Close" 데이터 품질 신호 건도 계속 대기 중.
+
+
+## 2026-09-25 세션 (이어서): NaN Close 발생 날짜 로깅 확장 — "특정 하루에 10개 티커 전부" 패턴 후속 조치
+
+**배경**: 직전 walk-forward 재점검 세션의 TASKS.md 기록에 "특정 하루에 10개 티커 전부 NaN
+Close" 패턴이 흥미로운 데이터 품질 신호로 남아 있었음 (2026-09-23 historical-backtest #7:
+M7 7종목 + QQQ + SPY + TLT 총 10개 fetch 지점 전부에서 정확히 1건씩, 합계 10건 — 개별
+종목 무작위 결측이 아니라 특정 날짜의 공급자 이슈로 추정되었으나 정확한 날짜는 기록되지
+않아 확인 불가능했음). 사용자가 "자체 개선활동 진행 마저 해달라"고 지시하여, 백로그에
+이미 명시적으로 남아있던 이 항목("해당 날짜를 특정하는 로깅 확장")을 진행. 매매
+로직/파라미터는 전혀 건드리지 않는 순수 진단 로깅 확장이라 표준 절차(rigor bar)의
+"전략 판단" 범주가 아니라고 판단해 바로 구현.
+
+**변경 내용**:
+- `scripts/run_historical_backtest.py`: `_nan_close_dates(ohlcv) -> list[str]` 신규 함수
+  추가 — 기존 `_nan_close_count()`(건수만 셈)와 별개로, NaN Close가 발생한 행의 ISO 날짜
+  (YYYY-MM-DD)를 시간순 리스트로 반환. `_nan_close_count()` 자체는 건드리지 않아 기존
+  호출부/테스트에 영향 없음. `run_backtest()`의 10개 fetch 지점(M7 7종목 + QQQ 레짐 fetch
+  + SPY/TLT 벤치마크) 각각에서 호출해 `nan_close_dates_by_ticker: dict[str, list[str]]`에
+  누적(NaN이 없는 티커는 키 자체를 생략 — 10개 전부 빈 리스트를 넣는 것보다 간결). 정상
+  종료 경로와 전체 실패 조기 반환 경로 양쪽의 `data_quality`에 필드 추가. `main()`의 콘솔
+  로그에도 NaN 발생 시 날짜 breakdown 한 줄 추가 출력.
+- `tests/test_run_historical_backtest.py`: `test_nan_close_dates_helper` 신규(클린/2건
+  NaN/Close 컬럼 없음 3가지 케이스), `test_data_quality_reports_zero_when_history_is_clean`에
+  "NaN 없으면 dates 필드도 빈 dict `{}`"인지 확인하는 assert 추가, `test_data_quality_counts_
+  isolated_nan_close_days`에 10개 소스 전부 같은 상대 위치에 NaN을 심었을 때 (같은 합성
+  날짜 범위를 쓰므로) 실제로 동일한 날짜 하나로 수렴하는지 확인하는 assert 추가,
+  `test_data_quality_present_even_when_all_tickers_fail`의 기대값에 새 필드 반영.
+
+**검증**:
+- 로컬 `python -m pytest -q tests/test_run_historical_backtest.py`: 24 passed. 전체 로컬
+  스위트(`python -m pytest -q`, 214개 — 로컬 미러가 최신 전체 리포지토리를 담고 있지 않아
+  GitHub 최신 327개보다 적지만, 실행된 항목은 전부 통과): 214 passed, 회귀 없음.
+- `scripts/run_historical_backtest.py` 커밋(`1cfb1d5`) 직후 `tests` CI(#176)가 일시적으로
+  RED였음 — 같은 파일을 두 개의 커밋(운영 코드 → 테스트 코드)으로 나눠 순차 푸시했기 때문에,
+  두 번째 커밋(`tests/test_run_historical_backtest.py`, `d91862c`) 전까지 짧은 순간 main이
+  구버전 테스트 기대값과 신버전 출력 형태가 어긋나는 상태였음. `d91862c` 커밋 직후 CI(#177)
+  즉시 그린 확인 — 최종 HEAD는 항상 정상. (다음 세션 참고: 프로덕션 코드와 그 테스트를 같은
+  커밋으로 묶거나, 최소한 연속으로 빠르게 푸시해 이 적색 구간을 최소화할 것.)
+- 두 파일 모두 `raw.githubusercontent.com` fetch 후 SHA-256 완전 일치 확인
+  (`scripts/run_historical_backtest.py`: 31496바이트/`9b625eef...`,
+  `tests/test_run_historical_backtest.py`: 22084바이트/`812b9088...`).
+- `historical-backtest` 워크플로 수동 재실행(run #8, run_ts `2026-09-25T02:56:03+00:00`)
+  성공(41초), `data/backtest/results.json`을 raw fetch로 직접 확인 — `nan_close_dates_by_ticker`
+  필드가 정상적으로 존재. **흥미롭게도 이번 실행에서는 `total_nan_close_days: 0`, 즉 10개
+  소스 전부 NaN Close가 하나도 없었음** (2026-09-23 run #7의 10건과 대조적). "3y" fetch
+  기간이 실행 시점 기준 상대적이라, 문제의 그 날짜가 이번엔 3년 윈도우 밖으로 밀려났거나,
+  yfinance 측에서 해당 날짜의 데이터를 사후에 백필했을 가능성이 있음 — 어느 쪽이든, 이
+  결측이 지속적인 데이터 공급 문제가 아니라 일회성/일시적 이슈였음을 시사하는 방향의
+  증거임. 정확한 날짜를 확인하려면 2026-09-23 run #7 시점의 원본 fetch 데이터가 남아있어야
+  하는데 남아있지 않아, 이번 로깅 확장으로도 "그 날짜가 정확히 언제였는지"는 소급 확인이
+  불가능함 — 앞으로 같은 패턴이 다시 나타나면 이번에 추가된 `nan_close_dates_by_ticker`로
+  즉시 날짜를 특정할 수 있음.
+
+**다음 세션이 할 일**: 변동 없음 — 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화)
+전부 사용자 지시 대기. 3번(RISK_FRACTION 인상 후속 분석 중 지배 가중치 재검토)은
+2026-09-25 walk-forward 재점검으로 갱신된 티커별 IC 데이터(AAPL/NVDA/TSLA 악화 vs
+GOOGL/META 개선)가 근거로 남아있음 — 여전히 스코어링 로직 변경은 전략 판단이라 사용자
+지시 없이는 진행하지 않음. NaN Close 데이터 품질 건은 이번 세션으로 "날짜 로깅" 자체는
+완료되었고, 이번 실행에서는 재현되지 않았으므로 추가 조치 없이 관찰 모드로 전환 — 다음에
+NaN Close가 다시 나타나면 `nan_close_dates_by_ticker`에서 바로 날짜를 확인 가능.
