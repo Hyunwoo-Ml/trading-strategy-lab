@@ -1491,6 +1491,29 @@
           '</div>'
         : '';
 
+      // 2026-09-25: surface scripts/run_historical_backtest.py's
+      // data_quality field (added 2026-09-23/25 -- NaN Close counting, then
+      // per-ticker dates) directly on the dashboard instead of leaving it
+      // buried in the raw JSON. Deliberately silent when clean (no NaN
+      // Close found) -- this is a rare-event notice, not a permanent
+      // status line, so it should not add visual noise on every normal
+      // run. Read-only rendering of numbers the backend already computed;
+      // no trading logic involved.
+      var dq = data.data_quality;
+      var dataQualityHtml = "";
+      if(dq && dq.total_nan_close_days){
+        var datesByTicker = dq.nan_close_dates_by_ticker || {};
+        var breakdown = Object.keys(datesByTicker).sort().map(function(t){
+          return escapeHtml(t) + ": " + datesByTicker[t].map(escapeHtml).join(", ");
+        }).join(" · ");
+        dataQualityHtml = '<div class="section-sub" style="margin-top:16px;">' +
+            '<b style="color:var(--amber);">⚠ 데이터 품질 참고</b><br>' +
+            '이번 백테스트 fetch에서 총 ' + dq.total_nan_close_days + '건의 결측(NaN) 종가가 발견되어 ' +
+            '해당 날짜는 자동으로 건너뛰었습니다 (매매 로직/신호에는 영향 없음, yfinance 데이터 공급 이슈로 추정).' +
+            (breakdown ? '<br>· ' + breakdown : '') +
+          '</div>';
+      }
+
       var startingCash = data.config && data.config.starting_cash;
       var footNote = data.run_ts
         ? '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:12px;">마지막 실행: ' + escapeHtml(data.run_ts) + ' · 모델당/벤치마크당 초기 자본 ' + fmtUSD(startingCash) + '</div>'
@@ -1506,7 +1529,7 @@
           '<thead><tr>' + headerHtml + '</tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
         '</table></div>' +
-        mddNoteHtml + notesHtml + footNote;
+        mddNoteHtml + dataQualityHtml + notesHtml + footNote;
     }).catch(function(err){
       el.innerHTML = stateBox(
         "백테스트 데이터를 불러올 수 없습니다",
