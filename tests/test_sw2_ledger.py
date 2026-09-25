@@ -129,3 +129,34 @@ def test_equity_df_computes_daily_return():
     df = p.equity_df()
     assert list(df["equity"]) == [100_000.0, 100_000.0, 110_000.0]
     assert df["daily_return"].iloc[-1] == pytest.approx(0.10)
+
+
+# -- 2026-09-25: duplicate / weekend equity points --------------------------
+
+
+def test_mark_to_market_same_date_replaces_instead_of_appending():
+    p = Portfolio(model_name="m")
+    p.mark_to_market(date="2026-09-01", prices={})
+    p.cash = 101_000.0
+    p.mark_to_market(date="2026-09-01", prices={})
+    assert len(p.equity_curve) == 1
+    assert p.equity_curve[0]["equity"] == pytest.approx(101_000.0)
+
+
+def test_equity_df_dedupes_dates_and_drops_weekends():
+    p = Portfolio(model_name="m")
+    # legacy persisted curve shape: repeated dates + a Sat/Sun point
+    p.equity_curve = [
+        {"date": "2026-09-12", "equity": 100_000.0},  # Sat
+        {"date": "2026-09-13", "equity": 100_000.0},  # Sun
+        {"date": "2026-09-14", "equity": 100_000.0},
+        {"date": "2026-09-14", "equity": 100_000.0},
+        {"date": "2026-09-14", "equity": 100_000.0},
+        {"date": "2026-09-15", "equity": 101_000.0},
+        {"date": "2026-09-15", "equity": 102_000.0},
+    ]
+    df = p.equity_df()
+    assert [d.date().isoformat() for d in df.index] == ["2026-09-14", "2026-09-15"]
+    assert df["equity"].iloc[-1] == pytest.approx(102_000.0)  # last point for a date wins
+    assert df["daily_return"].iloc[-1] == pytest.approx(0.02)
+    assert len(p.equity_curve) == 7  # persisted history itself untouched

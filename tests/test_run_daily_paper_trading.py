@@ -36,8 +36,20 @@ def wired_script(tmp_path, monkeypatch):
     return script
 
 
+# 2026-09-25: the script now takes its run date from the signals file's
+# `date` column (the market date) and skips a date it already processed,
+# so each write_signals() call stamps the next business day by default --
+# i.e. every main() call below is a distinct trading day, like production.
+_SIGNAL_DATES = pd.bdate_range("2026-09-01", periods=60)
+
+
 def write_signals(mod, rows):
+    call_index = getattr(mod, "_test_signal_calls", 0)
+    mod._test_signal_calls = call_index + 1
+    date = _SIGNAL_DATES[call_index].date().isoformat()
+    rows = [{"date": date, **row} for row in rows]
     pd.DataFrame(rows).to_csv(mod.SIGNALS_PATH, index=False)
+    return date
 
 
 def test_missing_signals_file_returns_error(wired_script):
@@ -280,8 +292,11 @@ def test_price_criteria_model_participates_in_comparisons(wired_script):
     write_price_criteria_config(wired_script)
     write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row()])
     wired_script.main()
+    # each main() is a new trading day -> fresh signals file (new market date)
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 201.0, "quant_score": 0.0, "news_score": None}])
     write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=201.0)])
     wired_script.main()
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 202.0, "quant_score": 0.0, "news_score": None}])
     write_price_criteria_latest(wired_script, "price_model_1", [make_criteria_row(close=202.0)])
     wired_script.main()
 
@@ -341,12 +356,11 @@ def test_missing_market_regime_file_applies_no_filter(wired_script):
 
 
 def test_earnings_blackout_blocks_price_criteria_buy1(wired_script):
-    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
+    run_date = write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.0, "news_score": None}])
     write_price_criteria_config(wired_script)
     write_price_criteria_latest(
         wired_script, "price_model_1", [make_criteria_row(ticker="AAPL", close=200.0, buy_1_price=210.0)]
     )
-    run_date = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).date().isoformat()
     write_earnings_dates(wired_script, {"AAPL": run_date})
 
     assert wired_script.main() == 0
@@ -404,3 +418,56 @@ def test_missing_news_score_for_ticker_does_not_block_even_with_gate_configured(
     assert wired_script.main() == 0
     state = json.loads((wired_script.PORTFOLIOS_DIR / "price_model_1.json").read_text())
     assert "AAPL" in state["positions"]
+
+
+# -- 2026-09-25: idempotent re-runs / market-date run_date ------------------
+
+
+def test_run_date_comes_from_signals_market_date(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None, "date": "2026-09-18"}])
+    assert wired_script.main() == 0
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert state["equity_curve"][-1]["date"] == "2026-09-18"
+    assert state["trades"][-1]["date"] == "2026-09-18"
+
+
+def test_rerun_on_same_market_date_is_a_noop(wired_script):
+    row = {"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None, "date": "2026-09-18"}
+    write_signals(wired_script, [row])
+    wired_script.main()
+    first = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+
+    # manual re-run (e.g. workflow_dispatch) with the same market data
+    write_signals(wired_script, [row])
+    assert wired_script.main() == 0
+    second = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+
+    assert second == first  # no duplicate equity point, no extra trade
+    equity_df = pd.read_csv(wired_script.EQUITY_DIR / "baseline.csv")
+    assert len(equity_df) == 1
+
+
+def test_rerun_after_same_day_take_profit_does_not_reenter(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None, "date": "2026-09-17"}])
+    wired_script.main()
+    exit_row = {"ticker": "AAPL", "close": 260.0, "quant_score": 0.9, "news_score": None, "date": "2026-09-18"}
+    write_signals(wired_script, [exit_row])
+    wired_script.main()
+    after_exit = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert "AAPL" not in after_exit["positions"]
+
+    write_signals(wired_script, [exit_row])  # same-day re-run with a still-strong buy score
+    wired_script.main()
+    after_rerun = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert "AAPL" not in after_rerun["positions"]
+    assert len(after_rerun["trades"]) == len(after_exit["trades"])
+
+
+def test_signals_without_date_column_fall_back_to_wall_clock(wired_script):
+    pd.DataFrame([{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}]).to_csv(
+        wired_script.SIGNALS_PATH, index=False
+    )
+    assert wired_script.main() == 0
+    today = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).date().isoformat()
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert state["equity_curve"][-1]["date"] == today
