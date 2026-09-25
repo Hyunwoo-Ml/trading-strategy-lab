@@ -336,6 +336,26 @@ def _nan_close_count(ohlcv: pd.DataFrame) -> int:
         return 0
     return int(ohlcv["Close"].isna().sum())
 
+
+def _nan_close_dates(ohlcv: pd.DataFrame) -> list[str]:
+    """2026-09-25 follow-up to _nan_close_count above: that function counts
+    HOW OFTEN an isolated NaN Close occurs, but not WHEN. The 2026-09-23
+    backtest run (historical-backtest #7) found all 10 fetch points (M7 x7 +
+    QQQ regime fetch + SPY/TLT benchmarks) had exactly 1 NaN Close each,
+    total_nan_close_days=10 -- suggestive of a single shared data-provider
+    gap on one specific day rather than random per-ticker noise, but the
+    actual date wasn't recorded anywhere to confirm or refute that. Returns
+    the ISO date (YYYY-MM-DD) of every NaN Close row in `ohlcv`, in
+    chronological order -- empty list if there's no Close column or no NaN
+    rows. Kept as a separate function from _nan_close_count (rather than
+    changing that one's return type) so existing callers/tests that only
+    want the count are unaffected."""
+    if "Close" not in ohlcv.columns:
+        return []
+    nan_index = ohlcv.index[ohlcv["Close"].isna()]
+    return [d.date().isoformat() if hasattr(d, "date") else str(d) for d in nan_index]
+
+
 def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> dict:
     """Turns a raw OHLCV history into the same {starting_cash, final_equity,
     total_return, max_drawdown, n_trades, n_trading_days, periods} shape a
@@ -373,11 +393,15 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
     ticker_data: dict[str, dict] = {}
     failures: list[tuple[str, str]] = []
     nan_close_days_by_ticker: dict[str, int] = {}
+    nan_close_dates_by_ticker: dict[str, list[str]] = {}
 
     for ticker in M7_TICKERS:
         try:
             ohlcv = fetch_ohlcv(ticker, period=FETCH_PERIOD)
             nan_close_days_by_ticker[ticker] = _nan_close_count(ohlcv)
+            nan_dates = _nan_close_dates(ohlcv)
+            if nan_dates:
+                nan_close_dates_by_ticker[ticker] = nan_dates
             indicators = compute_all_technical_indicators(ohlcv)
             quant_scores = indicators.apply(compute_quant_score, axis=1)
             weekly_trend = _weekly_trend_series(ohlcv)
@@ -399,6 +423,7 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "failures": failures,
             "data_quality": {
                 "nan_close_days_by_ticker": nan_close_days_by_ticker,
+                "nan_close_dates_by_ticker": nan_close_dates_by_ticker,
                 "total_nan_close_days": sum(nan_close_days_by_ticker.values()),
             },
         }
@@ -407,6 +432,9 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
     try:
         qqq_ohlcv = fetch_ohlcv(MARKET_INDEX_TICKER, period=FETCH_PERIOD)
         nan_close_days_by_ticker[MARKET_INDEX_TICKER] = _nan_close_count(qqq_ohlcv)
+        qqq_nan_dates = _nan_close_dates(qqq_ohlcv)
+        if qqq_nan_dates:
+            nan_close_dates_by_ticker[MARKET_INDEX_TICKER] = qqq_nan_dates
         qqq_indicators = compute_all_technical_indicators(qqq_ohlcv)
         regime_by_date = _regime_series(qqq_indicators)
     except Exception as exc:  # noqa: BLE001 -- missing market regime just means "no filter", not a crash
@@ -490,6 +518,9 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             else:
                 bench_ohlcv = fetch_ohlcv(ticker, period=FETCH_PERIOD)
                 nan_close_days_by_ticker[ticker] = _nan_close_count(bench_ohlcv)
+                bench_nan_dates = _nan_close_dates(bench_ohlcv)
+                if bench_nan_dates:
+                    nan_close_dates_by_ticker[ticker] = bench_nan_dates
             benchmarks_output[ticker] = _buy_and_hold_payload(bench_ohlcv, label, period_freq)
         except Exception as exc:  # noqa: BLE001 -- one bad benchmark ticker must not crash the whole run
             failures.append((ticker, str(exc)))
@@ -502,6 +533,7 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
         "failures": failures,
         "data_quality": {
             "nan_close_days_by_ticker": nan_close_days_by_ticker,
+            "nan_close_dates_by_ticker": nan_close_dates_by_ticker,
             "total_nan_close_days": sum(nan_close_days_by_ticker.values()),
         },
     }
@@ -554,6 +586,10 @@ def main() -> int:
         nonzero = {t: c for t, c in data_quality.get("nan_close_days_by_ticker", {}).items() if c}
         breakdown = ", ".join(f"{t}={c}" for t, c in sorted(nonzero.items()))
         print(f"[backtest] data quality: {total_nan_days} isolated NaN Close day(s) skipped ({breakdown})")
+        dates_by_ticker = data_quality.get("nan_close_dates_by_ticker", {})
+        if dates_by_ticker:
+            dates_breakdown = ", ".join(f"{t}: {', '.join(ds)}" for t, ds in sorted(dates_by_ticker.items()))
+            print(f"[backtest] data quality dates: {dates_breakdown}")
     else:
         print("[backtest] data quality: no NaN Close days found in fetched history")
 
