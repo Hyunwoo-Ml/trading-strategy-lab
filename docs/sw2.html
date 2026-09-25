@@ -131,6 +131,15 @@
     animation:pulse-dot 2.2s ease-in-out infinite;
     flex-shrink:0;
   }
+  .status-dot.stale{
+    background:var(--amber);
+    box-shadow:0 0 8px var(--amber);
+  }
+  .status-dot.error{
+    background:var(--red);
+    box-shadow:0 0 8px var(--red);
+    animation:none;
+  }
   @keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
   .desc{
     font-size:var(--fs-base);
@@ -757,6 +766,7 @@
           <div class="brand-name">Trading Strategy Lab<span class="mono-tag">SW2 · PAPER TRADING</span></div>
         </div>
       </div>
+      <div class="status-pill"><span class="status-dot" id="status-dot"></span><span id="last-updated">데이터 불러오는 중…</span></div>
     </div>
     <div class="desc">SW1 퀀트 신호와 사용자 정의 가격기준을 서로 다른 매매 규칙으로 적용한 다섯 모델의 장기 페이퍼 트레이딩(paper trading) 성과를 일일 자산가치(equity) 추이와 통계적 유의성 비교로 보여줍니다. 각 모델 이름 옆 <span class="info-icon" aria-hidden="true">ⓘ</span> 아이콘에 커서를 올리면 매매 기준을 바로 확인할 수 있습니다.</div>
     <div class="meta-row">
@@ -837,6 +847,39 @@
   var EQUITY_URL = function(m){ return BASE + "data/sw2/equity/" + m + ".csv"; };
   var COMPARISONS_URL = BASE + "data/sw2/comparisons/latest.json";
   var BACKTEST_URL = BASE + "data/backtest/results.json";
+
+  // 2026-09-25: run-paper-trading.yml runs Mon-Fri at 22:30 UTC, so the
+  // normal maximum gap between two equity rows is the Fri->Mon weekend
+  // (3 calendar days). STALE_THRESHOLD_DAYS adds 1 day of slack for holiday
+  // timing / CI scheduling jitter before the status pill flags the pipeline
+  // as stuck -- this is purely a "has the automation silently stopped
+  // running" indicator (현우 previously had no way to notice a broken
+  // scheduled workflow short of manually checking dates), never a trading
+  // signal.
+  var STALE_THRESHOLD_DAYS = 4;
+
+  function pipelineDaysStale(lastDateStr){
+    // lastDateStr is an equity-row date ("YYYY-MM-DD"). Compare whole UTC
+    // calendar days so time-of-day doesn't cause off-by-one flapping.
+    // Returns NaN if the string can't be parsed.
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(lastDateStr || ""));
+    if(!m) return NaN;
+    var a = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    var now = new Date();
+    var b = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    return Math.round((b - a) / 86400000);
+  }
+
+  function setPipelineStatus(text, state){
+    // state: "ok" | "stale" | "error"
+    var lu = document.getElementById("last-updated");
+    var dot = document.getElementById("status-dot");
+    if(lu) lu.textContent = text;
+    if(dot){
+      dot.classList.toggle("stale", state === "stale");
+      dot.classList.toggle("error", state === "error");
+    }
+  }
 
   var MODELS = [
     { key:"baseline", label:"Baseline", color:"#22d3ee" },
@@ -1132,6 +1175,7 @@
     var allFailed = results.every(function(r){ return r.error; });
 
     if(allFailed){
+      setPipelineStatus("업데이트 시각 확인 불가", "error");
       contentEl.innerHTML = stateBox(
         "Equity 데이터를 불러올 수 없습니다",
         "세 모델 파일 요청이 모두 실패했습니다 (data/sw2/equity/*.csv 경로를 확인해 주세요). 첫 예: " + results[0].error,
@@ -1142,6 +1186,7 @@
     }
 
     if(!haveAnyData){
+      setPipelineStatus("아직 데이터 없음 (첫 실행 대기)", "ok");
       contentEl.innerHTML = stateBox(
         "Equity 데이터가 아직 없습니다",
         "SW2 첫 실행 이후 데이터가 쌓이면 차트가 표시됩니다.",
@@ -1150,6 +1195,15 @@
       document.getElementById("model-summary-row").innerHTML = "";
       return;
     }
+
+    var lastDate = allDates[allDates.length - 1];
+    var staleDays = pipelineDaysStale(lastDate);
+    var isStale = !isNaN(staleDays) && staleDays > STALE_THRESHOLD_DAYS;
+    setPipelineStatus(
+      (isStale ? "⚠ 데이터 갱신 " + staleDays + "일째 지연 — " + lastDate + " 기준 데이터"
+               : lastDate + " 장 마감 기준 최신 데이터"),
+      isStale ? "stale" : "ok"
+    );
 
     var maxPoints = allDates.length;
     var lowDataNotice = maxPoints < 3
