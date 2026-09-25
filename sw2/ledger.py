@@ -112,6 +112,27 @@ class Portfolio:
             return None
         return (current_price - position.entry_price) / position.entry_price
 
+    def current_equity(self) -> float:
+        """Most recently marked-to-market portfolio value (cash + open
+        positions at their last known price), or starting_cash before the
+        first mark_to_market call ever runs for this portfolio.
+
+        2026-09-25 (equity-based sizing): scripts/run_daily_paper_trading.py
+        and scripts/run_historical_backtest.py now size new tranches against
+        this instead of the fixed starting_cash constant (see
+        sw2/sizing.py's module docstring) -- a model that has compounded
+        gains commits more dollars to its next tranche, and one nursing a
+        drawdown commits less, the same way a fully-invested buy-and-hold
+        benchmark's dollar exposure moves with its own equity. Because this
+        only ever reads the LAST recorded mark (yesterday's close, not
+        today's still-unmarked prices), every trade decided today is sized
+        off the same number regardless of trade order within the day --
+        it can't see today's own trades yet.
+        """
+        if self.equity_curve:
+            return self.equity_curve[-1]["equity"]
+        return self.starting_cash
+
     # -- reporting -----------------------------------------------------
     def equity_df(self) -> pd.DataFrame:
         df = pd.DataFrame(self.equity_curve)
