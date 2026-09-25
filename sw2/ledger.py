@@ -103,7 +103,15 @@ class Portfolio:
         for ticker, position in self.positions.items():
             price = prices.get(ticker, position.entry_price)
             equity += position.shares * price
-        self.equity_curve.append({"date": date, "equity": equity})
+        # 2026-09-25: idempotent per date -- a second mark on the same date
+        # (e.g. a manual workflow_dispatch re-run) replaces that day's
+        # point instead of appending a duplicate. Duplicate same-date
+        # points used to show up as fake 0.0 daily returns and skew every
+        # downstream statistic (t-test, bootstrap, governance verdict).
+        if self.equity_curve and self.equity_curve[-1].get("date") == date:
+            self.equity_curve[-1] = {"date": date, "equity": equity}
+        else:
+            self.equity_curve.append({"date": date, "equity": equity})
         return equity
 
     def price_return_from_entry(self, ticker: str, current_price: float) -> float | None:
@@ -118,6 +126,18 @@ class Portfolio:
         if df.empty:
             return df
         df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date").set_index("date")
+        # 2026-09-25: historical state (before mark_to_market became
+        # idempotent) contains repeated same-date points from manual
+        # re-runs plus weekend points from runs with no new market data
+        # (e.g. 2026-09-14 x5, 2026-09-12 Sat / 09-13 Sun). Keep only the
+        # last point per date and drop Sat/Sun so daily returns reflect
+        # real trading days only. The persisted equity_curve itself is left
+        # untouched -- this is a read-side cleanup, fully reversible.
+        df = df.sort_values("date", kind="stable")
+        df = df.drop_duplicates(subset="date", keep="last")
+        df = df[df["date"].dt.dayofweek < 5]
+        if df.empty:
+            return df
+        df = df.set_index("date")
         df["daily_return"] = df["equity"].pct_change()
         return df
