@@ -645,6 +645,10 @@
   var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/";
   var SIGNALS_URL = BASE + "data/signals/latest.csv";
   var WALKFORWARD_URL = BASE + "data/walkforward/results.json";
+  // 2026-09-25: mirrors sw1/news/log.py's NEWS_WINDOW_DAYS -- used only to
+  // decide when scripts/collect_daily_data.py's news_days_ago column
+  // (added same date) is worth flagging as "stale" on the dashboard.
+  var NEWS_WINDOW_DAYS = 14;
 
   var TICKER_NAMES = {
     AAPL: "Apple Inc.",
@@ -821,7 +825,23 @@
           '<span class="news-soon">준비 중</span>' :
           '<span class="metric-v ' + quantClass(news) + '">' + (news>=0?"+":"") + news.toFixed(2) + '</span>') +
       '</div>' +
+      newsStalenessNote(row.news_days_ago) +
     '</div>';
+  }
+
+  function newsStalenessNote(newsDaysAgoRaw){
+    // 2026-09-25: surfaces scripts/collect_daily_data.py's news_days_ago
+    // field (how long since the last manual news/시황 입력 for this
+    // ticker, counting past the 14-day scoring window on purpose -- see
+    // that script's docstring). Deliberately silent unless input has
+    // actually gone stale, matching the SW2 dashboard's NaN-Close notice
+    // pattern (rare/actionable signal, not a permanent status line) --
+    // otherwise every card would show a day count on every normal run.
+    var days = parseNumOrNull(newsDaysAgoRaw);
+    if(days === null || days <= NEWS_WINDOW_DAYS) return "";
+    return '<div class="news-soon" style="margin-top:8px;width:100%;box-sizing:border-box;">' +
+        '⚠ 최근 뉴스/시황 입력 ' + days + '일 전 — 새 코멘터리를 입력해 주세요' +
+      '</div>';
   }
 
   /* ---------------- section 2: user-defined price-criteria models ---------------- */
