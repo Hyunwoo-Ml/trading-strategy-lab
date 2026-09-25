@@ -193,3 +193,50 @@ def test_ticker_and_general_entries_are_both_fed_to_the_same_call(wired_script, 
 
     nvda_prompt = next(p for p in seen_prompts if "엔비디아 자체 코멘터리" in p)
     assert "반도체 수출 규제 관련 일반 시황" in nvda_prompt
+
+
+# -- 2026-09-25: _collect_news_staleness (dashboard "N일간 뉴스 입력 없음" signal) --
+
+
+def test_staleness_none_when_ticker_never_had_any_entry(wired_script):
+    staleness = wired_script._collect_news_staleness(TODAY)
+    assert all(v is None for v in staleness.values())
+    assert set(staleness.keys()) == set(wired_script.M7_TICKERS)
+
+
+def test_staleness_counts_days_since_own_ticker_entry(wired_script):
+    five_days_ago = (TODAY - timedelta(days=5)).isoformat()
+    write_ticker_entry(wired_script, "AAPL", five_days_ago, "닷새 전 코멘터리")
+    staleness = wired_script._collect_news_staleness(TODAY)
+    assert staleness["AAPL"] == 5
+
+
+def test_staleness_ignores_the_14_day_scoring_window(wired_script):
+    # Unlike _collect_news_scores, this must keep counting well past 14 days
+    # -- that's exactly the case a "add fresh news" reminder is for.
+    write_ticker_entry(wired_script, "AAPL", OLD_STR, "30일 전 코멘터리 (윈도우 밖)")
+    staleness = wired_script._collect_news_staleness(TODAY)
+    assert staleness["AAPL"] == 30
+
+
+def test_staleness_uses_whichever_log_is_more_recent(wired_script):
+    ten_days_ago = (TODAY - timedelta(days=10)).isoformat()
+    two_days_ago = (TODAY - timedelta(days=2)).isoformat()
+    write_ticker_entry(wired_script, "MSFT", ten_days_ago, "티커 자체 코멘터리 (10일 전)")
+    write_general_entry(wired_script, two_days_ago, "일반 시황 (2일 전, 더 최근)")
+    staleness = wired_script._collect_news_staleness(TODAY)
+    assert staleness["MSFT"] == 2
+
+
+def test_staleness_general_only_still_counts_for_every_ticker(wired_script):
+    three_days_ago = (TODAY - timedelta(days=3)).isoformat()
+    write_general_entry(wired_script, three_days_ago, "일반 시황만 있음")
+    staleness = wired_script._collect_news_staleness(TODAY)
+    assert staleness["AAPL"] == 3
+    assert staleness["TSLA"] == 3
+
+
+def test_staleness_zero_for_todays_entry(wired_script):
+    write_ticker_entry(wired_script, "NVDA", TODAY_STR, "오늘 입력된 코멘터리")
+    staleness = wired_script._collect_news_staleness(TODAY)
+    assert staleness["NVDA"] == 0
