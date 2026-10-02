@@ -1,27 +1,26 @@
 {
-  "run_date": "2026-10-01",
+  "run_date": "2026-10-02",
   "comparisons": [
     {
       "model_a": "baseline",
       "model_b": "technical_only",
       "mean_daily_return_a": 0.0,
-      "mean_daily_return_b": -0.00042652658996602426,
-      "t_statistic": 0.7363930672558977,
-      "p_value": 0.4700416230491019,
-      "n_a": 21,
-      "n_b": 21,
-      "cohens_d": 0.22725583433289015,
-      "p_value_adjusted": 0.8352227655612314,
+      "mean_daily_return_b": -3.0172438122068956e-06,
+      "t_statistic": 0.0043354321462720806,
+      "p_value": 0.9965817580007725,
+      "n_a": 22,
+      "n_b": 22,
+      "cohens_d": 0.0013071819757481545,
+      "p_value_adjusted": 0.9965817580007725,
       "autocorrelation_warning_a": false,
-      "autocorrelation_warning_b": true,
-      "p_value_block_bootstrap": 0.20539730134932535,
+      "autocorrelation_warning_b": false,
+      "p_value_block_bootstrap": 0.9855072463768116,
       "governance": {
         "model_a": "baseline",
         "model_b": "technical_only",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -33,8 +32,8 @@
       "mean_daily_return_b": 0.0,
       "t_statistic": null,
       "p_value": null,
-      "n_a": 21,
-      "n_b": 21,
+      "n_a": 22,
+      "n_b": 22,
       "cohens_d": null,
       "p_value_adjusted": null,
       "autocorrelation_warning_a": false,
@@ -54,23 +53,22 @@
       "model_a": "baseline",
       "model_b": "price_model_1",
       "mean_daily_return_a": 0.0,
-      "mean_daily_return_b": -0.0001358834671637388,
-      "t_statistic": 0.6164441025132263,
-      "p_value": 0.5449173509033378,
-      "n_a": 21,
-      "n_b": 20,
-      "cohens_d": 0.19748504226776362,
-      "p_value_adjusted": 0.8352227655612314,
+      "mean_daily_return_b": 6.407178698153437e-06,
+      "t_statistic": -0.02528536446247841,
+      "p_value": 0.9800779390395128,
+      "n_a": 22,
+      "n_b": 21,
+      "cohens_d": -0.007900171169938122,
+      "p_value_adjusted": 0.9965817580007725,
       "autocorrelation_warning_a": false,
-      "autocorrelation_warning_b": true,
-      "p_value_block_bootstrap": 0.1619190404797601,
+      "autocorrelation_warning_b": false,
+      "p_value_block_bootstrap": 0.9540229885057471,
       "governance": {
         "model_a": "baseline",
         "model_b": "price_model_1",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -79,22 +77,22 @@
       "model_a": "baseline",
       "model_b": "price_model_2",
       "mean_daily_return_a": 0.0,
-      "mean_daily_return_b": 2.100424974815773e-06,
-      "t_statistic": -0.010224563658892351,
-      "p_value": 0.9919487167076585,
-      "n_a": 21,
-      "n_b": 20,
-      "cohens_d": -0.0032755579591297527,
-      "p_value_adjusted": 0.9919487167076585,
+      "mean_daily_return_b": 0.00012050624939650252,
+      "t_statistic": -0.5274315440658904,
+      "p_value": 0.6036963823068824,
+      "n_a": 22,
+      "n_b": 21,
+      "cohens_d": -0.16479095979528052,
+      "p_value_adjusted": 0.9965817580007725,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.935032483758121,
+      "p_value_block_bootstrap": 0.3683158420789605,
       "governance": {
         "model_a": "baseline",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.9919 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -102,24 +100,23 @@
     {
       "model_a": "technical_only",
       "model_b": "conservative",
-      "mean_daily_return_a": -0.00042652658996602426,
+      "mean_daily_return_a": -3.0172438122068956e-06,
       "mean_daily_return_b": 0.0,
-      "t_statistic": -0.7363930672558977,
-      "p_value": 0.4700416230491019,
-      "n_a": 21,
-      "n_b": 21,
-      "cohens_d": -0.22725583433289015,
-      "p_value_adjusted": 0.8352227655612314,
-      "autocorrelation_warning_a": true,
+      "t_statistic": -0.0043354321462720806,
+      "p_value": 0.9965817580007725,
+      "n_a": 22,
+      "n_b": 22,
+      "cohens_d": -0.0013071819757481545,
+      "p_value_adjusted": 0.9965817580007725,
+      "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.18590704647676162,
+      "p_value_block_bootstrap": 0.9825087456271864,
       "governance": {
         "model_a": "technical_only",
         "model_b": "conservative",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -127,24 +124,23 @@
     {
       "model_a": "technical_only",
       "model_b": "price_model_1",
-      "mean_daily_return_a": -0.00042652658996602426,
-      "mean_daily_return_b": -0.0001358834671637388,
-      "t_statistic": -0.4689777254793568,
-      "p_value": 0.6430477891529475,
-      "n_a": 21,
-      "n_b": 20,
-      "cohens_d": -0.1437778913365442,
-      "p_value_adjusted": 0.8352227655612314,
-      "autocorrelation_warning_a": true,
-      "autocorrelation_warning_b": true,
-      "p_value_block_bootstrap": 0.3953023488255872,
+      "mean_daily_return_a": -3.0172438122068956e-06,
+      "mean_daily_return_b": 6.407178698153437e-06,
+      "t_statistic": -0.012724612416843563,
+      "p_value": 0.9899430011966599,
+      "n_a": 22,
+      "n_b": 21,
+      "cohens_d": -0.0038109964802160016,
+      "p_value_adjusted": 0.9965817580007725,
+      "autocorrelation_warning_a": false,
+      "autocorrelation_warning_b": false,
+      "p_value_block_bootstrap": 0.9775112443778111,
       "governance": {
         "model_a": "technical_only",
         "model_b": "price_model_1",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -152,24 +148,23 @@
     {
       "model_a": "technical_only",
       "model_b": "price_model_2",
-      "mean_daily_return_a": -0.00042652658996602426,
-      "mean_daily_return_b": 2.100424974815773e-06,
-      "t_statistic": -0.6974516428572308,
-      "p_value": 0.49197327779403066,
-      "n_a": 21,
-      "n_b": 20,
-      "cohens_d": -0.2136706763333247,
-      "p_value_adjusted": 0.8352227655612314,
-      "autocorrelation_warning_a": true,
+      "mean_daily_return_a": -3.0172438122068956e-06,
+      "mean_daily_return_b": 0.00012050624939650252,
+      "t_statistic": -0.1686340018484863,
+      "p_value": 0.8674170904509959,
+      "n_a": 22,
+      "n_b": 21,
+      "cohens_d": -0.05045976730613818,
+      "p_value_adjusted": 0.9965817580007725,
+      "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.20889555222388806,
+      "p_value_block_bootstrap": 0.7776111944027986,
       "governance": {
         "model_a": "technical_only",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -178,23 +173,22 @@
       "model_a": "conservative",
       "model_b": "price_model_1",
       "mean_daily_return_a": 0.0,
-      "mean_daily_return_b": -0.0001358834671637388,
-      "t_statistic": 0.6164441025132263,
-      "p_value": 0.5449173509033378,
-      "n_a": 21,
-      "n_b": 20,
-      "cohens_d": 0.19748504226776362,
-      "p_value_adjusted": 0.8352227655612314,
+      "mean_daily_return_b": 6.407178698153437e-06,
+      "t_statistic": -0.02528536446247841,
+      "p_value": 0.9800779390395128,
+      "n_a": 22,
+      "n_b": 21,
+      "cohens_d": -0.007900171169938122,
+      "p_value_adjusted": 0.9965817580007725,
       "autocorrelation_warning_a": false,
-      "autocorrelation_warning_b": true,
-      "p_value_block_bootstrap": 0.1619190404797601,
+      "autocorrelation_warning_b": false,
+      "p_value_block_bootstrap": 0.9540229885057471,
       "governance": {
         "model_a": "conservative",
         "model_b": "price_model_1",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -203,22 +197,22 @@
       "model_a": "conservative",
       "model_b": "price_model_2",
       "mean_daily_return_a": 0.0,
-      "mean_daily_return_b": 2.100424974815773e-06,
-      "t_statistic": -0.010224563658892351,
-      "p_value": 0.9919487167076585,
-      "n_a": 21,
-      "n_b": 20,
-      "cohens_d": -0.0032755579591297527,
-      "p_value_adjusted": 0.9919487167076585,
+      "mean_daily_return_b": 0.00012050624939650252,
+      "t_statistic": -0.5274315440658904,
+      "p_value": 0.6036963823068824,
+      "n_a": 22,
+      "n_b": 21,
+      "cohens_d": -0.16479095979528052,
+      "p_value_adjusted": 0.9965817580007725,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.935032483758121,
+      "p_value_block_bootstrap": 0.3683158420789605,
       "governance": {
         "model_a": "conservative",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.9919 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -226,24 +220,23 @@
     {
       "model_a": "price_model_1",
       "model_b": "price_model_2",
-      "mean_daily_return_a": -0.0001358834671637388,
-      "mean_daily_return_b": 2.100424974815773e-06,
-      "t_statistic": -0.45793812555123825,
-      "p_value": 0.6496177065476244,
-      "n_a": 20,
-      "n_b": 20,
-      "cohens_d": -0.1448127504170063,
-      "p_value_adjusted": 0.8352227655612314,
-      "autocorrelation_warning_a": true,
+      "mean_daily_return_a": 6.407178698153437e-06,
+      "mean_daily_return_b": 0.00012050624939650252,
+      "t_statistic": -0.3344146749497024,
+      "p_value": 0.739832366362646,
+      "n_a": 21,
+      "n_b": 21,
+      "cohens_d": -0.10320260924244627,
+      "p_value_adjusted": 0.9965817580007725,
+      "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.39580209895052476,
+      "p_value_block_bootstrap": 0.5307346326836582,
       "governance": {
         "model_a": "price_model_1",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "significant autocorrelation detected in at least one model's daily returns (Ljung-Box) -- the t-test's independence assumption may not hold for this comparison",
-          "not statistically significant: p=0.8352 >= alpha=0.05"
+          "not statistically significant: p=0.9966 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
