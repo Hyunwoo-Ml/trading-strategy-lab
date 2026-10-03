@@ -358,13 +358,41 @@ def _comparison_to_dict(comparison: ComparisonResult, returns_by_model: dict[str
     return result
 
 
+def resolve_run_date(signals_df: pd.DataFrame) -> str:
+    """The trading date this run represents.
+
+    2026-09-25: previously always the wall-clock UTC date, so a manual
+    workflow_dispatch on a weekend (or a re-run after a failed/stale
+    collect-daily-data job) stamped stale prices with a new date and
+    produced fake 0.0-return days. Now the market date carried by SW1's
+    signals file (its `date` column = the last bar's date) is used; the
+    wall-clock date is only a fallback for signals files without it."""
+    if "date" in signals_df.columns:
+        dates = pd.to_datetime(signals_df["date"], errors="coerce").dropna()
+        if not dates.empty:
+            return dates.max().date().isoformat()
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def already_processed(portfolio: Portfolio, run_date: str) -> bool:
+    """True if this portfolio already has an equity point on/after
+    run_date -- i.e. this market date was already traded. Re-running it
+    would risk re-entering a position that was just closed (buy_1 only
+    checks "not currently held") or adding buy_2 on the same day, so the
+    model is skipped instead (its saved state is left as-is)."""
+    if not portfolio.equity_curve:
+        return False
+    last = str(portfolio.equity_curve[-1].get("date", ""))
+    return last >= run_date
+
+
 def main() -> int:
     if not SIGNALS_PATH.exists():
         print(f"[ERROR] no signals file at {SIGNALS_PATH} -- run collect_daily_data.py first")
         return 1
 
     signals_df = pd.read_csv(SIGNALS_PATH)
-    run_date = datetime.now(timezone.utc).date().isoformat()
+    run_date = resolve_run_date(signals_df)
 
     registry = default_registry()
     returns_by_model: dict[str, pd.Series] = {}
@@ -383,7 +411,10 @@ def main() -> int:
     # -- score-threshold models (sw1.scoring.integrate) -----------------
     for model in registry.all():
         portfolio = load_or_create_portfolio(model.name, PORTFOLIOS_DIR / f"{model.name}.json")
-        process_model_for_day(model, portfolio, signals_df, run_date)
+        if already_processed(portfolio, run_date):
+            print(f"[{model.name}] {run_date} already processed -- skipping trades (idempotent re-run)")
+        else:
+            process_model_for_day(model, portfolio, signals_df, run_date)
         _finalize_model_run(model.name, portfolio, returns_by_model)
 
     # -- user-defined price-criteria models (sw1.criteria.generator) ----
@@ -396,9 +427,12 @@ def main() -> int:
         criteria_df = pd.read_csv(criteria_path)
 
         portfolio = load_or_create_portfolio(model.name, PORTFOLIOS_DIR / f"{model.name}.json")
-        process_price_criteria_model_for_day(
-            model, portfolio, criteria_df, run_date, market_regime, earnings_dates, news_scores
-        )
+        if already_processed(portfolio, run_date):
+            print(f"[{model.name}] {run_date} already processed -- skipping trades (idempotent re-run)")
+        else:
+            process_price_criteria_model_for_day(
+                model, portfolio, criteria_df, run_date, market_regime, earnings_dates, news_scores
+            )
         _finalize_model_run(model.name, portfolio, returns_by_model)
 
     comparisons = compare_all_pairs(returns_by_model)
