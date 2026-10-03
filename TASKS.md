@@ -1622,3 +1622,69 @@ SW2는 실시간 페이퍼 트레이딩 데이터가 "언제 기준인지" 표�
 **다음 세션이 할 일**: 변동 없음 — 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화), 3번(지배
 가중치 재검토)은 여전히 사용자 지시 대기. 연휴 등으로 평일 실행이 이틀 이상 연달아 빠지면 이번
 경고가 처음 실제로 뜰 수 있음 — 그때 Actions 로그로 원인 확인할 것.
+
+
+## 2026-10-03 세션 (자동 재개, 스케줄 실행): PR #5(SW2 멱등성 수정) 재검증 — 머지는 안전장치에 막힘
+
+**배경**: 스케줄 실행으로 재개. TASKS.md 끝까지 재확인 — "다음 세션이 할 일"에 남아있던 유일한
+구체적 항목은 2026-09-25 세션(이어서 5)이 열어둔 PR #5(`fix/sw2-idempotent-runs`, SW2 일일
+페이퍼 트레이딩 중복/주말 equity 행 멱등성 수정). 해당 세션이 "머지 전엔 오늘 밤 스케줄 실행이
+여전히 구 코드로 돈다"고 명시했는데, 8일이 지나도록(자동 일일 커밋만 16개 쌓이고) 머지되지
+않은 채 방치되어 있었음을 확인. 참고로 이번 스케줄 호출에 딸려온 작업 설명문의 "RISK_FRACTION
+방금 검증함" 서술은 TASKS.md 실제 기록(해당 작업은 09-22에 이미 완료)과 맞지 않는 오래된
+캐시였고, MDD 지표 부재·뉴스 공정성 캐비엇 미기재로 서술된 백로그 (a)(b) 항목도 이미 09-22~23
+세션에서 전부 구현·배포 완료된 상태였음 — TASKS.md 원본 재확인 결과이며 작업 설명문 쪽이
+구버전임.
+
+**재검증 내용**:
+- PR #5 Files changed(4개: `sw2/ledger.py`, `scripts/run_daily_paper_trading.py`,
+  `tests/test_sw2_ledger.py`, `tests/test_run_daily_paper_trading.py`) 전체를 `main`
+  HEAD(branches 페이지 기준 "16 commits behind, 5 ahead" — 그 16개는 전부 날짜 자동화
+  chore 커밋으로 확인됨) 기준으로 직접 3-way 병합 재구성 — `main`에 PR 분기 이후 추가된
+  `Portfolio.current_equity()`(미사용 상태로 남아있는 "equity-based sizing" 준비 코드,
+  TASKS.md에 세션 기록이 없는 미문서화 커밋 — 별도 이슈로 하단에 기록)와 PR의 변경분이
+  서로 다른 영역이라 충돌 없이 병합됨을 직접 확인.
+- 로컬 샌드박스에 `main` 전체 소스(sw1/sw2/scripts/tests, 62개 파일)를 GitHub REST
+  tree API(브라우저 경유 — 직접 curl은 api.github.com 차단됨) + raw.githubusercontent.com으로
+  재구성, `requirements.txt` 설치(`ta` 패키지는 Python 3.13 setuptools 비호환으로 wheel
+  빌드가 깨져 소스 디렉터리를 site-packages에 직접 복사해 우회 설치).
+- **병합 전(현재 main 그대로) 로컬 `pytest -q`: 356 passed.**
+- **PR #5 적용 후(재구성한 병합본) 로컬 `pytest -q`: 362 passed (356 + PR의 신규 6건, 회귀 0건).**
+- GitHub PR #5 페이지 자체도 "Ready to merge"(자동 머지 가능, 충돌 없음) 상태로 확인 — 위
+  수작업 재구성 결과와 일치.
+- 라이브 SW2 대시보드(`.../sw2.html`)를 실제로 열어 확인한 결과, 이 버그의 증상이 **지금도
+  실시간으로 노출되고 있음**을 확인: Baseline/Conservative가 23/22일치 기록에도 `$100,000.00`
+  (0.00% 누적) 그대로이고, 10개 쌍대 t-test 비교 전부 평균 수익률이 `0.000%`대, 효과크기
+  "매우 작음", p-value 0.6~0.99로 전부 "유의하지 않음 → 보류" — PR #5가 고치려는 바로 그
+  증상(가짜 0.0 수익률일이 섞여 통계가 희석됨)과 일치하는 패턴.
+
+**이번 세션에서 머지하지 못한 이유**: PR #5의 "Merge pull request" 버튼 클릭이 Claude Code
+자동 모드 안전장치("Merge Without Review" 분류기)에 의해 차단됨 — 세션 권한이나 리포지토리
+권한 문제가 아니라, 리뷰 없는 PR 머지 자체를 막는 의도적 안전장치로 판단됨. 안내문이 "같은
+결과를 다른 도구로 우회하지 말 것"을 명시하고 있어, 동일 변경분을 브라우저 에디터로 `main`에
+직접 커밋하는 우회도 시도하지 않음(지금까지의 작업 방식과 달리 이번 건은 사람이 직접 머지
+버튼을 눌러야 함).
+
+**사용자 액션 필요**: PR #5 (`https://github.com/Hyunwoo-Ml/trading-strategy-lab/pull/5`)를
+열어 "Merge pull request" 버튼을 직접 눌러주세요. 위 검증대로 충돌 없음·테스트 전부 통과·현재
+증상과 정확히 일치 — 안전하게 머지 가능한 상태입니다. 머지 후: (1) 다음 스케줄 실행
+(`run-paper-trading`, 매일 평일 22:30 UTC)부터 적용되고, (2) 첫 실행 후 `data/sw2/equity/*.csv`가
+중복 없는 거래일만 담는지, 비교 JSON의 n 값이 기대한 거래일 수와 맞는지 다음 세션이 확인할
+예정.
+
+**발견했지만 이번 세션 범위 밖으로 둔 것**:
+- `sw2/ledger.py`의 `Portfolio.current_equity()`: 2026-09-25 어느 시점에 커밋됐으나(관련
+  TASKS.md 세션 기록 없음) `risk_based_tranche_dollars()` 호출부(`run_daily_paper_trading.py`,
+  `run_historical_backtest.py` 양쪽 다)는 여전히 `portfolio.starting_cash`를 넘기고 있어
+  **미사용 상태** — docstring이 설명하는 "equity-based sizing"은 아직 실제로 배선되지 않음.
+  이는 작업 설명문이 언급한 "equity-based sizing instead of fixed starting_cash" 후속
+  튜닝 아이디어와 사실상 동일한 항목이므로, 사이징 파라미터 변경은 한 세션에 하나만
+  신중히 검증하라는 원칙에 따라 이번엔 건드리지 않음 — 다음에 이 아이디어를 고를 세션이
+  참고할 것.
+- Baseline/Conservative가 2주 넘게 한 번도 매매하지 않는 문제(최근 M7 quant_score 최대값이
+  매수 임계값에 못 미침)는 2026-09-25(이어서 5) 세션이 이미 "스코어링/임계값 변경 필요 —
+  사용자 판단 대기"로 남겨둔 것과 동일 — 변동 없음.
+
+**다음 세션이 할 일**: 1순위 — PR #5가 머지됐는지 확인하고, 머지됐다면 다음 스케줄 실행 데이터로
+equity curve/비교 통계가 정상화됐는지 검증. 여전히 미머지 상태면 사용자에게 다시 안내. 그 외
+1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화)은 계속 사용자 지시 대기.
