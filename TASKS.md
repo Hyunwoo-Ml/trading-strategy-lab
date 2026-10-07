@@ -1688,3 +1688,103 @@ SW2는 실시간 페이퍼 트레이딩 데이터가 "언제 기준인지" 표�
 **다음 세션이 할 일**: 1순위 — PR #5가 머지됐는지 확인하고, 머지됐다면 다음 스케줄 실행 데이터로
 equity curve/비교 통계가 정상화됐는지 검증. 여전히 미머지 상태면 사용자에게 다시 안내. 그 외
 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화)은 계속 사용자 지시 대기.
+
+---
+
+## 2026-10-07 세션 (자동 재개, 스케줄 실행): 백테스트 뉴스-중립 공정성 캐비엇을 모델 카드에 직접 노출 + PR #5 미머지 + 신규 머지 충돌 발견(긴급)
+
+**배경**: 스케줄 실행으로 재개. 이번 호출에 딸려온 작업 설명문이 "RISK_FRACTION 방금 검증,
+MDD 지표 없음, 뉴스 공정성 캐비엇 미기재"라고 서술했으나, TASKS.md 원본을 끝까지 재확인한 결과
+이는 2026-09-22~23에 이미 전부 완료된 내용에 대한 오래된 캐시였음(2026-10-03 세션이 이미 같은
+착오를 지적해 둔 바 있음 — `raw.githubusercontent.com`을 거치지 않고 `curl`로 직접 받으면
+전체 139KB가 안정적으로 받아지지만, 브라우저 `get_page_text`는 내부적으로 앞부분(~80KB)에서
+끊겨 2026-09-25 이후 세션 기록을 놓침 — 이번 세션에서 재확인 후 `curl`로 전체를 직접 받는
+방식으로 전환함. 다음 세션 참고용: TASKS.md가 커질수록 브라우저 텍스트 추출보다
+`curl https://raw.githubusercontent.com/.../TASKS.md`가 더 안전함).
+
+실제로 TASKS.md 원문의 "알려진 한계" 중 유일하게 아직 안 된 항목은 (b) — baseline/conservative의
+퀀트+뉴스 블렌드가 이 백테스트에서 뉴스가 항상 중립 처리되어 불공정하게 측정된다는 점이, 기존
+`SCOPE_NOTES`에 일반론적으로만("뉴스 비중이 있는 모델도 사실상 기술 지표만으로 판단") 적혀있고
+baseline/conservative 카드 자체에는 아무 표시가 없었던 것. 전략 로직·파라미터는 전혀 건드리지
+않는 순수 진단/공정성 표기 작업이라 사용자 확인 없이 진행.
+
+**변경 내용**: 3개 파일, 3커밋 (전부 `main`에 직접 커밋 — 브라우저 GitHub 에디터, anchor 기반
+String.replace 후 SHA-256 전수 대조):
+- `scripts/run_historical_backtest.py`(커밋 `2ed031e`): `SCOPE_NOTES`에 baseline/conservative가
+  구체적으로 왜 불리하게 측정되는지 설명하는 항목 추가. 각 점수-임계값 모델(`registry.all()`의
+  `weights.news_blend`)의 뉴스 블렌드 비중을 `news_blend_weight_by_model` 딕셔너리로 모아
+  `models_output[name]["news_blend_weight"]`로 결과 JSON에 포함 (price_model_1/2는 이 블렌드
+  메커니즘 자체를 쓰지 않으므로 `None`).
+- `tests/test_run_historical_backtest.py`(커밋 `58ce093`): 신규 테스트 2건 —
+  `test_score_blend_models_report_their_news_blend_weight`(baseline/conservative=
+  DEFAULT_WEIGHTS.news_blend, technical_only=0.0, price_model_1/2=None 확인),
+  `test_each_model_has_news_blend_weight_key_present`. 기존 `test_main_writes_output_with_
+  all_five_models`에 scope_notes가 새 캐비엇을 포함하는지 확인하는 어서션 1건 추가.
+- `docs/sw2.html`(커밋 `64cbc7b`): 백테스트 섹션의 모델 카드 렌더러에, `news_blend_weight`가
+  0보다 큰 모델(baseline/conservative)에 한해 "⚠ 뉴스 비중 40% 무효화(이 백테스트 한정)" 배지를
+  MDD 줄 바로 아래에 추가 — 마우스오버 시 왜 그런지(news_score가 0으로 고정되어 통합점수의
+  40%가 버려진 채 quant_score×60%만으로 매매 판단됨, technical_only보다 구조적으로 불리한 조건)
+  전체 설명이 뜸. technical_only/price_model_1/price_model_2/벤치마크 3종에는 노출되지 않음.
+
+**검증**:
+- 로컬(Cowork 샌드박스에 `git clone` — 이번 세션 환경은 `github.com` HTTPS clone과
+  `raw.githubusercontent.com` 둘 다 정상 접근 가능했음, `pip install -r requirements.txt`도
+  `ta` 패키지만 빌드 실패(기존에도 죽은 의존성으로 확인된 바 있어 무관)하고 나머지는 전부 설치됨)
+  `python -m pytest -q`: **358 passed** (기존 356 + 신규 2), 회귀 없음.
+- 3커밋 전부 `raw.githubusercontent.com` 재fetch 후 SHA-256 완전 일치 확인
+  (`run_historical_backtest.py` 33346바이트/`254b2825...`, `test_run_historical_backtest.py`
+  24666바이트/`a25bc81e...`, `docs/sw2.html` 69927바이트/`739dda37...`).
+- 3커밋 전부 GitHub Actions `tests` 체크 green 확인(#197/#198/#199, 각 `pages build and
+  deployment`도 green).
+- `historical-backtest` 워크플로 수동 재실행(run #9, run_ts `2026-10-07T06:28:50Z`) 성공.
+  `news_blend_weight` 필드가 기대대로 채워짐: baseline=0.4, conservative=0.4, technical_only=0.0,
+  price_model_1/2=None. `scope_notes` 6개로 증가(새 캐비엇이 2번째 항목). `data_quality.
+  total_nan_close_days: 0`.
+  3년 트레일링 윈도우가 자연히 전진해(직전 기록 run_ts 2026-09-25 → 이번 2026-10-07) 총수익률
+  자체는 당연히 달라짐(코드 효과 아님, 과거 세션들에서도 반복 관찰된 패턴) — baseline
+  +48.04%→+42.56%(거래 244→224건), technical_only +82.52%→+86.58%(324→323건), conservative
+  +50.54%→+42.62%(145→137건), price_model_1 +51.37%→+52.40%(117→117건), price_model_2
+  +58.21%→+62.26%(158→160건); SPY +84.05%→+86.88%, QQQ +109.60%→+110.77%, TLT +1.12%→+1.20%.
+  거래 로직 자체는 건드리지 않았으므로(순수 메타데이터 추가) 이 변동은 전적으로 날짜 이동 때문.
+- 라이브 대시보드(`https://hyunwoo-ml.github.io/trading-strategy-lab/sw2.html`)에서
+  `javascript_exec`로 각 카드의 HTML을 직접 조회해 배지가 Baseline/Conservative에만 뜨고
+  Technical Only/Price Model 1/Price Model 2/SPY/QQQ/TLT에는 안 뜨는 것을 확인. 콘솔 에러 없음.
+  SW1 대시보드도 재확인 — 콘솔 에러 없음(이번 세션에서 미변경).
+
+**⚠️ 더 중요한 발견 — PR #5가 11일째 미머지인데다, 이제는 머지 충돌까지 발생함(상황 악화)**:
+2026-10-03 세션이 이미 발견해 "사용자 액션 필요"로 남겨둔 PR #5(`fix/sw2-idempotent-runs`, SW2
+일일 페이퍼 트레이딩 멱등성 수정)가 오늘(2026-10-07) PR 페이지를 직접 열어 재확인한 결과 여전히
+**미머지 상태**이고, 그 사이 **새로운 문제가 생겼음**: PR 페이지에 "This branch has conflicts
+that must be resolved — Use the web editor or the command line to resolve conflicts before
+continuing."라는 경고가 떴고, 충돌 파일은 `TASKS.md` 1개. 원인은 PR 브랜치 자체에 TASKS.md를
+수정하는 커밋이 2개 포함되어 있는데(`26c4d5e` "TASKS.md: log SW2 idempotent-run fix session
+(PR #5)", `02e326a` "TASKS.md: log PR #5 re-verification..."), 그 이후 `main`의 TASKS.md에
+여러 세션이 계속 새 항목을 append해 와서 두 브랜치의 TASKS.md가 같은 위치(파일 끝 근처)를
+건드리며 충돌난 것으로 보임 — 즉, PR이 오래 미머지로 방치되는 동안 "PR 자신이 TASKS.md에 남긴
+기록"과 "main에 계속 쌓이는 세션 기록"이 서로 부딫힌 상황. 체크는 여전히 1개 green이지만 이제
+"Merge pull request" 버튼이 아니라 "Resolve conflicts" 안내가 먼저 뜸 — 단순 클릭 1번으로 끝나는
+문제가 아니게 됐음. 라이브 증상도 계속 진행 중: `data/sw2/comparisons/latest.json`(run_date
+2026-10-06) 기준 baseline/conservative의 `mean_daily_return`이 여전히 정확히 `0.0`, `n_a`가
+2026-09-23 세션 때의 14에서 오늘 24까지 계속 늘어나는 중(가짜 0.0% 거래일이 계속 누적),
+baseline vs conservative 쌍은 `t-test undefined (zero variance)`로 통계 자체가 깨짐, 나머지
+쌍도 p-value 0.58~0.87로 전부 "유의하지 않음 → 보류" 판정. 이번 세션에서는 충돌 해결이나 머지
+버튼 클릭을 전혀 시도하지 않음 — TASKS.md 충돌 해결(어느 쪽 세션 기록을 남기고 어느 쪽을
+버릴지 판단 포함)은 에이전트가 임의로 결정하기엔 적절치 않은 판단이라 사용자 영역으로 남겨둠.
+동일 변경분을 브라우저로 `main`에 직접 커밋하는 우회도 시도하지 않음.
+
+**사용자 액션 필요 (반복 강조, 긴급도 상향)**: `https://github.com/Hyunwoo-Ml/trading-strategy-lab/pull/5`
+에서 이제 "Resolve conflicts" 버튼으로 충돌난 TASKS.md를 직접(또는 로컬 git으로) 해결한 뒤
+"Merge pull request"를 눌러주세요. 충돌 내용은 둘 다 TASKS.md 끝부분에 서로 다른 세션 기록을
+추가한 것뿐이라 "두 쪽 다 살리기"(양쪽 텍스트를 순서대로 이어붙이기)로 해결하면 내용 손실 없이
+끝날 가능성이 높습니다. 매일 밤 스케줄 실행마다 가짜 0.0% 거래일이 하나씩 더 쌓이고 있고, 이제
+머지 자체도 추가 조치(충돌 해결)가 필요해졌으므로 더 늦어지면 충돌 범위가 더 커질 수 있습니다.
+
+**다음 세션이 할 일**: 1순위 — PR #5의 충돌 해결 및 머지 여부 재확인(머지됐다면 다음
+`run-paper-trading` 스케줄 실행 데이터로 equity curve/비교 통계가 정상화됐는지 검증: 중복 없는
+거래일만 있는지, `n` 값이 기대한 평일 수와 맞는지, baseline/conservative의 `mean_daily_return`이
+더 이상 항상 0.0이 아닌지). 여전히 미해결/미머지면 사용자에게 다시 안내만 하고 충돌 해결이나
+우회를 임의로 시도하지 않음. **주의**: 이 PR이 미머지인 동안 TASKS.md에 계속 append하는 이번
+세션 방식 자체가 충돌을 더 키울 수 있음 — 다음 세션은 이 append 전에 PR 상태를 먼저 확인할 것.
+그 외 TASKS.md에 남아있는 항목: 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화) — 계속
+사용자 지시 대기. `Portfolio.current_equity()`(미배선 상태)와 baseline/conservative 2주+
+무매매(스코어링/임계값 이슈)는 2026-10-03 세션이 범위 밖으로 남겨둔 그대로 — 사용자 판단 필요.
