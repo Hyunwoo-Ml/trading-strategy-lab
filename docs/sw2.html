@@ -1488,12 +1488,36 @@
             : "";
           mddHtml = '<div class="mdd-line" title="' + mddTitle + '">최대 낙폭(MDD) <span style="color:var(--red);">' + fmtPct(mdd.max_drawdown_pct) + '</span></div>';
         }
+        // 2026-10-03 follow-up to the RISK_FRACTION 2x session's "알려진
+        // 한계" item (b): baseline/conservative blend quant_score with
+        // news_score, but this backtest has no historical news archive so
+        // news_score is always coerced to neutral (0.0) -- see
+        // scripts/run_historical_backtest.py's SCOPE_NOTES and the new
+        // news_blend_weight field it now writes per model. That means a
+        // nonzero-news-blend model's integrated_score here is effectively
+        // quant_score * (1 - news_blend_weight), a structurally weaker
+        // signal than technical_only's quant_score * 1.0 -- flag that right
+        // on the affected card instead of leaving it as a footnote few
+        // people scroll down to read.
+        var newsCaveatHtml = "";
+        if(!meta.isBenchmark && m.news_blend_weight){
+          var newsPct = Math.round(m.news_blend_weight * 100);
+          var quantPct = 100 - newsPct;
+          var newsCaveatTitle = "이 백테스트는 과거 뉴스 아카이브가 없어 news_score가 항상 중립(0)으로 처리됩니다. " +
+            "이 모델은 통합점수의 " + newsPct + "%를 뉴스에 배분하므로, 그 " + newsPct + "%가 버려진 채 quant_score×" +
+            quantPct + "%만으로 매수/매도 임계값과 비교된 결과입니다 — technical_only(퀀트 100%)보다 신호가 " +
+            "구조적으로 약한 조건에서 측정된 것이라, 이 수치만으로 '뉴스를 섞는 전략이 기술지표 전용보다 열등하다'고 " +
+            "보기는 어렵습니다. 라이브에서는 실제 뉴스 점수가 반영되어 이 격차가 그대로 재현되지 않을 수 있습니다.";
+          newsCaveatHtml = '<div class="mdd-line" style="color:var(--amber);" title="' + escapeHtml(newsCaveatTitle) + '">⚠ 뉴스 비중 ' +
+            newsPct + '% 무효화(이 백테스트 한정)</div>';
+        }
         return '<div class="model-summary' + (meta.isBenchmark ? " is-benchmark" : "") + '">' +
           '<div class="name"><span class="legend-dot" style="background:' + meta.color + ';"></span>' + escapeHtml(meta.label) + infoIconHtml(key) + (meta.isBenchmark ? '<span class="bh-tag">B&amp;H</span>' : "") + '</div>' +
           '<div class="eq">' + fmtUSD(m.final_equity) + '</div>' +
           '<div class="ret ' + '" style="color:' + (retCls === "pos" ? "var(--green)" : retCls === "neg" ? "var(--red)" : "var(--text-muted)") + ';">' + fmtPct(m.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
           '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;">거래 ' + (m.n_trades !== undefined ? m.n_trades : "—") + '건</div>' +
           mddHtml +
+          newsCaveatHtml +
           deltaHtml +
         '</div>';
       }).join("");
