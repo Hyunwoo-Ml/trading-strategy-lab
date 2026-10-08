@@ -2,7 +2,7 @@
   "model_name": "technical_only",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 54285.71428571431,
+  "cash": 42857.142857142884,
   "positions": {
     "GOOGL": {
       "ticker": "GOOGL",
@@ -30,6 +30,13 @@
       "shares": 31.940530052437566,
       "entry_price": 357.45001220703125,
       "entry_date": "2026-09-28",
+      "tranche_count": 1
+    },
+    "NVDA": {
+      "ticker": "NVDA",
+      "shares": 49.53637221791511,
+      "entry_price": 230.47999572753903,
+      "entry_date": "2026-10-08",
       "tranche_count": 1
     }
   },
@@ -67,6 +74,15 @@
       "action": "buy_1",
       "shares": 31.940530052437566,
       "price": 357.45001220703125,
+      "cash_delta": -11428.571428571428,
+      "fee": 11.428571428571427
+    },
+    {
+      "date": "2026-10-08",
+      "ticker": "NVDA",
+      "action": "buy_1",
+      "shares": 49.53637221791511,
+      "price": 230.47999572753903,
       "cash_delta": -11428.571428571428,
       "fee": 11.428571428571427
     }
@@ -175,6 +191,10 @@
     {
       "date": "2026-10-07",
       "equity": 100721.25162372083
+    },
+    {
+      "date": "2026-10-08",
+      "equity": 100273.37124210587
     }
   ]
 }
