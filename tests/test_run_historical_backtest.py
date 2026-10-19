@@ -71,6 +71,10 @@ def test_main_writes_output_with_all_five_models(wired_script, monkeypatch):
     assert output["config"]["period_freq"] == "Q"
     assert output["config"]["fetch_period"] == "3y"
     assert len(output["config"]["scope_notes"]) > 0
+    # 2026-10-03: the news-neutral-blend fairness caveat (item (b) from the
+    # RISK_FRACTION 2x session's "알려진 한계") must be spelled out, not just
+    # the generic "news_score is neutral" note that was already there.
+    assert any("news_blend_weight" in note for note in output["config"]["scope_notes"])
 
 
 def test_each_model_has_periods_and_summary_fields(wired_script, monkeypatch):
@@ -117,6 +121,45 @@ def test_each_benchmark_has_max_drawdown(wired_script, monkeypatch):
         mdd = payload["max_drawdown"]
         assert set(mdd.keys()) == {"max_drawdown_pct", "peak_date", "trough_date", "peak_equity", "trough_equity"}
         assert mdd["max_drawdown_pct"] <= 0.0
+
+
+# -- news_blend_weight wiring (2026-10-03 follow-up to the RISK_FRACTION 2x
+# session's "알려진 한계" item (b): baseline/conservative blend quant_score
+# with news_score, but news_score is forced neutral in this backtest -- see
+# SCOPE_NOTES -- so surface each model's news_blend weight in the output so
+# the dashboard can flag the affected cards directly instead of leaving it
+# as a footnote.) --
+
+def test_score_blend_models_report_their_news_blend_weight(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    models = output["models"]
+    # baseline/conservative both use sw1.scoring.integrate.DEFAULT_WEIGHTS
+    # (see sw2/models.py::default_registry) -- same nonzero news_blend.
+    assert models["baseline"]["news_blend_weight"] == pytest.approx(script.default_registry().get("baseline").weights.news_blend)
+    assert models["baseline"]["news_blend_weight"] > 0.0
+    assert models["conservative"]["news_blend_weight"] == models["baseline"]["news_blend_weight"]
+    # technical_only explicitly zeroes news_blend (news_blend=0.0 in its
+    # ScoringWeights) -- it should report exactly 0.0, not be absent.
+    assert models["technical_only"]["news_blend_weight"] == 0.0
+    # price-criteria models don't use this quant/news blend mechanism at all
+    # (they gate entries on news_score instead -- a no-op when news_score is
+    # None, see sw2/price_criteria_model.py) -- the field should be present
+    # but None, never a stale/misleading number.
+    assert models["price_model_1"]["news_blend_weight"] is None
+    assert models["price_model_2"]["news_blend_weight"] is None
+
+
+def test_each_model_has_news_blend_weight_key_present(wired_script, monkeypatch):
+    # every model (score-threshold and price-criteria alike) must carry the
+    # key, even if the value is None for price-criteria models -- so
+    # dashboard/consumer code never has to special-case a missing key.
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    for name, payload in output["models"].items():
+        assert "news_blend_weight" in payload, name
 
 
 def test_score_threshold_models_actually_trade_on_volatile_history(wired_script, monkeypatch):

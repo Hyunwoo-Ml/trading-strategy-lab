@@ -134,6 +134,13 @@ BENCHMARK_TICKERS: dict[str, str] = {
 SCOPE_NOTES = [
     "뉴스 감성 점수는 과거 데이터가 없어 이 백테스트 전 기간 동안 중립(미반영)으로 처리됩니다 -- "
     "뉴스 비중이 있는 모델(baseline 등)도 이 기간에는 사실상 기술적 지표만으로 판단합니다.",
+    "위 항목의 구체적 영향: baseline/conservative처럼 quant_score와 news_score를 블렌드하는 모델은, "
+    "news_score가 0(중립)으로 고정되는 이 백테스트에서 통합점수 = quant_score × quant_blend 비중만 "
+    "반영됩니다(각 모델의 news_blend_weight만큼 신호가 깎인 채 매수/매도 임계값과 비교됨) -- "
+    "technical_only(뉴스 비중 0, 퀀트 100%)와 구조적으로 불공정한 조건에서 비교되는 것이므로, 이 "
+    "백테스트에서 baseline/conservative의 수익률이 더 낮게 나오더라도 '뉴스를 섞는 전략이 실제로 더 "
+    "나쁘다'는 뜻은 아닙니다. 라이브에서는 실제 뉴스 점수가 반영되므로 이 격차가 그대로 재현되지 "
+    "않을 수 있습니다 (대시보드의 해당 모델 카드에도 같은 안내가 노출됩니다).",
     "실적 발표일 블랙아웃은 yfinance가 과거 실적 발표일을 안정적으로 제공하지 않아 이 백테스트에는 "
     "반영되지 않습니다 (라이브 파이프라인에는 반영됨).",
     "거래량 확인, 주봉 추세, 시장 레짐(QQQ 기준), 거래비용(수수료+슬리피지 10bps), 리스크 기반 포지션 사이징, "
@@ -445,6 +452,18 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
 
     registry = default_registry()
     score_portfolios = {m.name: Portfolio(model_name=m.name, starting_cash=STARTING_CASH) for m in registry.all()}
+    # 2026-10-03 follow-up to the RISK_FRACTION 2x session's "알려진 한계" item
+    # (b): record each score-threshold model's news_blend weight so the
+    # dashboard can flag, right on the affected model's own card, that this
+    # backtest forces news_score neutral (see SCOPE_NOTES above) -- a model
+    # with a nonzero news_blend is measured on a structurally weaker signal
+    # here than technical_only, not because it's a worse strategy. Price-
+    # criteria models (price_model_1/2) don't use this quant/news blend at
+    # all (they gate entries on news_score instead, which is simply inert
+    # when news_score is None -- see sw2/price_criteria_model.py), so they
+    # are deliberately absent from this dict and models_output.get() below
+    # falls back to None for them.
+    news_blend_weight_by_model: dict[str, float] = {m.name: m.weights.news_blend for m in registry.all()}
 
     price_criteria_params = load_price_criteria_params(PRICE_CRITERIA_CONFIG_DIR)
     pc_models = {p.model_name: PriceCriteriaModel(params=p) for p in price_criteria_params}
@@ -505,6 +524,7 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "n_trades": len(portfolio.trades),
             "n_trading_days": len(equity_df),
             "periods": [p.to_dict() for p in periods],
+            "news_blend_weight": news_blend_weight_by_model.get(name),
         }
 
     # -- benchmark buy-and-hold references (SPY / QQQ / TLT) --
