@@ -2,13 +2,20 @@
   "model_name": "baseline",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 88571.42857142858,
+  "cash": 77142.85714285716,
   "positions": {
     "NVDA": {
       "ticker": "NVDA",
       "shares": 52.557856105023454,
       "entry_price": 217.22999572753903,
       "entry_date": "2026-10-16",
+      "tranche_count": 1
+    },
+    "TSLA": {
+      "ticker": "TSLA",
+      "shares": NaN,
+      "entry_price": NaN,
+      "entry_date": "2026-10-31",
       "tranche_count": 1
     }
   },
@@ -19,6 +26,15 @@
       "action": "buy_1",
       "shares": 52.557856105023454,
       "price": 217.22999572753903,
+      "cash_delta": -11428.571428571428,
+      "fee": 11.428571428571427
+    },
+    {
+      "date": "2026-10-31",
+      "ticker": "TSLA",
+      "action": "buy_1",
+      "shares": NaN,
+      "price": NaN,
       "cash_delta": -11428.571428571428,
       "fee": 11.428571428571427
     }
@@ -190,6 +206,10 @@
     },
     {
       "date": "2026-10-30",
+      "equity": NaN
+    },
+    {
+      "date": "2026-10-31",
       "equity": NaN
     }
   ]
