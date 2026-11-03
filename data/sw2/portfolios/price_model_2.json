@@ -2,15 +2,8 @@
   "model_name": "price_model_2",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 52000.0,
+  "cash": 64039.7682882472,
   "positions": {
-    "GOOGL": {
-      "ticker": "GOOGL",
-      "shares": 47.313739559294106,
-      "entry_price": 337.8299865722656,
-      "entry_date": "2026-09-23",
-      "tranche_count": 1
-    },
     "AMZN": {
       "ticker": "AMZN",
       "shares": 62.91427282373968,
@@ -18,11 +11,11 @@
       "entry_date": "2026-10-08",
       "tranche_count": 1
     },
-    "NVDA": {
-      "ticker": "NVDA",
-      "shares": 73.58099854703283,
-      "entry_price": 217.22999572753903,
-      "entry_date": "2026-10-16",
+    "MSFT": {
+      "ticker": "MSFT",
+      "shares": 31.519167364533413,
+      "entry_price": 507.1199951171875,
+      "entry_date": "2026-11-03",
       "tranche_count": 1
     }
   },
@@ -53,6 +46,33 @@
       "price": 217.22999572753903,
       "cash_delta": -16000.0,
       "fee": 16.0
+    },
+    {
+      "date": "2026-11-03",
+      "ticker": "MSFT",
+      "action": "buy_1",
+      "shares": 31.519167364533413,
+      "price": 507.1199951171875,
+      "cash_delta": -16000.0,
+      "fee": 16.0
+    },
+    {
+      "date": "2026-11-03",
+      "ticker": "GOOGL",
+      "action": "stop_loss",
+      "shares": -47.313739559294106,
+      "price": 278.989990234375,
+      "cash_delta": 13186.859677861627,
+      "fee": 13.200059737599226
+    },
+    {
+      "date": "2026-11-03",
+      "ticker": "NVDA",
+      "action": "stop_loss",
+      "shares": -73.58099854703283,
+      "price": 202.05999755859375,
+      "cash_delta": 14852.908610385572,
+      "fee": 14.867776386772345
     }
   ],
   "equity_curve": [
@@ -223,6 +243,10 @@
     {
       "date": "2026-10-31",
       "equity": NaN
+    },
+    {
+      "date": "2026-11-03",
+      "equity": 95477.40142914097
     }
   ]
 }
