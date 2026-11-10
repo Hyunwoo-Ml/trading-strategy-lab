@@ -2,7 +2,7 @@
   "model_name": "conservative",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 68000.0,
+  "cash": 52000.0,
   "positions": {
     "MSFT": {
       "ticker": "MSFT",
@@ -16,6 +16,13 @@
       "shares": 57.29237807626037,
       "entry_price": 278.989990234375,
       "entry_date": "2026-11-03",
+      "tranche_count": 1
+    },
+    "NVDA": {
+      "ticker": "NVDA",
+      "shares": 89.46101843514869,
+      "entry_price": 178.6699981689453,
+      "entry_date": "2026-11-10",
       "tranche_count": 1
     }
   },
@@ -35,6 +42,15 @@
       "action": "buy_1",
       "shares": 57.29237807626037,
       "price": 278.989990234375,
+      "cash_delta": -16000.0,
+      "fee": 16.0
+    },
+    {
+      "date": "2026-11-10",
+      "ticker": "NVDA",
+      "action": "buy_1",
+      "shares": 89.46101843514869,
+      "price": 178.6699981689453,
       "cash_delta": -16000.0,
       "fee": 16.0
     }
@@ -231,6 +247,10 @@
     {
       "date": "2026-11-07",
       "equity": NaN
+    },
+    {
+      "date": "2026-11-10",
+      "equity": 101676.41782593256
     }
   ]
 }
