@@ -393,6 +393,37 @@ def test_price_criteria_model_ignores_news_gate_by_default(wired_script):
     assert "AAPL" in state["positions"]
 
 
+# -- 2026-11-11: missing close price for a ticker (SW1 data-collection gap) --
+
+
+def test_nan_close_skips_trade_and_does_not_corrupt_equity(wired_script, capsys):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": float("nan"), "quant_score": 0.9, "news_score": None}])
+    assert wired_script.main() == 0
+
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert state["positions"] == {}  # never bought at the missing price
+    assert state["trades"] == []
+    assert state["equity_curve"][-1]["equity"] == pytest.approx(state["starting_cash"])  # no NaN equity
+    assert "skipping trade decision" in capsys.readouterr().out
+
+
+def test_nan_close_on_later_day_does_not_break_already_open_position(wired_script):
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
+    wired_script.main()
+
+    # day 2: AAPL's close is missing entirely (provider gap) -- the position
+    # opened on day 1 must survive this with a finite equity, not NaN.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": float("nan"), "quant_score": 0.0, "news_score": None}])
+    wired_script.main()
+
+    state = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert "AAPL" in state["positions"]
+    shares = state["positions"]["AAPL"]["shares"]
+    equity = state["equity_curve"][-1]["equity"]
+    # carried forward day 1's close (200.0, via last_known_prices), not NaN
+    assert equity == pytest.approx(state["cash"] + shares * 200.0)
+
+
 def test_missing_news_score_for_ticker_does_not_block_even_with_gate_configured(wired_script):
     # No sw1/news/input/AAPL.txt this week -> news_score is None in
     # signals -- a configured gate must not block on "no news", only on
