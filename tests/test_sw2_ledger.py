@@ -120,6 +120,57 @@ def test_higher_transaction_cost_leaves_less_equity_for_same_round_trip():
     assert pricey.cash < cheap.cash  # fees strictly cost money
 
 
+# -- NaN price guards (2026-11-11 postmortem: a missing SW1 close for one
+# ticker on one day used to be able to permanently break a model's whole
+# equity curve -- see sw2/ledger.py's buy()/sell_all()/mark_to_market()) --
+
+
+def test_buy_with_nan_price_is_a_noop():
+    p = Portfolio(model_name="test", starting_cash=100_000.0, transaction_cost_pct=0.0)
+    p.buy(date="2026-09-01", ticker="AAPL", price=float("nan"), dollar_amount=10_000.0, action="buy_1")
+    assert p.cash == pytest.approx(100_000.0)
+    assert "AAPL" not in p.positions
+    assert p.trades == []
+
+
+def test_sell_all_with_nan_price_is_a_noop_and_keeps_position():
+    p = Portfolio(model_name="test", starting_cash=100_000.0, transaction_cost_pct=0.0)
+    p.buy(date="2026-09-01", ticker="AAPL", price=100.0, dollar_amount=10_000.0, action="buy_1")
+    cash_before = p.cash
+    p.sell_all(date="2026-09-05", ticker="AAPL", price=float("nan"), action="take_profit")
+    # a NaN-priced sell must not liquidate the position -- it should still
+    # be there to sell properly once a real price comes back.
+    assert "AAPL" in p.positions
+    assert p.cash == pytest.approx(cash_before)
+    assert len(p.trades) == 1  # only the original buy -- no bad sell recorded
+
+
+def test_mark_to_market_falls_back_to_last_known_price_on_nan_gap():
+    p = Portfolio(model_name="test", starting_cash=100_000.0, transaction_cost_pct=0.0)
+    p.buy(date="2026-09-01", ticker="AAPL", price=100.0, dollar_amount=10_000.0, action="buy_1")
+    p.mark_to_market(date="2026-09-02", prices={"AAPL": 110.0})
+
+    # 2026-09-03: provider gap -- AAPL missing from today's prices entirely
+    equity_gap = p.mark_to_market(date="2026-09-03", prices={})
+    assert equity_gap == pytest.approx(90_000.0 + 100 * 110.0)  # carried forward 110, not entry_price 100
+
+    # 2026-09-04: still a gap, but this time the key is present and explicitly NaN
+    equity_gap2 = p.mark_to_market(date="2026-09-04", prices={"AAPL": float("nan")})
+    assert equity_gap2 == pytest.approx(90_000.0 + 100 * 110.0)
+
+    # 2026-09-05: real price resumes
+    equity_ok = p.mark_to_market(date="2026-09-05", prices={"AAPL": 120.0})
+    assert equity_ok == pytest.approx(90_000.0 + 100 * 120.0)
+
+
+def test_mark_to_market_falls_back_to_entry_price_when_never_seen_a_valid_price():
+    p = Portfolio(model_name="test", starting_cash=100_000.0, transaction_cost_pct=0.0)
+    p.buy(date="2026-09-01", ticker="AAPL", price=100.0, dollar_amount=10_000.0, action="buy_1")
+    # first-ever mark lands on a gap day -- no last_known_prices entry yet
+    equity = p.mark_to_market(date="2026-09-02", prices={})
+    assert equity == pytest.approx(90_000.0 + 100 * 100.0)
+
+
 def test_equity_df_computes_daily_return():
     p = Portfolio(model_name="test", starting_cash=100_000.0)
     p.mark_to_market(date="2026-09-01", prices={})
