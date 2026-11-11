@@ -150,6 +150,7 @@ def portfolio_to_dict(p: Portfolio) -> dict:
         "positions": {ticker: asdict(pos) for ticker, pos in p.positions.items()},
         "trades": [asdict(t) for t in p.trades],
         "equity_curve": p.equity_curve,
+        "last_known_prices": p.last_known_prices,
     }
 
 
@@ -166,6 +167,9 @@ def portfolio_from_dict(d: dict) -> Portfolio:
     p.positions = {ticker: Position(**pos) for ticker, pos in d["positions"].items()}
     p.trades = [Trade(**t) for t in d["trades"]]
     p.equity_curve = d["equity_curve"]
+    # last_known_prices is missing on portfolios saved before 2026-11-11 --
+    # same backward-compat fallback as transaction_cost_pct above.
+    p.last_known_prices = d.get("last_known_prices", {})
     return p
 
 
@@ -189,7 +193,17 @@ def process_model_for_day(model: TradingModel, portfolio: Portfolio, signals_df:
 
     for _, row in signals_df.iterrows():
         ticker = row["ticker"]
-        price = float(row["close"])
+        close = row["close"]
+        if pd.isna(close):
+            # 2026-11-11: a missing close for one ticker on one day is a SW1
+            # data-collection gap (upstream provider), not a trading-model
+            # bug -- see sw2.ledger.Portfolio.buy()/mark_to_market()'s
+            # comments for the postmortem. Skip this ticker entirely for
+            # today rather than let a NaN price reach a trade decision or
+            # the `prices` dict mark_to_market() reads from.
+            print(f"[WARN] {ticker}: missing close price for {run_date} -- skipping trade decision")
+            continue
+        price = float(close)
         prices[ticker] = price
 
         quant_score = row.get("quant_score")
@@ -255,7 +269,16 @@ def process_price_criteria_model_for_day(
 
     for _, row in criteria_df.iterrows():
         ticker = row["ticker"]
-        price = float(row["close"])
+        close = row["close"]
+        if pd.isna(close):
+            # Same NaN-close data gap as process_model_for_day above -- skip
+            # this ticker for today instead of building a trade decision off
+            # a garbage price. Mirrors the equivalent guard already in
+            # scripts/run_historical_backtest.py's
+            # _generate_criteria_rows_for_day (2026-09-22).
+            print(f"[WARN] {ticker}: missing close price for {run_date} -- skipping trade decision")
+            continue
+        price = float(close)
         prices[ticker] = price
 
         criteria = PriceCriteria(
