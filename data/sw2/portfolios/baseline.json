@@ -289,6 +289,10 @@
     {
       "date": "2026-11-11",
       "equity": NaN
+    },
+    {
+      "date": "2026-11-12",
+      "equity": NaN
     }
   ],
   "last_known_prices": {}
