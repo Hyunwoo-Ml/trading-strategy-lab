@@ -2,7 +2,7 @@
   "model_name": "price_model_1",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 76450.26864790844,
+  "cash": 66450.26864790844,
   "positions": {
     "AMZN": {
       "ticker": "AMZN",
@@ -16,6 +16,13 @@
       "shares": 19.69947960283338,
       "entry_price": 507.1199951171875,
       "entry_date": "2026-11-03",
+      "tranche_count": 1
+    },
+    "NVDA": {
+      "ticker": "NVDA",
+      "shares": 61.344793525213966,
+      "entry_price": 162.85000610351562,
+      "entry_date": "2026-11-13",
       "tranche_count": 1
     }
   },
@@ -73,6 +80,15 @@
       "price": 178.6699981689453,
       "cash_delta": 8208.481349244912,
       "fee": 8.216698047292205
+    },
+    {
+      "date": "2026-11-13",
+      "ticker": "NVDA",
+      "action": "buy_1",
+      "shares": 61.344793525213966,
+      "price": 162.85000610351562,
+      "cash_delta": -10000.0,
+      "fee": 10.0
     }
   ],
   "equity_curve": [
@@ -275,7 +291,15 @@
     {
       "date": "2026-11-12",
       "equity": 96430.26864790844
+    },
+    {
+      "date": "2026-11-13",
+      "equity": 97208.0495049757
     }
   ],
-  "last_known_prices": {}
+  "last_known_prices": {
+    "AMZN": 266.6600036621094,
+    "MSFT": 523.8800048828125,
+    "NVDA": 162.85000610351562
+  }
 }
