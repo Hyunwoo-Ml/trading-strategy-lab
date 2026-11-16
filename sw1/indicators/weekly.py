@@ -30,12 +30,34 @@ class WeeklyTrend:
     reason: str
 
 
+def _with_datetime_index(daily_df: pd.DataFrame) -> pd.DataFrame:
+    """Returns daily_df with a real DatetimeIndex.
+
+    data/indicators/{TICKER}.csv stores each bar's date as exchange-local
+    midnight with its UTC offset ("2026-11-13 00:00:00-05:00"). A year of
+    history always spans a daylight-saving change, so the file mixes
+    -04:00 and -05:00 rows, and pd.read_csv(..., parse_dates=True) then
+    hands back a plain string/object Index instead of a DatetimeIndex --
+    which made .resample() raise for every ticker read from disk. The
+    first 10 characters of each label are the trading date in the
+    exchange's own timezone, which is all a weekly resample needs, so
+    parse just that part. An index that already is a DatetimeIndex is
+    returned untouched."""
+    if isinstance(daily_df.index, pd.DatetimeIndex):
+        return daily_df
+    out = daily_df.copy()
+    out.index = pd.to_datetime(pd.Index(daily_df.index).astype(str).str.slice(0, 10))
+    return out
+
+
 def resample_to_weekly(daily_df: pd.DataFrame) -> pd.DataFrame:
-    """daily_df needs a DatetimeIndex and Open/High/Low/Close/Volume
-    columns (the same shape sw1.indicators.technical expects). Weeks end
-    Friday to match US market trading weeks."""
+    """daily_df needs Open/High/Low/Close/Volume columns (the same shape
+    sw1.indicators.technical expects) and either a DatetimeIndex or date
+    labels as read back from data/indicators/{TICKER}.csv (see
+    _with_datetime_index). Weeks end Friday to match US market trading
+    weeks."""
     agg = {"Open": "first", "High": "max", "Low": "min", "Close": "last", "Volume": "sum"}
-    weekly = daily_df.resample("W-FRI").agg(agg).dropna(subset=["Close"])
+    weekly = _with_datetime_index(daily_df).resample("W-FRI").agg(agg).dropna(subset=["Close"])
     return weekly
 
 
