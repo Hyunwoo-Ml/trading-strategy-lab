@@ -1,0 +1,101 @@
+name: pipeline-health-check
+
+# Active counterpart to the dashboards' passive "⚠ 데이터 갱신 N일째 지연" status
+# dot (docs/index.html / docs/sw2.html's pipelineDaysStale()). scripts/
+# check_pipeline_health.py has described this workflow in its own module
+# docstring since 2026-09-25 and has had tests since the same day
+# (tests/test_check_pipeline_health.py) -- but this workflow file itself
+# was never actually created, so the script has never once run in CI.
+# Wiring it up now: runs once a day, every day (including weekends, unlike
+# collect-daily-data/run-paper-trading which only fire on weekday market
+# days), reads the same freshness signals the script already checks, and
+# opens/updates/auto-closes a GitHub Issue so a silently broken schedule
+# (Actions outage, expired secret, uncaught exception) reaches 현우 as an
+# actual notification instead of requiring him to remember to open a
+# dashboard.
+#
+# Pure operational monitoring -- never touches trading parameters, strategy
+# logic, or live weights.
+
+on:
+  schedule:
+    # 23:30 UTC daily -- after both collect-daily-data (22:00 UTC) and
+    # run-paper-trading (22:30 UTC) would have run on a weekday, with some
+    # slack for CI jitter. Runs on weekends too, on purpose: an outage
+    # spanning a weekend should still be caught as soon as it crosses the
+    # staleness threshold, not only once Monday's jobs would have run.
+    - cron: "30 23 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check SW1/SW2 pipeline freshness
+        id: health
+        env:
+          PIPELINE_HEALTH_BODY_PATH: pipeline_health_body.md
+        run: python scripts/check_pipeline_health.py
+
+      - name: Open, update, or auto-close the alert issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const isStale = "${{ steps.health.outputs.is_stale }}" === "true";
+            const title = ${{ toJSON(steps.health.outputs.title) }};
+            const body = fs.readFileSync("pipeline_health_body.md", "utf-8");
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const openIssue = existing.data.find(
+              (i) => !i.pull_request && i.title === title
+            );
+
+            if (isStale) {
+              if (openIssue) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: openIssue.number,
+                  body,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                });
+              }
+            } else if (openIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                body,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                state: "closed",
+              });
+            }
