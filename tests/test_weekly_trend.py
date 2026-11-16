@@ -62,3 +62,45 @@ def test_short_window_must_be_less_than_long_window():
     df = _daily_df_from_weekly_closes([100.0] * 40)
     with pytest.raises(ValueError):
         compute_weekly_trend(df, short_window=30, long_window=10)
+
+
+def _write_like_collected_indicators(df: pd.DataFrame, path) -> None:
+    """Writes df the way data/indicators/{TICKER}.csv looks on disk: each
+    date as US-Eastern midnight with its UTC offset, so a range that
+    crosses a daylight-saving change mixes -04:00 and -05:00 rows."""
+    out = df.copy()
+    out.index = [str(ts) for ts in df.index.tz_localize("America/New_York")]
+    out.index.name = "Date"
+    out.to_csv(path)
+
+
+def test_trend_from_csv_with_mixed_utc_offsets_matches_in_memory_trend(tmp_path):
+    # Regression: indicator files span a daylight-saving change, so
+    # read_csv(parse_dates=True) returns a non-datetime Index and
+    # resample() used to raise for every real ticker file.
+    closes = list(np.linspace(100, 200, 40))
+    df = _daily_df_from_weekly_closes(closes)
+    path = tmp_path / "AAPL.csv"
+    _write_like_collected_indicators(df, path)
+
+    from_disk = pd.read_csv(path, index_col=0, parse_dates=True)
+    offsets = {str(label)[-6:] for label in from_disk.index}
+    assert offsets == {"-04:00", "-05:00"}  # the fixture really does mix offsets
+
+    expected = compute_weekly_trend(df)
+    result = compute_weekly_trend(from_disk)
+    assert result.trend == expected.trend == "up"
+    assert result.date == expected.date
+    assert result.close == pytest.approx(expected.close)
+    assert result.ma_short == pytest.approx(expected.ma_short)
+    assert result.ma_long == pytest.approx(expected.ma_long)
+
+
+def test_resample_to_weekly_accepts_plain_date_strings():
+    df = _daily_df_from_weekly_closes([10.0, 11.0, 12.0])
+    as_strings = df.copy()
+    as_strings.index = [ts.date().isoformat() for ts in df.index]
+
+    pd.testing.assert_frame_equal(
+        resample_to_weekly(as_strings), resample_to_weekly(df), check_freq=False
+    )
