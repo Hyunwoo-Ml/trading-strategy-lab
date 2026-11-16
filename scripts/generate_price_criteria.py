@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sw1.criteria.generator import generate_price_criteria, load_price_criteria_params  # noqa: E402
 from sw1.data.yahoo import M7_TICKERS  # noqa: E402
+from sw1.indicators.io import read_indicators_csv  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -81,7 +82,7 @@ def main() -> int:
                 print(f"[WARN] no indicators file at {indicators_path} -- run collect_daily_data.py first, skipping {ticker}")
                 continue
 
-            indicators_df = pd.read_csv(indicators_path, index_col=0, parse_dates=True)
+            indicators_df = read_indicators_csv(indicators_path)
             try:
                 criteria = generate_price_criteria(ticker, indicators_df, params)
             except ValueError as exc:

@@ -162,7 +162,7 @@
   .cell-ticker{ font-family:var(--mono); font-weight:700; }
   .cell-ticker-name{ font-size:var(--fs-sm); color:var(--text-muted); font-weight:400; display:block; margin-top:1px; }
   .cell-price{ font-family:var(--mono); font-weight:600; }
-  .cell-price-sub{ font-size:var(--fs-sm); color:var(--text-muted); font-family:var(--mono); margin-top:1px; }
+  .cell-price-sub{ display:block; font-size:var(--fs-sm); color:var(--text-muted); font-family:var(--mono); margin-top:1px; }
   .cell-mono{ font-family:var(--mono); }
   .cell-mono.pos{ color:var(--green); }
   .cell-mono.neg{ color:var(--red); }
@@ -318,15 +318,36 @@
     });
   }
 
-  /* Minimal defensive CSV parser: no quoted-comma fields in this dataset. */
+  /* Quote-aware CSV parser: weekly_trend_reason contains commas, which
+     pandas wraps in double quotes. */
+  function splitCSVLine(line){
+    var cells = [], cur = "", inQuotes = false;
+    for(var i=0;i<line.length;i++){
+      var c = line[i];
+      if(inQuotes){
+        if(c === '"'){
+          if(line[i+1] === '"'){ cur += '"'; i++; }
+          else { inQuotes = false; }
+        } else { cur += c; }
+      } else if(c === '"'){
+        inQuotes = true;
+      } else if(c === ","){
+        cells.push(cur); cur = "";
+      } else {
+        cur += c;
+      }
+    }
+    cells.push(cur);
+    return cells;
+  }
   function parseCSV(text){
     if(!text) return [];
     var lines = text.replace(/\r\n/g,"\n").split("\n").filter(function(l){ return l.trim().length > 0; });
     if(lines.length < 1) return [];
-    var headers = lines[0].split(",").map(function(h){ return h.trim(); });
+    var headers = splitCSVLine(lines[0]).map(function(h){ return h.trim(); });
     var rows = [];
     for(var i=1;i<lines.length;i++){
-      var cells = lines[i].split(",");
+      var cells = splitCSVLine(lines[i]);
       var row = {};
       for(var j=0;j<headers.length;j++){
         row[headers[j]] = cells[j] !== undefined ? cells[j].trim() : "";
@@ -361,7 +382,7 @@
     return '<span class="badge ' + m.cls + '">' + escapeHtml(m.label) + '</span>';
   }
 
-  function weeklyTrendTag(trend){
+  function weeklyTrendTag(trend, reason){
     var map = {
       up: { label:"상승", cls:"up" },
       down: { label:"하락", cls:"down" },
@@ -369,7 +390,8 @@
     };
     var m = map[trend];
     if(!m) return '<span class="tag unknown">데이터 부족</span>';
-    return '<span class="tag ' + m.cls + '">' + escapeHtml(m.label) + '</span>';
+    var title = reason ? ' title="' + escapeHtml(reason) + '"' : '';
+    return '<span class="tag ' + m.cls + '"' + title + '>' + escapeHtml(m.label) + '</span>';
   }
 
   function rsiCell(rsi){
@@ -434,7 +456,7 @@
       '<td>' + macdCell(macd) + '</td>' +
       '<td>' + bbCell(bb) + '</td>' +
       '<td>' + maCrossCell(row.ma_cross) + '</td>' +
-      '<td>' + weeklyTrendTag(weeklyTrend) + '</td>' +
+      '<td>' + weeklyTrendTag(weeklyTrend, row.weekly_trend_reason) + '</td>' +
       '<td>' + confirmCell + '</td>' +
     '</tr>';
   }

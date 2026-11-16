@@ -38,6 +38,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sw1.data.yahoo import M7_TICKERS  # noqa: E402
+from sw1.indicators.io import read_indicators_csv  # noqa: E402
 from sw1.indicators.weekly import compute_weekly_trend  # noqa: E402
 from sw1.scoring.integrate import classify_signal, compute_integrated_score  # noqa: E402
 
@@ -75,7 +76,7 @@ def weekly_trend_for(ticker: str) -> tuple[str | None, str | None]:
     if not indicators_path.exists():
         return None, None
     try:
-        indicators_df = pd.read_csv(indicators_path, index_col=0, parse_dates=True)
+        indicators_df = read_indicators_csv(indicators_path)
         trend = compute_weekly_trend(indicators_df)
         return trend.trend, trend.reason
     except Exception as exc:  # noqa: BLE001
