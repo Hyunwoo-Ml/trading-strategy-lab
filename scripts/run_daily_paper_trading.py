@@ -188,8 +188,16 @@ def save_portfolio(p: Portfolio, path: Path) -> None:
 def process_model_for_day(model: TradingModel, portfolio: Portfolio, signals_df: pd.DataFrame, run_date: str) -> None:
     # model.thresholds.stop_loss_pct is fixed per model (not per ticker/day),
     # so the risk-based tranche size can be computed once for this whole run
-    # -- see sw2.sizing and Task #22.
-    tranche_dollars = risk_based_tranche_dollars(portfolio.starting_cash, model.thresholds.stop_loss_pct)
+    # -- see sw2.sizing and Task #22. Sized off current_equity() (yesterday's
+    # mark, or starting_cash before the first mark) rather than the fixed
+    # starting_cash constant -- see sw2/ledger.py's Portfolio.current_equity()
+    # docstring and sw2/sizing.py's module docstring for why. (2026-11-16:
+    # an earlier commit today updated those two docstrings to describe this
+    # wiring as already done, but never actually changed this call site or
+    # the two price-criteria call sites below/in run_historical_backtest.py
+    # -- this commit is what actually wires them, so the docstrings' claim
+    # is now true instead of aspirational.)
+    tranche_dollars = risk_based_tranche_dollars(portfolio.current_equity(), model.thresholds.stop_loss_pct)
     prices: dict[str, float] = {}
 
     for _, row in signals_df.iterrows():
@@ -303,7 +311,9 @@ def process_price_criteria_model_for_day(
         tranche_count = existing_position.tranche_count if existing_position else 0
         price_return = portfolio.price_return_from_entry(ticker, price)
         market_context = build_market_context(ticker, run_date, market_regime, earnings_dates, news_scores)
-        tranche_dollars = risk_based_tranche_dollars(portfolio.starting_cash, criteria.stop_loss_pct)
+        # current_equity(), not the fixed starting_cash constant -- see the
+        # matching comment in process_model_for_day above.
+        tranche_dollars = risk_based_tranche_dollars(portfolio.current_equity(), criteria.stop_loss_pct)
 
         signal = model.decide(
             criteria=criteria,
