@@ -1,0 +1,55 @@
+/* Fin-tip_lab -- shared site chrome (top nav + footer note), loaded by every
+   page in docs/. Page-specific styles stay in each page. Colours match the
+   tokens each page already defines on :root. */
+
+.ft-nav{
+  position:sticky; top:0; z-index:50;
+  background:rgba(10,13,20,0.86);
+  -webkit-backdrop-filter:saturate(140%) blur(10px);
+  backdrop-filter:saturate(140%) blur(10px);
+  border-bottom:1px solid #181e29;
+}
+.ft-nav-inner{
+  max-width:1180px; margin:0 auto; padding:10px 20px;
+  display:flex; align-items:center; gap:18px;
+}
+@media (min-width:640px){ .ft-nav-inner{ padding:12px 32px; } }
+
+.ft-brand{
+  display:inline-flex; align-items:center; gap:10px;
+  text-decoration:none; color:#e8ebf1; flex-shrink:0;
+}
+.ft-brand img{ width:30px; height:30px; display:block; }
+.ft-word{ font-size:17px; font-weight:800; letter-spacing:-0.02em; white-space:nowrap; }
+.ft-word .ft-lab{
+  font-family:'SF Mono','Roboto Mono','Consolas','Menlo',monospace;
+  font-weight:700; color:#22d3ee; letter-spacing:0;
+}
+
+.ft-links{
+  display:flex; gap:4px; margin-left:auto;
+  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.ft-links::-webkit-scrollbar{ display:none; }
+.ft-link{
+  font-size:13px; font-weight:600; color:#98a2b8; text-decoration:none;
+  padding:7px 12px; border-radius:8px; white-space:nowrap;
+  transition:background .15s ease, color .15s ease;
+}
+.ft-link:hover{ color:#e8ebf1; background:#151b28; }
+.ft-link[aria-current="page"]{ color:#22d3ee; background:rgba(34,211,238,0.1); }
+.ft-link:focus-visible, .ft-brand:focus-visible{ outline:2px solid #22d3ee; outline-offset:2px; }
+
+@media (max-width:560px){
+  .ft-nav-inner{ flex-wrap:wrap; row-gap:8px; }
+  .ft-links{ margin-left:0; width:100%; }
+}
+
+/* The site logo now lives in the top nav, so each page header drops its own mark. */
+header.top .brand-mark{ display:none; }
+
+.ft-disclaimer{
+  max-width:1180px; margin:0 auto; padding:0 20px 40px;
+  font-size:11px; line-height:1.7; color:#6b7688;
+}
+@media (min-width:640px){ .ft-disclaimer{ padding:0 32px 48px; } }
