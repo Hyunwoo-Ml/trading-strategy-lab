@@ -1,0 +1,101 @@
+name: news-staleness-check
+
+# Active counterpart to docs/index.html's passive per-ticker
+# "⚠ 최근 뉴스/시황 입력 N일 전" card note. scripts/check_news_staleness.py
+# reads the news_days_ago column scripts/collect_daily_data.py already
+# writes into data/signals/latest.csv and opens/updates/auto-closes a
+# GitHub Issue (same actions/github-script pattern as
+# pipeline-health-check.yml) when NO M7 ticker has had a news/시황 input
+# within the scoring window -- so a stale manual workflow reaches 현우 as
+# an actual notification instead of requiring him to remember to open the
+# dashboard.
+#
+# Weekly, not daily: news input is an inherently weekly-cadence manual
+# workflow (sw1/news/input/README.md), and news_days_ago only changes by
+# one per calendar day -- a daily cron here would just add a new comment
+# to the same open issue every single day for as long as it stays
+# unresolved. workflow_dispatch is kept for on-demand / manual testing.
+#
+# Pure operational monitoring of input freshness -- never touches trading
+# parameters, strategy logic, live weights, or news_score itself.
+
+on:
+  schedule:
+    # 22:00 UTC every Monday (= Tuesday morning KST) -- start-of-week
+    # nudge to review the weekend and comment before the week's trading
+    # days run.
+    - cron: "0 22 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check news/시황 input freshness
+        id: staleness
+        env:
+          NEWS_STALENESS_BODY_PATH: news_staleness_body.md
+        run: python scripts/check_news_staleness.py
+
+      - name: Open, update, or auto-close the alert issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const isStale = "${{ steps.staleness.outputs.is_stale }}" === "true";
+            const title = ${{ toJSON(steps.staleness.outputs.title) }};
+            const body = fs.readFileSync("news_staleness_body.md", "utf-8");
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const openIssue = existing.data.find(
+              (i) => !i.pull_request && i.title === title
+            );
+
+            if (isStale) {
+              if (openIssue) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: openIssue.number,
+                  body,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                });
+              }
+            } else if (openIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                body,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                state: "closed",
+              });
+            }
