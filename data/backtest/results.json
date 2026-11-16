@@ -1,5 +1,5 @@
 {
-  "run_ts": "2026-10-07T06:28:50+00:00",
+  "run_ts": "2026-11-16T15:03:14+00:00",
   "config": {
     "fetch_period": "3y",
     "period_freq": "Q",
@@ -16,605 +16,605 @@
   "models": {
     "baseline": {
       "starting_cash": 100000.0,
-      "final_equity": 142559.91279456066,
-      "total_return": 0.4255991279456066,
+      "final_equity": 145434.47787859032,
+      "total_return": 0.4543447787859032,
       "max_drawdown": {
-        "max_drawdown_pct": -0.14511375417186512,
+        "max_drawdown_pct": -0.16676127018204212,
         "peak_date": "2024-12-24",
         "trough_date": "2025-04-08",
-        "peak_equity": 122111.8257843716,
-        "trough_equity": 104391.72031602068
+        "peak_equity": 122626.30746419699,
+        "trough_equity": 102176.98867373387
       },
-      "n_trades": 224,
-      "n_trading_days": 751,
+      "n_trades": 242,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
           "start_equity": 100000.0,
-          "end_equity": 103007.02504388396,
-          "period_return": 0.030070250438839485
+          "end_equity": 100926.78877991161,
+          "period_return": 0.009267887799116137
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 103007.02504388396,
-          "end_equity": 107998.31220749319,
-          "period_return": 0.04845579378185905
+          "start_equity": 100926.78877991161,
+          "end_equity": 106528.06216013583,
+          "period_return": 0.055498381033788347
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 107998.31220749319,
-          "end_equity": 112560.67547239536,
-          "period_return": 0.042244764493510445
+          "start_equity": 106528.06216013583,
+          "end_equity": 110709.45858202301,
+          "period_return": 0.039251595655627414
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 112560.67547239536,
-          "end_equity": 112866.61474324034,
-          "period_return": 0.0027179942689665726
+          "start_equity": 110709.45858202301,
+          "end_equity": 112179.28881451116,
+          "period_return": 0.01327646482345668
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 112866.61474324034,
-          "end_equity": 118184.55849173905,
-          "period_return": 0.047117066110261785
+          "start_equity": 112179.28881451116,
+          "end_equity": 118003.95729241619,
+          "period_return": 0.051922850817285315
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 118184.55849173905,
-          "end_equity": 111781.75347869837,
-          "period_return": -0.05417632468025191
+          "start_equity": 118003.95729241619,
+          "end_equity": 110299.006084208,
+          "period_return": -0.06529400695533594
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 111781.75347869837,
-          "end_equity": 125844.6942953239,
-          "period_return": 0.1258071230677682
+          "start_equity": 110299.006084208,
+          "end_equity": 125739.82349248805,
+          "period_return": 0.13999053986480825
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 125844.6942953239,
-          "end_equity": 132662.40764222367,
-          "period_return": 0.054175612131095674
+          "start_equity": 125739.82349248805,
+          "end_equity": 134084.87377041063,
+          "period_return": 0.06636759974791229
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 132662.40764222367,
-          "end_equity": 133720.71209487697,
-          "period_return": 0.007977425341981093
+          "start_equity": 134084.87377041063,
+          "end_equity": 135615.47160850107,
+          "period_return": 0.011415141731133893
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 133720.71209487697,
-          "end_equity": 125707.68954587335,
-          "period_return": -0.059923570727908326
+          "start_equity": 135615.47160850107,
+          "end_equity": 124829.13948626728,
+          "period_return": -0.0795361472721351
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 125707.68954587335,
-          "end_equity": 133966.9240354283,
-          "period_return": 0.0657019035143509
+          "start_equity": 124829.13948626728,
+          "end_equity": 135077.73794580178,
+          "period_return": 0.08210101024258032
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 133966.9240354283,
-          "end_equity": 141245.1812826016,
-          "period_return": 0.05432876286126076
+          "start_equity": 135077.73794580178,
+          "end_equity": 144473.2252216054,
+          "period_return": 0.06955614906412944
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 141245.1812826016,
-          "end_equity": 142559.91279456066,
-          "period_return": 0.009308151258828001
+          "end_date": "2026-11-16",
+          "start_equity": 144473.2252216054,
+          "end_equity": 145434.47787859032,
+          "period_return": 0.006653500366663012
         }
       ],
       "news_blend_weight": 0.4
     },
     "technical_only": {
       "starting_cash": 100000.0,
-      "final_equity": 186575.71540053075,
-      "total_return": 0.8657571540053075,
+      "final_equity": 170306.23551634586,
+      "total_return": 0.7030623551634585,
       "max_drawdown": {
-        "max_drawdown_pct": -0.203916852290423,
+        "max_drawdown_pct": -0.27363942096048677,
         "peak_date": "2024-12-24",
         "trough_date": "2025-04-21",
-        "peak_equity": 158202.1339384159,
-        "trough_equity": 125942.05276006623
+        "peak_equity": 147985.15025145913,
+        "trough_equity": 107490.57942589922
       },
-      "n_trades": 323,
-      "n_trading_days": 751,
+      "n_trades": 318,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
           "start_equity": 100000.0,
-          "end_equity": 107749.20297637489,
-          "period_return": 0.07749202976374892
+          "end_equity": 101064.57094687027,
+          "period_return": 0.010645709468702691
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 107749.20297637489,
-          "end_equity": 117887.78707440602,
-          "period_return": 0.09409428392945163
+          "start_equity": 101064.57094687027,
+          "end_equity": 112006.78487692367,
+          "period_return": 0.1082695333046606
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 117887.78707440602,
-          "end_equity": 140277.99171495865,
-          "period_return": 0.18992811041928226
+          "start_equity": 112006.78487692367,
+          "end_equity": 135115.90485856167,
+          "period_return": 0.20631892975975497
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 140277.99171495865,
-          "end_equity": 141125.62160393476,
-          "period_return": 0.006042500884233304
+          "start_equity": 135115.90485856167,
+          "end_equity": 131000.56481706096,
+          "period_return": -0.030457850582495172
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 141125.62160393476,
-          "end_equity": 151468.09810642665,
-          "period_return": 0.07328560459076505
+          "start_equity": 131000.56481706096,
+          "end_equity": 141411.61185428174,
+          "period_return": 0.07947329884996712
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 151468.09810642665,
-          "end_equity": 135273.63257946284,
-          "period_return": -0.10691667571863905
+          "start_equity": 141411.61185428174,
+          "end_equity": 118259.62150553889,
+          "period_return": -0.16372057460599443
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 135273.63257946284,
-          "end_equity": 147878.87450800868,
-          "period_return": 0.09318328848115498
+          "start_equity": 118259.62150553889,
+          "end_equity": 127771.03359783963,
+          "period_return": 0.080428230457809
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 147878.87450800868,
-          "end_equity": 161995.55462115764,
-          "period_return": 0.09546110058055968
+          "start_equity": 127771.03359783963,
+          "end_equity": 144807.49893429357,
+          "period_return": 0.13333589669530532
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 161995.55462115764,
-          "end_equity": 169632.87762199395,
-          "period_return": 0.04714526283574205
+          "start_equity": 144807.49893429357,
+          "end_equity": 151934.21156473618,
+          "period_return": 0.049215079901879566
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 169632.87762199395,
-          "end_equity": 155854.00170373401,
-          "period_return": -0.0812276258672241
+          "start_equity": 151934.21156473618,
+          "end_equity": 136656.20568060924,
+          "period_return": -0.10055671942995725
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 155854.00170373401,
-          "end_equity": 171221.19133494757,
-          "period_return": 0.0985999041617509
+          "start_equity": 136656.20568060924,
+          "end_equity": 152503.23676675747,
+          "period_return": 0.11596276222673452
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 171221.19133494757,
-          "end_equity": 183650.48547566662,
-          "period_return": 0.07259203165106198
+          "start_equity": 152503.23676675747,
+          "end_equity": 171939.2142512821,
+          "period_return": 0.12744632767533015
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 183650.48547566662,
-          "end_equity": 186575.71540053075,
-          "period_return": 0.015928244988231866
+          "end_date": "2026-11-16",
+          "start_equity": 171939.2142512821,
+          "end_equity": 170306.23551634586,
+          "period_return": -0.009497418852628448
         }
       ],
       "news_blend_weight": 0.0
     },
     "conservative": {
       "starting_cash": 100000.0,
-      "final_equity": 142623.69586368362,
-      "total_return": 0.4262369586368362,
+      "final_equity": 144626.22944743524,
+      "total_return": 0.4462622944743524,
       "max_drawdown": {
-        "max_drawdown_pct": -0.10394068804669487,
+        "max_drawdown_pct": -0.12326093972218743,
         "peak_date": "2025-02-19",
         "trough_date": "2025-04-04",
-        "peak_equity": 123881.6181307115,
-        "trough_equity": 111005.27750586745
+        "peak_equity": 122263.3867741032,
+        "trough_equity": 107193.08682670997
       },
-      "n_trades": 137,
-      "n_trading_days": 751,
+      "n_trades": 148,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
           "start_equity": 100000.0,
-          "end_equity": 100425.60995802697,
-          "period_return": 0.004256099580269623
+          "end_equity": 100566.01682911188,
+          "period_return": 0.005660168291118817
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 100425.60995802697,
-          "end_equity": 102008.98049567803,
-          "period_return": 0.015766601151965487
+          "start_equity": 100566.01682911188,
+          "end_equity": 99073.63333108393,
+          "period_return": -0.014839838994159416
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 102008.98049567803,
-          "end_equity": 112210.40089000022,
-          "period_return": 0.1000051205761674
+          "start_equity": 99073.63333108393,
+          "end_equity": 109206.51015630498,
+          "period_return": 0.10227622107447143
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 112210.40089000022,
-          "end_equity": 114056.4770578077,
-          "period_return": 0.016451916695469082
+          "start_equity": 109206.51015630498,
+          "end_equity": 111009.44859961965,
+          "period_return": 0.01650944106476948
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 114056.4770578077,
-          "end_equity": 119182.843897546,
-          "period_return": 0.044945863417647836
+          "start_equity": 111009.44859961965,
+          "end_equity": 116750.50824730526,
+          "period_return": 0.05171685581821084
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 119182.843897546,
-          "end_equity": 116091.10817964117,
-          "period_return": -0.025941113811335126
+          "start_equity": 116750.50824730526,
+          "end_equity": 113036.8783169644,
+          "period_return": -0.03180825493688222
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 116091.10817964117,
-          "end_equity": 128560.27048829324,
-          "period_return": 0.10740841830329595
+          "start_equity": 113036.8783169644,
+          "end_equity": 126637.842399377,
+          "period_return": 0.12032324569574904
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 128560.27048829324,
-          "end_equity": 138508.79869946465,
-          "period_return": 0.07738415743359317
+          "start_equity": 126637.842399377,
+          "end_equity": 139420.05872327552,
+          "period_return": 0.10093520295132108
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 138508.79869946465,
-          "end_equity": 138160.106507771,
-          "period_return": -0.0025174732216848295
+          "start_equity": 139420.05872327552,
+          "end_equity": 138768.2099788272,
+          "period_return": -0.004675430138371572
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 138160.106507771,
-          "end_equity": 135298.92617540451,
-          "period_return": -0.020709164205845232
+          "start_equity": 138768.2099788272,
+          "end_equity": 134562.02143901368,
+          "period_return": -0.030310894263572807
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 135298.92617540451,
-          "end_equity": 138676.44669213178,
-          "period_return": 0.024963394848740883
+          "start_equity": 134562.02143901368,
+          "end_equity": 139179.27104323625,
+          "period_return": 0.03431317064685446
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 138676.44669213178,
-          "end_equity": 142449.6674390026,
-          "period_return": 0.02720880752913679
+          "start_equity": 139179.27104323625,
+          "end_equity": 144451.39489958942,
+          "period_return": 0.03788009390216862
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 142449.6674390026,
-          "end_equity": 142623.69586368362,
-          "period_return": 0.001221683615060254
+          "end_date": "2026-11-16",
+          "start_equity": 144451.39489958942,
+          "end_equity": 144626.22944743524,
+          "period_return": 0.0012103347840106693
         }
       ],
       "news_blend_weight": 0.4
     },
     "price_model_1": {
       "starting_cash": 100000.0,
-      "final_equity": 152399.24617389738,
-      "total_return": 0.5239924617389737,
+      "final_equity": 149441.76266309913,
+      "total_return": 0.4944176266309912,
       "max_drawdown": {
-        "max_drawdown_pct": -0.1779319336678592,
+        "max_drawdown_pct": -0.18230310321035625,
         "peak_date": "2025-02-04",
         "trough_date": "2025-04-08",
-        "peak_equity": 127429.49627768567,
-        "trough_equity": 104755.71959867579
+        "peak_equity": 123851.30886166208,
+        "trough_equity": 101272.83091951678
       },
-      "n_trades": 117,
-      "n_trading_days": 751,
+      "n_trades": 112,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
           "start_equity": 100000.0,
-          "end_equity": 103547.4530907016,
-          "period_return": 0.03547453090701591
+          "end_equity": 100000.0,
+          "period_return": 0.0
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 103547.4530907016,
-          "end_equity": 103623.35734052351,
-          "period_return": 0.0007330383081023406
+          "start_equity": 100000.0,
+          "end_equity": 100092.56775661548,
+          "period_return": 0.0009256775661548033
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 103623.35734052351,
-          "end_equity": 112072.62075170214,
-          "period_return": 0.08153821327572852
+          "start_equity": 100092.56775661548,
+          "end_equity": 108250.38673767842,
+          "period_return": 0.08150274454842088
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 112072.62075170214,
-          "end_equity": 114848.48175452,
-          "period_return": 0.02476841341087055
+          "start_equity": 108250.38673767842,
+          "end_equity": 111445.78199482417,
+          "period_return": 0.029518557424548453
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 114848.48175452,
-          "end_equity": 122943.41515566975,
-          "period_return": 0.07048359087978229
+          "start_equity": 111445.78199482417,
+          "end_equity": 119511.84839190073,
+          "period_return": 0.07237659651803763
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 122943.41515566975,
-          "end_equity": 113109.5889316476,
-          "period_return": -0.07998660368731958
+          "start_equity": 119511.84839190073,
+          "end_equity": 109870.96365673302,
+          "period_return": -0.08066886141325103
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 113109.5889316476,
-          "end_equity": 121180.2913320756,
-          "period_return": 0.07135294608227394
+          "start_equity": 109870.96365673302,
+          "end_equity": 118152.90204381967,
+          "period_return": 0.07537877262059611
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 121180.2913320756,
-          "end_equity": 136496.18599871758,
-          "period_return": 0.12638932039428075
+          "start_equity": 118152.90204381967,
+          "end_equity": 134196.80086106298,
+          "period_return": 0.13578929116182903
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 136496.18599871758,
-          "end_equity": 140203.87494849743,
-          "period_return": 0.027163315389740372
+          "start_equity": 134196.80086106298,
+          "end_equity": 138779.5854983061,
+          "period_return": 0.034149730901467557
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 140203.87494849743,
-          "end_equity": 132007.18179800242,
-          "period_return": -0.05846267197326738
+          "start_equity": 138779.5854983061,
+          "end_equity": 128545.13742473403,
+          "period_return": -0.0737460631318646
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 132007.18179800242,
-          "end_equity": 141973.1006826022,
-          "period_return": 0.07549527797547895
+          "start_equity": 128545.13742473403,
+          "end_equity": 141758.17598856983,
+          "period_return": 0.10278909672154901
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 141973.1006826022,
-          "end_equity": 150718.02387479896,
-          "period_return": 0.0615956343148909
+          "start_equity": 141758.17598856983,
+          "end_equity": 153360.49441423273,
+          "period_return": 0.08184585012294754
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 150718.02387479896,
-          "end_equity": 152399.24617389738,
-          "period_return": 0.01115475280179501
+          "end_date": "2026-11-16",
+          "start_equity": 153360.49441423273,
+          "end_equity": 149441.76266309913,
+          "period_return": -0.025552419911668678
         }
       ],
       "news_blend_weight": null
     },
     "price_model_2": {
       "starting_cash": 100000.0,
-      "final_equity": 162261.2650501634,
-      "total_return": 0.6226126505016341,
+      "final_equity": 149510.29628500837,
+      "total_return": 0.4951029628500838,
       "max_drawdown": {
-        "max_drawdown_pct": -0.1770295445372001,
+        "max_drawdown_pct": -0.20207735897930357,
         "peak_date": "2025-01-06",
         "trough_date": "2025-04-08",
-        "peak_equity": 130645.70476522033,
-        "trough_equity": 107517.55515489186
+        "peak_equity": 123930.02683835565,
+        "trough_equity": 98886.57431662653
       },
-      "n_trades": 160,
-      "n_trading_days": 751,
+      "n_trades": 152,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
           "start_equity": 100000.0,
-          "end_equity": 105964.98305678403,
-          "period_return": 0.059649830567840345
+          "end_equity": 100000.0,
+          "period_return": 0.0
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 105964.98305678403,
-          "end_equity": 105297.34537981542,
-          "period_return": -0.006300550028029872
+          "start_equity": 100000.0,
+          "end_equity": 99366.7118269675,
+          "period_return": -0.00633288173032498
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 105297.34537981542,
-          "end_equity": 115872.56014664134,
-          "period_return": 0.10043192189395023
+          "start_equity": 99366.7118269675,
+          "end_equity": 109212.76764912056,
+          "period_return": 0.09908807125769159
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 115872.56014664134,
-          "end_equity": 118273.230568194,
-          "period_return": 0.02071819608123371
+          "start_equity": 109212.76764912056,
+          "end_equity": 111694.26929597648,
+          "period_return": 0.022721717435350675
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 118273.230568194,
-          "end_equity": 127430.27007215224,
-          "period_return": 0.07742275627347861
+          "start_equity": 111694.26929597648,
+          "end_equity": 120185.4010788323,
+          "period_return": 0.07602119460896728
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 127430.27007215224,
-          "end_equity": 115042.97322997356,
-          "period_return": -0.09720843277790181
+          "start_equity": 120185.4010788323,
+          "end_equity": 105863.1664392789,
+          "period_return": -0.11916783994554492
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 115042.97322997356,
-          "end_equity": 123602.45572708434,
-          "period_return": 0.07440247984551096
+          "start_equity": 105863.1664392789,
+          "end_equity": 115553.25063897995,
+          "period_return": 0.09153404839122303
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 123602.45572708434,
-          "end_equity": 146596.32072778716,
-          "period_return": 0.18603081035439573
+          "start_equity": 115553.25063897995,
+          "end_equity": 140877.6204992362,
+          "period_return": 0.21915757211691522
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 146596.32072778716,
-          "end_equity": 153288.85964717448,
-          "period_return": 0.04565284371505207
+          "start_equity": 140877.6204992362,
+          "end_equity": 149833.54791579107,
+          "period_return": 0.06357239272509885
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 153288.85964717448,
-          "end_equity": 142720.2918295217,
-          "period_return": -0.0689454396228042
+          "start_equity": 149833.54791579107,
+          "end_equity": 134772.884637398,
+          "period_return": -0.10051596246561156
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 142720.2918295217,
-          "end_equity": 150581.81684666776,
-          "period_return": 0.05508344270019139
+          "start_equity": 134772.884637398,
+          "end_equity": 144272.68630575537,
+          "period_return": 0.07048748488181622
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 150581.81684666776,
-          "end_equity": 159595.76613176483,
-          "period_return": 0.059860808388808806
+          "start_equity": 144272.68630575537,
+          "end_equity": 155771.89647978035,
+          "period_return": 0.07970469302591932
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 159595.76613176483,
-          "end_equity": 162261.2650501634,
-          "period_return": 0.01670156410163104
+          "end_date": "2026-11-16",
+          "start_equity": 155771.89647978035,
+          "end_equity": 149510.29628500837,
+          "period_return": -0.04019723927277696
         }
       ],
       "news_blend_weight": null
@@ -624,363 +624,363 @@
     "SPY": {
       "label": "S&P 500 (SPY) 장기 보유",
       "starting_cash": 100000.0,
-      "final_equity": 186876.36986456797,
-      "total_return": 0.8687636986456797,
+      "final_equity": 171677.85731133833,
+      "total_return": 0.7167785731133833,
       "max_drawdown": {
-        "max_drawdown_pct": -0.1875523416145789,
+        "max_drawdown_pct": -0.1875522908467664,
         "peak_date": "2025-02-19",
         "trough_date": "2025-04-08",
-        "peak_equity": 144187.74817872338,
-        "trough_equity": 117144.99837567058
+        "peak_equity": 138442.3735918216,
+        "trough_equity": 112477.18927441159
       },
       "n_trades": 1,
-      "n_trading_days": 751,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
           "start_equity": 100000.0,
-          "end_equity": 110397.45781830963,
-          "period_return": 0.1039745781830963
+          "end_equity": 105998.51447389914,
+          "period_return": 0.059985144738991414
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 110397.45781830963,
-          "end_equity": 121867.87342850337,
-          "period_return": 0.10390108465243442
+          "start_equity": 105998.51447389914,
+          "end_equity": 117011.8743690239,
+          "period_return": 0.10390107776309154
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 121867.87342850337,
-          "end_equity": 127204.56785736821,
-          "period_return": 0.04379082262394385
+          "start_equity": 117011.8743690239,
+          "end_equity": 122135.88515455066,
+          "period_return": 0.04379051966441461
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 127204.56785736821,
-          "end_equity": 134520.52123186682,
-          "period_return": 0.05751329136782135
+          "start_equity": 122135.88515455066,
+          "end_equity": 129160.37974815216,
+          "period_return": 0.05751376497343674
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 134520.52123186682,
-          "end_equity": 137871.48574974845,
-          "period_return": 0.024910433643843266
+          "start_equity": 129160.37974815216,
+          "end_equity": 132377.77794645977,
+          "period_return": 0.024910101724547218
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 137871.48574974845,
-          "end_equity": 131988.6901580277,
-          "period_return": -0.04266868932129053
+          "start_equity": 132377.77794645977,
+          "end_equity": 126729.40512326578,
+          "period_return": -0.04266858766490611
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 131988.6901580277,
-          "end_equity": 146213.3506556098,
-          "period_return": 0.10777181348304299
+          "start_equity": 126729.40512326578,
+          "end_equity": 140387.24887819446,
+          "period_return": 0.1077717025629854
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 146213.3506556098,
-          "end_equity": 158087.6599129992,
-          "period_return": 0.0812122094469887
+          "start_equity": 140387.24887819446,
+          "end_equity": 151788.42273619625,
+          "period_return": 0.0812123177076709
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 158087.6599129992,
-          "end_equity": 162301.0050053356,
-          "period_return": 0.026651954331256222
+          "start_equity": 151788.42273619625,
+          "end_equity": 155833.8808469748,
+          "period_return": 0.026651954331256444
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 162301.0050053356,
-          "end_equity": 155207.50936496552,
+          "start_equity": 155833.8808469748,
+          "end_equity": 149023.0360566198,
           "period_return": -0.043705802315499476
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 155207.50936496552,
-          "end_equity": 178680.23344080697,
+          "start_equity": 149023.0360566198,
+          "end_equity": 171560.45464295786,
           "period_return": 0.15123446134713814
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 178680.23344080697,
-          "end_equity": 182928.18794962778,
-          "period_return": 0.023774059542115422
+          "start_equity": 171560.45464295786,
+          "end_equity": 175639.14310671188,
+          "period_return": 0.0237740595421152
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 182928.18794962778,
-          "end_equity": 186876.36986456797,
-          "period_return": 0.021583234159775255
+          "end_date": "2026-11-16",
+          "start_equity": 175639.14310671188,
+          "end_equity": 171677.85731133833,
+          "period_return": -0.02255354771895479
         }
       ]
     },
     "QQQ": {
       "label": "나스닥 100 (QQQ) 장기 보유",
       "starting_cash": 100000.0,
-      "final_equity": 210773.46482766306,
-      "total_return": 1.1077346482766308,
+      "final_equity": 175609.58505923414,
+      "total_return": 0.7560958505923412,
       "max_drawdown": {
         "max_drawdown_pct": -0.2276830764396881,
         "peak_date": "2025-02-19",
         "trough_date": "2025-04-08",
-        "peak_equity": 148433.08150631524,
-        "trough_equity": 114637.38086353442
+        "peak_equity": 140975.8620376297,
+        "trough_equity": 108878.04406516513
       },
       "n_trades": 1,
-      "n_trading_days": 751,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
-          "start_equity": 100000.0,
-          "end_equity": 112001.80421979814,
-          "period_return": 0.12001804219798151
+          "start_equity": 100000.00000000001,
+          "end_equity": 106374.88579440412,
+          "period_return": 0.06374885794404106
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 112001.80421979814,
-          "end_equity": 121595.24427034475,
-          "period_return": 0.08565433492231911
+          "start_equity": 106374.88579440412,
+          "end_equity": 115486.34715879479,
+          "period_return": 0.08565425284686867
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 121595.24427034475,
-          "end_equity": 131416.15928276928,
-          "period_return": 0.08076726249745048
+          "start_equity": 115486.34715879479,
+          "end_equity": 124813.8471907615,
+          "period_return": 0.08076712322662094
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 131416.15928276928,
-          "end_equity": 134061.9305981639,
-          "period_return": 0.020132770047720516
+          "start_equity": 124813.8471907615,
+          "end_equity": 127326.72012465651,
+          "period_return": 0.020132965936499048
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 134061.9305981639,
-          "end_equity": 140649.90693128444,
-          "period_return": 0.04914129092223285
+          "start_equity": 127326.72012465651,
+          "end_equity": 133583.71912528467,
+          "period_return": 0.04914128781847493
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 140649.90693128444,
-          "end_equity": 129201.9511111303,
-          "period_return": -0.08139326978543338
+          "start_equity": 133583.71912528467,
+          "end_equity": 122710.87996431954,
+          "period_return": -0.08139344548992367
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 129201.9511111303,
-          "end_equity": 152164.55148398093,
-          "period_return": 0.17772642112114734
+          "start_equity": 122710.87996431954,
+          "end_equity": 144519.8805192938,
+          "period_return": 0.17772670655866563
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 152164.55148398093,
-          "end_equity": 165798.24829461516,
-          "period_return": 0.08959837674196747
+          "start_equity": 144519.8805192938,
+          "end_equity": 157468.60969579677,
+          "period_return": 0.0895982554785899
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 165798.24829461516,
-          "end_equity": 169866.48113041636,
+          "start_equity": 157468.60969579677,
+          "end_equity": 161332.456118553,
           "period_return": 0.024537248599708628
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 169866.48113041636,
-          "end_equity": 159800.68231481028,
-          "period_return": -0.05925712211509215
+          "start_equity": 161332.456118553,
+          "end_equity": 151772.35906520818,
+          "period_return": -0.05925712211509204
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 159800.68231481028,
-          "end_equity": 204107.1317740058,
+          "start_equity": 151772.35906520818,
+          "end_equity": 193852.8699792864,
           "period_return": 0.27726070262898506
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 204107.1317740058,
-          "end_equity": 205254.84519975333,
+          "start_equity": 193852.8699792864,
+          "end_equity": 194942.9227352149,
           "period_return": 0.005623093204887741
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 205254.84519975333,
-          "end_equity": 210773.46482766306,
-          "period_return": 0.02688667165220404
+          "end_date": "2026-11-16",
+          "start_equity": 194942.9227352149,
+          "end_equity": 175609.58505923414,
+          "period_return": -0.0991743501365302
         }
       ]
     },
     "TLT": {
       "label": "20년+ 국채 ETF (TLT, 30년물 장기채 대용) 장기 보유",
       "starting_cash": 100000.0,
-      "final_equity": 101202.12722166738,
-      "total_return": 0.012021272216673928,
+      "final_equity": 101103.79037577669,
+      "total_return": 0.011037903757767031,
       "max_drawdown": {
-        "max_drawdown_pct": -0.16588013552621217,
+        "max_drawdown_pct": -0.16588012648623618,
         "peak_date": "2024-09-16",
         "trough_date": "2026-10-05",
-        "peak_equity": 121061.14503417151,
-        "trough_equity": 100979.50588894471
+        "peak_equity": 116823.68041596742,
+        "trough_equity": 97444.95353197912
       },
       "n_trades": 1,
-      "n_trading_days": 751,
+      "n_trading_days": 752,
       "periods": [
         {
           "period": "2023Q4",
-          "start_date": "2023-10-09",
+          "start_date": "2023-11-16",
           "end_date": "2023-12-29",
-          "start_equity": 100000.0,
-          "end_equity": 115066.10500789096,
-          "period_return": 0.15066105007890962
+          "start_equity": 99999.99999999999,
+          "end_equity": 111038.49435653827,
+          "period_return": 0.11038494356538298
         },
         {
           "period": "2024Q1",
           "start_date": "2023-12-29",
           "end_date": "2024-03-28",
-          "start_equity": 115066.10500789096,
-          "end_equity": 110810.1630105294,
-          "period_return": -0.03698693022649624
+          "start_equity": 111038.49435653827,
+          "end_equity": 106931.47050089843,
+          "period_return": -0.036987387837342456
         },
         {
           "period": "2024Q2",
           "start_date": "2024-03-28",
           "end_date": "2024-06-28",
-          "start_equity": 110810.1630105294,
-          "end_equity": 108587.33666076393,
-          "period_return": -0.020059769694177332
+          "start_equity": 106931.47050089843,
+          "end_equity": 104786.53194689141,
+          "period_return": -0.020059001750929784
         },
         {
           "period": "2024Q3",
           "start_date": "2024-06-28",
           "end_date": "2024-09-30",
-          "start_equity": 108587.33666076393,
-          "end_equity": 117202.21873999643,
-          "period_return": 0.07933597364254474
+          "start_equity": 104786.53194689141,
+          "end_equity": 113099.7905698029,
+          "period_return": 0.0793351823794004
         },
         {
           "period": "2024Q4",
           "start_date": "2024-09-30",
           "end_date": "2024-12-31",
-          "start_equity": 117202.21873999643,
-          "end_equity": 105799.72432601148,
-          "period_return": -0.09728906616759925
+          "start_equity": 113099.7905698029,
+          "end_equity": 102096.44168113069,
+          "period_return": -0.09728885290800937
         },
         {
           "period": "2025Q1",
           "start_date": "2024-12-31",
           "end_date": "2025-03-31",
-          "start_equity": 105799.72432601148,
-          "end_equity": 111024.06212695791,
-          "period_return": 0.049379502963997846
+          "start_equity": 102096.44168113069,
+          "end_equity": 107137.92834023059,
+          "period_return": 0.049379651005326375
         },
         {
           "period": "2025Q2",
           "start_date": "2025-03-31",
           "end_date": "2025-06-30",
-          "start_equity": 111024.06212695791,
-          "end_equity": 108821.36781136514,
-          "period_return": -0.019839792144102586
+          "start_equity": 107137.92834023059,
+          "end_equity": 105012.31495257636,
+          "period_return": -0.0198399709662489
         },
         {
           "period": "2025Q3",
           "start_date": "2025-06-30",
           "end_date": "2025-09-30",
-          "start_equity": 108821.36781136514,
-          "end_equity": 111458.54439498192,
-          "period_return": 0.02423399592061881
+          "start_equity": 105012.31495257636,
+          "end_equity": 107557.19537617317,
+          "period_return": 0.02423411411076959
         },
         {
           "period": "2025Q4",
           "start_date": "2025-09-30",
           "end_date": "2025-12-31",
-          "start_equity": 111458.54439498192,
-          "end_equity": 110293.27428203072,
-          "period_return": -0.010454740094413606
+          "start_equity": 107557.19537617317,
+          "end_equity": 106432.70499755966,
+          "period_return": -0.010454813131568708
         },
         {
           "period": "2026Q1",
           "start_date": "2025-12-31",
           "end_date": "2026-03-31",
-          "start_equity": 110293.27428203072,
-          "end_equity": 110484.30380728238,
-          "period_return": 0.0017320142728121102
+          "start_equity": 106432.70499755966,
+          "end_equity": 106617.0492697827,
+          "period_return": 0.0017320265629561238
         },
         {
           "period": "2026Q2",
           "start_date": "2026-03-31",
           "end_date": "2026-06-30",
-          "start_equity": 110484.30380728238,
-          "end_equity": 111425.15419239871,
-          "period_return": 0.008515692751772663
+          "start_equity": 106617.0492697827,
+          "end_equity": 107524.97385632241,
+          "period_return": 0.008515754213402671
         },
         {
           "period": "2026Q3",
           "start_date": "2026-06-30",
           "end_date": "2026-09-30",
-          "start_equity": 111425.15419239871,
-          "end_equity": 101448.31752144387,
-          "period_return": -0.08953845963477658
+          "start_equity": 107524.97385632241,
+          "end_equity": 97897.35219079709,
+          "period_return": -0.08953847018265726
         },
         {
           "period": "2026Q4",
           "start_date": "2026-09-30",
-          "end_date": "2026-10-06",
-          "start_equity": 101448.31752144387,
-          "end_equity": 101202.12722166738,
-          "period_return": -0.0024267558673355394
+          "end_date": "2026-11-16",
+          "start_equity": 97897.35219079709,
+          "end_equity": 101103.79037577669,
+          "period_return": 0.03275306342024864
         }
       ]
     }
