@@ -1912,3 +1912,96 @@ PR 머지들에서). 2순위 -- 아직 손대지 않은 백로그: (c) 사이징
 conservative가 몇 주째 무매매인 문제(퀀트+뉴스 통합점수가 임계값에 못 미침)도 스코어링/임계값 판단이라
 여전히 보류 중. PR #8 정리(닫기 또는 충돌 해결)도 다음 세션이 판단. KIS 실계좌 연동과 사업화/포스팅
 자동화 파이프라인은 계속 현우님 지시 대기.
+
+
+---
+
+## 2026-11-16 세션 (자동 재개, 스케줄 실행 #2): equity-based 사이징 -- docstring만 바뀌고 실제로는 배선 안 된 채 9주 방치된 버그 수정 + 가격기준모델 사이징 테스트 보강
+
+**배경**: 스케줄 실행으로 재개. TASKS.md는 여전히 지난 CI 복구 세션(커밋 `87c87f4`)에서 멈춰 있었지만,
+로컬에 `git clone`해보니 main이 그 이후로도 계속 움직이고 있었음 -- PR #11(`feature/market-engine`,
+`sw1/market/options.py`/`trend.py`/`signal_stats.py` 신규 모듈 + 테스트, 아직 SW1/SW2 파이프라인에
+연결되진 않은 독립 라이브러리 코드)과 그 바로 앞 커밋 `9301f88`("Refactor tranche sizing to use current
+equity")가 약 4시간 전(이번 세션 시작 기준) 이미 머지되어 있었음. `9301f88`은 TASKS.md 백로그 (c)의
+"equity-based sizing(`Portfolio.current_equity()` 기반) -- 미배선 상태" 항목을 처리하려는 시도로 보여,
+이번 세션은 먼저 이게 실제로 끝까지 배선됐는지 검증하는 데서 시작함.
+
+**발견한 문제**: `9301f88`은 `sw2/sizing.py`와 `sw2/ledger.py`의 **docstring만** 바꿔서 "이제
+`scripts/run_daily_paper_trading.py`와 `scripts/run_historical_backtest.py`의 모든 호출부가
+`portfolio.current_equity()`를 넘긴다"고 서술했지만, 실제 코드(`grep`으로 직접 확인)는 호출부 3곳
+전부 여전히 `portfolio.starting_cash`를 넘기고 있었음 -- 즉 "이미 끝났다"는 문서만 있고 실제 배선은
+전혀 되지 않은 상태. 더 나쁜 건 `sw2/ledger.py`의 `Portfolio.current_equity()` docstring은 이 주장을
+**2026-09-25부터** 써 온 것으로, 거의 9주 가까이 아무도 실제 호출부를 고치지 않은 채 방치돼 있었음
+(이번 세션 전까지는 `current_equity()`를 실제로 호출하는 곳이 코드베이스에 전혀 없었음). 다음 세션이
+이 docstring만 믿고 "equity-based sizing 완료됨"으로 착각할 뻔한 상황.
+
+**변경 내용**: 3개 호출부 + 2개 테스트 파일, 4커밋 (브라우저 GitHub 에디터, anchor 기반 surgical
+replace 후 SHA-256 전수 대조, `main`에 직접 커밋):
+- `scripts/run_daily_paper_trading.py`(커밋 `0cbcafe`): `process_model_for_day()`와
+  `process_price_criteria_model_for_day()` 양쪽의 `risk_based_tranche_dollars(portfolio.starting_cash,
+  ...)`를 `risk_based_tranche_dollars(portfolio.current_equity(), ...)`로 교체. 이 함수가
+  `run_historical_backtest.py`에서 `daily_script.process_model_for_day()`로 그대로 재사용되므로
+  score-threshold 모델(baseline/technical_only/conservative)은 라이브 일일 실행과 백테스트 양쪽에
+  한 번에 적용됨.
+- `tests/test_run_daily_paper_trading.py`(커밋 `0d4713b`): 신규 테스트 2개 -- 사전에 `equity_curve`에
+  150,000(=starting_cash 100,000보다 큼)을 마크해둔 포트폴리오가 플랫 포트폴리오보다 다음 트랜치를
+  더 크게 사는지, 그 크기가 정확히 `risk_based_tranche_dollars(150_000, ...)`와 일치하고
+  `risk_based_tranche_dollars(100_000, ...)`와는 다른지 직접 검증 (score 모델 경로 +
+  가격기준모델 경로 각 1개).
+- `scripts/run_historical_backtest.py`(커밋 `bf7896c`): `_apply_price_criteria_day()`의 동일한
+  호출부를 동일하게 수정 -- 이건 백테스트 전용 가격기준모델(price_model_1/2) 경로라 위 라이브스크립트
+  수정으로는 커버 안 됐던 부분.
+- `tests/test_run_historical_backtest.py`(커밋 `d0e15d4`): 위와 대응하는 신규 테스트 1개.
+- **회귀 테스트임을 직접 재현 확인**: 로컬에서 세 파일의 `current_equity()`를 임시로 `starting_cash`로
+  되돌린 뒤 신규 테스트 3개를 돌려 전부 실패하는 것을 확인하고(예상대로 `10000.0 == 15000.0` 불일치),
+  다시 되돌려서 전부 통과하는 것을 재확인 -- 그냥 통과하는 assertion이 아니라 실제로 버그를 잡아내는
+  테스트임을 검증함.
+
+**검증**:
+- 로컬 `python -m pytest -q`: **419 passed** (기존 416 + 신규 3), 회귀 없음.
+- 4커밋 전부 `raw.githubusercontent.com` 재fetch 후 SHA-256 완전 일치 확인 (3개는 즉시, `d0e15d4`는
+  raw CDN이 약 1분 이상 갱신 지연을 보여 커밋 diff 뷰 자체로 내용 일치를 직접 대조함-- 과거 세션들이
+  기록한 것과 같은 종류의 일시적 CDN 지연으로 보이며, GitHub 커밋 diff/파일 크기(25.8KB, 541줄)는
+  처음부터 기대값과 일치했음).
+- GitHub Actions `tests` 체크 4커밋 전부(#218 `0cbcafe`, #219 `0d4713b`, #220 `bf7896c`, #221
+  `d0e15d4`) "completed successfully" 확인. PR #11 머지(`87c87f4` 직후) 이후로 main의 `tests` 체크가
+  계속 그린 상태임을 재확인.
+- `historical-backtest` 워크플로 수동 재실행(run #10, commit `5c8b2e0`, run_ts
+  `2026-11-16T15:03:14Z`) 성공, 크래시/실패 없음(`failures: []`, `data_quality.total_nan_close_days: 0`).
+  직전 기록(run #9, 2026-10-07)과 비교:
+  baseline +42.56%→+45.43%(거래224→242), conservative +42.62%→+44.63%(137→148),
+  price_model_1 +52.40%→+49.44%(117→112), price_model_2 +62.26%→+49.51%(160→152),
+  technical_only +86.58%→+70.31%(323→318); 벤치마크 SPY +86.88%→+71.68%, QQQ +110.77%→+75.61%,
+  TLT +1.20%→+1.10%.
+  **중요한 주의사항**: 매매 규칙이 전혀 없는 벤치마크(SPY/QQQ 등)조차 이만큼 크게 움직였으므로, 이
+  변동은 과거 세션들이 반복 기록한 것과 같은 이유 -- 3년 트레일링 윈도우가 2026-10-07→11-16로
+  자연스럽게 전진하며 백테스트 구간 자체가 바뀐 것 -- 이 압도적이며, 이번 사이징 수정의 순수 효과만
+  단독으로 분리해서 읽을 수 있는 비교가 아님(같은 날짜 윈도우에서 수정 전/후를 모두 돌리는 진짜
+  A/B 비교는 추가로 main에 되돌리기 커밋을 만들어야 해서 이번 세션 범위에서는 생략함). 다만 한 가지
+  패턴은 기록해 둘 가치가 있음: 5개 모델 전부 max_drawdown이 이전보다 더 깊어짐(baseline
+  -14.51%→-16.68%, conservative -10.39%→-12.33%, price_model_1 -17.79%→-18.23%, price_model_2
+  -17.70%→-20.21%, technical_only -20.39%→-27.36%) -- 이것도 날짜 윈도우 이동과 완전히 뒤섞여 있어
+  이번 수정이 원인이라고 단정할 수 없지만, equity 기반 사이징은 구조적으로 "오른 뒤에는 더 크게 사고,
+  내린 뒤에는 더 작게 산다"는 특성이 있어 상승 직후 되돌림이 오면 고정 사이징보다 낙폭을 키우는
+  방향으로 작동할 수 있음 -- 다음 세션/현우님이 라이브 데이터가 쌓이면 (날짜 윈도우 혼입 없이) 이
+  낙폭-확대 패턴이 실제로 재현되는지 지켜볼 가치가 있음.
+- 단위 테스트(위 3개 신규 테스트)는 날짜 윈도우와 무관하게 사이징 함수 자체의 방향성(이익 본 뒤
+  더 크게, 손실 본 뒤 더 작게)을 정확히 격리해서 검증하므로, "이 수정이 의도대로 동작하는가"에
+  대한 답은 이 단위 테스트가 주는 것이고, 전체 백테스트 재실행은 "크래시 없이 파이프라인이 여전히
+  일관되게 동작하는가"를 확인하는 통합 스모크 테스트로 봐야 함.
+
+**이번 세션이 보기만 하고 손대지 않은 것**:
+- PR #8(`fix/weekly-trend-date-parse`): 여전히 Open 상태, 체크 1개 실패(`0/1`, failing) -- PR #9가
+  같은 버그를 먼저 고치고 머지돼서 이제 중복+충돌 상태인 것으로 보이나, 이번 세션도 PR 정리(닫기/충돌
+  해결)는 판단이 필요한 영역이라 손대지 않음. 다음 세션 또는 현우님이 정리.
+- PR #11의 `sw1/market/options.py`/`trend.py`/`signal_stats.py`: 테스트는 있지만 SW1/SW2 파이프라인
+  (시그널 생성, 대시보드, 일일 실행) 어디에도 아직 연결 안 된 독립 모듈로 보임 -- 이번 세션은 새 기능을
+  추가하는 세션이 아니라 기존 docstring 거짓말을 고치는 세션이라 이 모듈을 실제로 연결하는 작업은
+  하지 않음. 다음 세션이 "이 분석 지표들을 실제로 어디에 쓸 것인가"를 판단할 여지로 남겨둠.
+
+**다음 세션이 할 일**: 1순위 -- main의 `tests` 체크가 계속 그린을 유지하는지 확인. 2순위 -- 아직
+손대지 않은 백로그: MAX_TRANCHE_FRACTION 추가 인상이나 buy_1/buy_2 임계값 인하 등 사이징/임계값
+튜닝 아이디어 중 하나를 한 세션에 하나만 신중히 검증해서 고를 것(이번 세션은 "새 튜닝"이 아니라
+"이미 결정된 사이징 방식을 실제로 고치는" 버그 수정이었으므로 백로그 소모로 치지 않음). baseline/
+conservative 무매매 문제, PR #8 정리, PR #11의 새 market 모듈 활용 여부도 계속 보류 중. KIS 실계좌
+연동과 사업화/포스팅 자동화 파이프라인은 계속 현우님 지시 대기.
