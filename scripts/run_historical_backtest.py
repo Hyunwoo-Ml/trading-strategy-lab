@@ -298,7 +298,11 @@ def _apply_price_criteria_day(
         tranche_count = existing_position.tranche_count if existing_position else 0
         price_return = portfolio.price_return_from_entry(ticker, price)
         market_context = market_context_by_ticker.get(ticker, MarketContext())
-        tranche_dollars = risk_based_tranche_dollars(portfolio.starting_cash, criteria.stop_loss_pct)
+        # current_equity(), not the fixed starting_cash constant -- mirrors
+        # the live-script fix in scripts/run_daily_paper_trading.py (see its
+        # process_model_for_day comment for the full story: a 2026-11-16
+        # commit described this wiring in docstrings but never did it).
+        tranche_dollars = risk_based_tranche_dollars(portfolio.current_equity(), criteria.stop_loss_pct)
 
         signal = model.decide(
             criteria=criteria,
