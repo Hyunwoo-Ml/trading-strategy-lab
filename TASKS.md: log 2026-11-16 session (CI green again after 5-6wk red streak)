@@ -1822,3 +1822,93 @@ baseline vs conservative 쌍은 `t-test undefined (zero variance)`로 통계 자
 그 외 TASKS.md에 남아있는 항목: 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화) — 계속
 사용자 지시 대기. `Portfolio.current_equity()`(미배선 상태)와 baseline/conservative 2주+
 무매매(스코어링/임계값 이슈)는 2026-10-03 세션이 범위 밖으로 남겨둔 그대로 — 사용자 판단 필요.
+
+
+---
+
+## 2026-11-16 세션 (자동 재개, 스케줄 실행): CI를 9주 만에 그린으로 복구 -- `write_signals()` 날짜 카운터가 테스트 전체에 누적되며 실제 캘린더와 충돌하던 구조적 결함 수정
+
+**배경**: 스케줄 실행으로 재개. TASKS.md 끝까지 재확인 결과, 이번 호출에 딸려온 작업 설명문(RISK_FRACTION
+방금 검증, MDD/뉴스공정성 캐비엇 미기재 등)은 2026-10-03/10-07 세션이 이미 지적한 것과 같은 오래된 캐시였음
+-- 실제로 MDD 지표와 뉴스-블렌드 공정성 캐비엇 모두 2026-09-22~23, 2026-10-07에 이미 구현·배포 완료된
+상태. 더 중요한 발견: **TASKS.md 자체가 2026-10-07 이후 9주 가까이(2026-10-19의 머지커밋 제외) 갱신되지
+않고 방치되어 있었음** -- 그 사이 실제로는 PR #5(SW2 멱등성, 10월 중 머지됨), PR #6(NaN 종가 가드,
+머지됨), PR #7(시그널 스크리너 신규 페이지, 머지됨), PR #9(지표 날짜 파싱/DST 버그 수정, 머지됨), PR #10
+(`feature/fin-tip-lab-brand`, 머지됨 -- 제목으로 보아 사업화/브랜딩 관련, 현우님이 보류 지시한 영역이라
+이번 세션은 전혀 들여다보지 않음)까지 진행되어 있었음. 즉 실제 개발은 (아마도 현우님이 직접 상호작용
+세션으로) 계속 진행되어 왔지만, 이 자동 2시간 주기 세션의 "세션 로그를 TASKS.md에 남긴다"는 습관만
+누락되어 왔던 것으로 보임. 이번 세션 시작 시점에도 커밋 타임스탬프가 수 분 전(08:37~08:44 UTC)까지
+찍혀 있어 실시간으로 다른 세션이 작업 중인 것으로 판단, 코드 영역이 겹칠 위험이 있는 변경은 피하고
+저위험·고가치 항목 하나만 골라 진행함 (아래).
+
+**발견한 실제 문제 (CI가 약 5~6주째 거의 항상 빨간불)**: main 브랜치의 `tests` 체크가 PR #5 머지 이후
+거의 모든 커밋에서 실패 중이었음 (`Merge pull request #5/#6/#7/#9` 전부 `failed: tests`). 매번 실패하는
+테스트 이름이 `test_missing_news_score_for_ticker_does_not_block_even_with_gate_configured`였다가
+PR #9 설명에서는 `is_event_blackout` 관련으로 서술되는 등 겉보기엔 "무작위로 다른 테스트가 실패하는"
+것처럼 보였음.
+
+**근본 원인 (로컬 재현으로 확인)**: `tests/test_run_daily_paper_trading.py`의 `write_signals()` 헬퍼는
+모듈에 동적으로 얹은 `_test_signal_calls` 카운터로 `_SIGNAL_DATES`(2026-09-01부터 60 영업일)에서 다음
+날짜를 뽑아 쓰는데, `wired_script` 픽스처의 `importlib.reload(script)`는 **모듈 소스에 없는, 테스트가
+동적으로 얹은 속성은 지우지 않음** -- 그래서 "매 테스트마다 새로 시작"하려던 의도와 달리 이 카운터가
+파일 전체(모든 테스트)에 걸쳐 계속 누적됨. 로컬에서 디버그 프린트로 확인한 결과
+`test_missing_news_score_for_ticker_does_not_block_even_with_gate_configured` 실행 시점의 누적
+call_index는 31 -> `_SIGNAL_DATES[31]` = `2026-10-14`인데, 이 날짜가 하필
+`sw1/calendar/events.py`에 하드코딩된 **2026년 10월 CPI 발표일 정확히 그 날**
+(`is_event_blackout("2026-10-14").is_blackout == True`)이라 event-blackout 게이트가 걸려 buy_1 진입
+자체가 막힘 -- 테스트가 검증하려던 "뉴스 점수 없음은 게이트를 막지 않아야 한다"와는 전혀 무관한 이유로
+실패한 것. 이 카운터는 앞쪽 테스트가 몇 개 더/덜 추가되느냐에 따라 뒤쪽 테스트들이 밟는 날짜가 계속
+밀리므로, 파일에 테스트가 추가/삭제될 때마다 **어느 테스트가 깨질지 사실상 무작위로 바뀌는** 구조적
+결함이었음 (PR #9가 "is_event_blackout, unrelated"라고 서술한 것도 같은 메커니즘의 다른 시점 증상으로
+추정).
+
+**변경 내용**: 1개 파일, 1커밋 (브라우저 GitHub 에디터, anchor 기반 전체 교체 후 SHA-256 전수 대조,
+`main`에 직접 커밋 -- 테스트 코드만의 변경이라 전략/파라미터 변경에 해당하지 않음):
+- `tests/test_run_daily_paper_trading.py`(커밋 `87c87f4`): `wired_script` 픽스처에
+  `monkeypatch.setattr(script, "_test_signal_calls", 0, raising=False)`를 `importlib.reload(script)`
+  직후에 추가해 매 테스트가 항상 `_SIGNAL_DATES[0]`(2026-09-01)부터 시작하도록 고정 -- 테스트 실행
+  순서/개수와 무관해짐. 왜 이게 필요한지와 10-14 CPI 충돌 메커니즘을 픽스처 docstring에 상세히 기록.
+  기존 테스트 중 write_signals()를 한 테스트 안에서 가장 많이 쓰는 경우도 3회뿐이라(2026-09-01~03),
+  CPI(2026-09-11)/FOMC(2026-09-16)까지는 안전 여유가 있음을 확인.
+
+**검증**:
+- 로컬 재현: 수정 전 `python -m pytest -q` -- 1 failed(위 테스트), 381 passed, 매번 동일하게 재현.
+  디버그 프린트로 call_index=31 -> 2026-10-14 확인, `is_event_blackout('2026-10-14')`가 CPI로 블랙아웃
+  되는 것도 직접 확인.
+- 수정 후 로컬 `python -m pytest -q`를 **3회 연속 실행, 매번 382 passed, 0 failed** (결정론적으로 고쳐짐
+  확인).
+- 커밋 `87c87f4`를 raw.githubusercontent.com으로 재fetch, SHA-256 완전 일치 확인
+  (`586cf50df0f0d4c5982a1dda10ecc4f207f2658b4708079749651d318a1fd033`).
+- GitHub Actions `tests` 워크플로 run #212 (commit `87c87f4`) -- **completed successfully**. 직전
+  커밋들(`c27c9a4`=PR #10 머지, `5483ccc`=PR #9 머지 등)은 모두 `failed: tests`였던 것과 대조적으로,
+  이 커밋에서 main이 처음으로(적어도 PR #5 머지 이후 처음) 그린으로 복귀함.
+- 트레이딩 로직/파라미터를 전혀 건드리지 않았으므로 historical-backtest 재실행은 생략(절차상 불필요).
+
+**다른 세션이 동시에 진행 중이던 작업 (참고, 이번 세션은 건드리지 않음)**:
+- PR #10 (`feature/fin-tip-lab-brand`)이 이번 세션 도중 머지됨 -- 제목상 사업화/브랜딩 관련으로 보여
+  현우님이 보류 지시한 영역이라 내용을 들여다보지 않았음.
+- PR #8 (`fix/weekly-trend-date-parse`)은 여전히 **열린 채로 방치** -- PR #9가 같은 근본 원인(지표 CSV의
+  DST 혼재 날짜)을 더 깔끔한 방식(`sw1/indicators/io.py` 신설)으로 먼저 고쳐 머지됐고, PR #8은 이제
+  중복이자 `main`과 충돌(`TASKS.md`류가 아니라 실제 코드 충돌 가능성) 상태로 보임. 다음 세션 또는
+  현우님이 정리(닫기)하면 될 것으로 보이나, 이번 세션은 능동적으로 손대지 않음 (충돌 해결/PR 정리는
+  과거 PR #5 사례처럼 판단이 필요한 영역이라 보수적으로 접근).
+
+**TASKS.md 공백(2026-10-07~11-16) 동안 실제로 있었던 변화 요약 (커밋 로그 기준, 세부 내용은 각 PR
+자체 설명 참조 -- 다음 세션은 이 시기를 다시 조사할 필요 없음)**:
+- PR #5(SW2 멱등성, 중복/주말 equity 행 제거) 머지됨.
+- PR #6(sw2 NaN 종가 가드) 머지됨.
+- PR #7(`docs/screener.html` 신규 -- 일일 시그널+주봉 추세 통합 스크리닝 페이지, `collect-daily-data.yml`에
+  `generate_screener.py` 연동) 머지됨.
+- PR #9(`sw1/indicators/io.py` 신설 -- 지표 CSV의 DST 혼재 날짜 파싱 버그 수정. 이 버그 때문에 SW2의
+  "주봉 하락추세 시 신규진입 보류" 게이트가 사실상 꺼져 있었음 -- 이제 정상 작동. GOOGL이 현재 이
+  게이트에 걸림) 머지됨.
+- PR #10(`feature/fin-tip-lab-brand`) 머지됨 -- 내용 미확인(보류 영역).
+- PR #8은 미머지 상태로 남음(위 참조).
+
+**다음 세션이 할 일**: 1순위 -- 이 세션 이후에도 main의 `tests` 체크가 계속 그린을 유지하는지 확인(다음
+PR 머지들에서). 2순위 -- 아직 손대지 않은 백로그: (c) 사이징/임계값 추가 튜닝 아이디어
+(MAX_TRANCHE_FRACTION 추가 인상, `Portfolio.current_equity()` 기반 에쿼티 사이징으로 전환 -- 이 메서드는
+여전히 미배선 상태, buy_1/buy_2 임계값 인하) 중 한 세션에 하나만 신중히 검증해서 고를 것. baseline/
+conservative가 몇 주째 무매매인 문제(퀀트+뉴스 통합점수가 임계값에 못 미침)도 스코어링/임계값 판단이라
+여전히 보류 중. PR #8 정리(닫기 또는 충돌 해결)도 다음 세션이 판단. KIS 실계좌 연동과 사업화/포스팅
+자동화 파이프라인은 계속 현우님 지시 대기.
