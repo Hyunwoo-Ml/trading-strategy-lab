@@ -1822,3 +1822,41 @@ baseline vs conservative 쌍은 `t-test undefined (zero variance)`로 통계 자
 그 외 TASKS.md에 남아있는 항목: 1번(KIS 연동), 2번(사업화 파이프라인/포스팅 자동화) — 계속
 사용자 지시 대기. `Portfolio.current_equity()`(미배선 상태)와 baseline/conservative 2주+
 무매매(스코어링/임계값 이슈)는 2026-10-03 세션이 범위 밖으로 남겨둔 그대로 — 사용자 판단 필요.
+
+## 2026-11-16 세션: PR #5/#6/#7 머지 + 주봉 추세가 실데이터에서 항상 실패하던 버그 수정
+
+**머지된 것**: PR #6(NaN 종가 가드, 2026-11-11), PR #5(SW2 일일 실행 멱등성, 2026-11-11, 사용자 승인 후
+머지), PR #7(신호 스크리닝 페이지 `docs/screener.html` + `scripts/generate_screener.py`, 2026-11-16).
+2026-11-16부터 사용자가 "머지는 허락 없이 진행"으로 지시함.
+
+**발견한 버그 (기존 코드, SW2에도 영향)**: `data/indicators/{TICKER}.csv`의 날짜는
+`2026-11-13 00:00:00-05:00`처럼 UTC 오프셋이 붙어 있고, 1년치 기록은 항상 서머타임 전환을 포함해
+`-04:00`/`-05:00`이 섞인다. 이 경우 `pd.read_csv(..., parse_dates=True)`가 DatetimeIndex가 아닌
+문자열 Index를 돌려줘서 `sw1.indicators.weekly.resample_to_weekly`의 `.resample()`이 7종목 전부에서
+예외를 냈다. `scripts/run_daily_paper_trading.py`의 `build_market_context`는 이 예외를 잡고
+`weekly_trend=None`으로 진행하므로, **price_criteria 모델의 "주봉 하락추세면 신규 진입 차단" 게이트가
+실제 일일 실행에서는 동작하지 않고 있었다** (로컬에서 main의 실데이터로 재현: 7종목 모두
+`[WARN] could not build market context ...`, `weekly_trend=None`). 기존 테스트는 tz 없는 mock
+데이터만 써서 못 잡았다.
+
+**수정 (PR #8)**: `resample_to_weekly`가 DatetimeIndex가 아닌 인덱스를 받으면 각 라벨의 앞 10글자
+(거래소 현지 기준 거래일)만 파싱해 DatetimeIndex로 바꾼다. 이미 DatetimeIndex면 그대로 둔다
+(`run_historical_backtest.py` 경로는 변화 없음). 회귀 테스트 2개 추가(`tests/test_weekly_trend.py`):
+혼합 오프셋 CSV를 디스크에서 다시 읽어도 메모리 상의 결과와 같은지, 날짜 문자열 인덱스도 받는지.
+수정 전 코드에서는 둘 다 실패함을 확인. 전체 테스트 379 passed, 1 failed(기존 날짜 의존 실패).
+
+**수정 후 달라지는 것**: 다음 `run-paper-trading` 실행부터 price_criteria 모델에 주봉 게이트가 실제로
+적용된다(2026-11-13 종가 기준 주봉 추세: AAPL/MSFT up, GOOGL down, 나머지 flat). 즉 그 이전의
+price_criteria 모델 페이퍼 트레이딩 기록은 주봉 게이트 없이 만들어진 것이다. 임계값이나 스코어링은
+건드리지 않았다.
+
+**같은 PR의 화면 수정**: `docs/screener.html`의 CSV 파서가 따옴표 필드를 처리하도록 변경
+(`weekly_trend_reason`에 쉼표가 있어 flat 종목의 confirmed/diamond 열이 밀려 읽히던 문제), 주봉 추세
+태그에 사유 툴팁 추가, 현재가 아래 날짜 줄바꿈.
+
+**다음 세션이 할 일**: PR #8 머지 후 첫 `collect-daily-data` 실행이 `data/screener/latest.csv`를
+만들었는지, 라이브 `screener.html`이 그 파일을 그리는지 확인. 첫 `run-paper-trading` 로그에서
+`could not build market context` 경고가 사라졌는지 확인. 진행 중인 큰 방향: 사이트 이름을
+Fin-tip_lab으로 바꾸고 세 페이지를 공통 메뉴로 통합, 종목 범위 확대, 헤드라인 뉴스(무료 공개 피드의
+제목+링크만). 유료 데이터(실적분석, 코인)는 사용자 결정으로 제외. 계속 사용자 지시 대기: KIS 연동,
+스코어링/임계값 변경, walk-forward 검증.
