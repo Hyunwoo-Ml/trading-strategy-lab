@@ -10,13 +10,24 @@ though both bought the same dollar amount -- the classic weakness of
 fixed-fraction sizing.
 
 This module sizes each tranche instead so that IF the stop-loss actually
-triggers, the position loses roughly a fixed fraction of starting cash
-(RISK_FRACTION), regardless of how tight or wide that particular stop is:
-a tighter stop can afford a bigger position for the same dollar risk, a
-wider stop needs a smaller one. The result is clamped to
-[MIN_TRANCHE_FRACTION, MAX_TRANCHE_FRACTION] of starting cash so an
+triggers, the position loses roughly a fixed fraction of a base dollar
+amount (RISK_FRACTION), regardless of how tight or wide that particular
+stop is: a tighter stop can afford a bigger position for the same dollar
+risk, a wider stop needs a smaller one. The result is clamped to
+[MIN_TRANCHE_FRACTION, MAX_TRANCHE_FRACTION] of that base amount so an
 extreme stop (near-zero or very wide) can never produce a nonsensical
 tranche size.
+
+2026-11-16: `risk_based_tranche_dollars()`'s first parameter is still named
+`starting_cash` (kept as-is -- tests/test_sw2_sizing.py pins it as a keyword
+argument), but every caller in scripts/run_daily_paper_trading.py and
+scripts/run_historical_backtest.py now actually passes
+`portfolio.current_equity()` (yesterday's mark-to-market close, or
+starting_cash before any mark has run) rather than the fixed starting_cash
+constant -- finishing the equity-based sizing that sw2/ledger.py's
+`Portfolio.current_equity()` docstring described since 2026-09-25 but that
+no caller had wired up until now. The function itself doesn't care which
+one it's handed; it just scales whatever base amount it's given.
 
 This governs the DOLLAR AMOUNT passed into Portfolio.buy() -- it doesn't
 touch sw2/ledger.py, which stays sizing-agnostic (buy() just clips whatever
