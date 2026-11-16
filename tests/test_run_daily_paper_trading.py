@@ -136,6 +136,50 @@ def test_conservative_tighter_stop_loss_buys_larger_tranche_than_baseline(wired_
     assert conservative_spent > baseline_spent
 
 
+def test_process_model_for_day_sizes_tranche_off_current_equity_not_starting_cash(wired_script):
+    # 2026-11-16: risk_based_tranche_dollars() must be sized off
+    # portfolio.current_equity() (the portfolio's last mark-to-market, or
+    # starting_cash before the first one), not the fixed starting_cash
+    # constant -- see sw2/sizing.py's module docstring and
+    # sw2/ledger.py's Portfolio.current_equity() docstring. A model that
+    # has compounded a gain should commit MORE dollars to its next
+    # tranche than a model still flat at starting_cash, and one nursing a
+    # drawdown should commit LESS -- fixed-starting_cash sizing can't do
+    # either. (A prior same-day commit updated those two docstrings to
+    # describe this as already wired up, but left every call site still
+    # passing portfolio.starting_cash -- this test pins the actual
+    # behavior so that regression can't silently recur.)
+    from sw1.scoring.integrate import DEFAULT_THRESHOLDS
+    from sw2.ledger import Portfolio
+    from sw2.models import TradingModel
+    from sw2.sizing import risk_based_tranche_dollars
+
+    model = TradingModel(name="test_model", thresholds=DEFAULT_THRESHOLDS)
+    signals_df = pd.DataFrame([{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
+
+    # Flat portfolio: never marked, current_equity() falls back to
+    # starting_cash -- the two bases agree here, as a sanity baseline.
+    flat_portfolio = Portfolio(model_name="test_model", starting_cash=100_000.0)
+    script.process_model_for_day(model, flat_portfolio, signals_df, "2026-09-01")
+    flat_spent = flat_portfolio.starting_cash - flat_portfolio.cash
+    assert flat_spent == pytest.approx(risk_based_tranche_dollars(100_000.0, model.thresholds.stop_loss_pct))
+
+    # Portfolio that compounded a gain on a prior mark: current_equity()
+    # is 150,000, well above the 100,000 starting_cash -- the new tranche
+    # must scale with the 150,000 figure, not the original 100,000.
+    grown_portfolio = Portfolio(model_name="test_model", starting_cash=100_000.0)
+    grown_portfolio.equity_curve.append({"date": "2026-08-31", "equity": 150_000.0})
+    script.process_model_for_day(model, grown_portfolio, signals_df, "2026-09-01")
+    grown_spent = grown_portfolio.starting_cash - grown_portfolio.cash
+
+    expected_from_equity = risk_based_tranche_dollars(150_000.0, model.thresholds.stop_loss_pct)
+    expected_from_starting_cash = risk_based_tranche_dollars(100_000.0, model.thresholds.stop_loss_pct)
+    assert expected_from_equity != expected_from_starting_cash  # sanity: the two bases actually disagree
+    assert grown_spent == pytest.approx(expected_from_equity)
+    assert grown_spent != pytest.approx(expected_from_starting_cash)
+    assert grown_spent > flat_spent  # the whole point: a compounded gain buys a bigger next tranche
+
+
 def test_writes_equity_curve_csv_per_model(wired_script):
     write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
     wired_script.main()
@@ -301,6 +345,34 @@ def test_price_criteria_model_tighter_stop_loss_pct_buys_larger_tranche(wired_sc
     tight_spent = tight_state["starting_cash"] - tight_state["cash"]
     wide_spent = wide_state["starting_cash"] - wide_state["cash"]
     assert tight_spent > wide_spent
+
+
+def test_process_price_criteria_model_for_day_sizes_tranche_off_current_equity(wired_script):
+    # Same fix as test_process_model_for_day_sizes_tranche_off_current_equity_
+    # not_starting_cash above, for the price-criteria call site (2026-11-16):
+    # process_price_criteria_model_for_day must size off portfolio.
+    # current_equity(), not the fixed starting_cash constant.
+    from sw1.criteria.generator import PriceCriteriaParams
+    from sw2.ledger import Portfolio
+    from sw2.price_criteria_model import PriceCriteriaModel
+    from sw2.sizing import risk_based_tranche_dollars
+
+    params = PriceCriteriaParams(model_name="price_model_1", stop_loss_pct=-0.08)
+    model = PriceCriteriaModel(params=params)
+    criteria_df = pd.DataFrame([make_criteria_row(close=200.0, buy_1_price=210.0, stop_loss_pct=-0.08)])
+
+    grown_portfolio = Portfolio(model_name="price_model_1", starting_cash=100_000.0)
+    grown_portfolio.equity_curve.append({"date": "2026-09-12", "equity": 150_000.0})
+    wired_script.process_price_criteria_model_for_day(
+        model, grown_portfolio, criteria_df, "2026-09-13", market_regime=None, earnings_dates={}, news_scores=None
+    )
+    grown_spent = grown_portfolio.starting_cash - grown_portfolio.cash
+
+    expected_from_equity = risk_based_tranche_dollars(150_000.0, -0.08)
+    expected_from_starting_cash = risk_based_tranche_dollars(100_000.0, -0.08)
+    assert expected_from_equity != expected_from_starting_cash  # sanity: the two bases actually disagree
+    assert grown_spent == pytest.approx(expected_from_equity)
+    assert grown_spent != pytest.approx(expected_from_starting_cash)
 
 
 def test_price_criteria_model_participates_in_comparisons(wired_script):
