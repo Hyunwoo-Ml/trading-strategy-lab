@@ -275,6 +275,34 @@ def test_apply_price_criteria_day_opens_position_on_buy_1_touch(wired_script):
     assert len(portfolio.equity_curve) == 1
 
 
+def test_apply_price_criteria_day_sizes_tranche_off_current_equity(wired_script):
+    # 2026-11-16: mirrors the fix in scripts/run_daily_paper_trading.py --
+    # _apply_price_criteria_day must size the tranche off
+    # portfolio.current_equity(), not the fixed starting_cash constant, so
+    # a model that has compounded a gain on an earlier historical day
+    # commits more dollars to its next tranche than one still flat.
+    from sw2.ledger import Portfolio
+    from sw2.price_criteria_model import MarketContext, PriceCriteriaModel
+    from sw2.sizing import risk_based_tranche_dollars
+    from sw1.criteria.generator import PriceCriteriaParams
+
+    params = PriceCriteriaParams(model_name="test_model", stop_loss_pct=-0.08, reward_risk_ratio=2.0)
+    model = PriceCriteriaModel(params=params)
+    rows = [{"ticker": "AAPL", "close": 100.0, "buy_1_price": 105.0, "buy_2_price": 95.0, "stop_loss_pct": -0.08, "target_price": 120.0}]
+    context = {"AAPL": MarketContext()}
+
+    grown_portfolio = Portfolio(model_name="test_model", starting_cash=100_000.0)
+    grown_portfolio.equity_curve.append({"date": "2024-01-01", "equity": 150_000.0})
+    wired_script._apply_price_criteria_day(model, grown_portfolio, rows, "2024-01-02", context)
+    grown_spent = grown_portfolio.starting_cash - grown_portfolio.cash
+
+    expected_from_equity = risk_based_tranche_dollars(150_000.0, -0.08)
+    expected_from_starting_cash = risk_based_tranche_dollars(100_000.0, -0.08)
+    assert expected_from_equity != expected_from_starting_cash  # sanity: the two bases actually disagree
+    assert grown_spent == pytest.approx(expected_from_equity)
+    assert grown_spent != pytest.approx(expected_from_starting_cash)
+
+
 def test_apply_price_criteria_day_blocked_entry_when_market_context_gates(wired_script):
     from sw2.ledger import Portfolio
     from sw2.price_criteria_model import MarketContext, PriceCriteriaModel
