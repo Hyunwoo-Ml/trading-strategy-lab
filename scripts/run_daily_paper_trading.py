@@ -48,6 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sw1.calendar.events import is_event_blackout  # noqa: E402
 from sw1.criteria.generator import PriceCriteria, load_price_criteria_params  # noqa: E402
+from sw1.indicators.io import read_indicators_csv  # noqa: E402
 from sw1.indicators.weekly import compute_weekly_trend  # noqa: E402
 from sw2.compare import ComparisonResult, compare_all_pairs  # noqa: E402
 from sw2.governance import evaluate_promotion  # noqa: E402
@@ -118,7 +119,7 @@ def build_market_context(
     indicators_path = INDICATORS_DIR / f"{ticker}.csv"
     if indicators_path.exists():
         try:
-            indicators_df = pd.read_csv(indicators_path, index_col=0, parse_dates=True)
+            indicators_df = read_indicators_csv(indicators_path)
             last = indicators_df.iloc[-1]
             vol_ratio_value = last.get("VOL_RATIO")
             if vol_ratio_value is not None and pd.notna(vol_ratio_value):
