@@ -30,6 +30,8 @@ jobs:
         run: python scripts/collect_daily_data.py
       - name: Generate user-defined price-criteria models (buy1/buy2/target)
         run: python scripts/generate_price_criteria.py
+      - name: Generate multi-timeframe signal screener
+        run: python scripts/generate_screener.py
       - name: Commit collected data
         run: |
           git config user.name "github-actions[bot]"

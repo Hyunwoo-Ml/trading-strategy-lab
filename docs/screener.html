@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Strategy Lab — 신호 스크리닝</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b0f17'/%3E%3Cpath d='M20 65 L40 45 L55 58 L80 28' stroke='%2322d3ee' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0a0d14;
+    --bg-elevated:#10141d;
+    --bg-card:#121722;
+    --bg-card-hover:#151b28;
+    --border:#1f2632;
+    --border-soft:#181e29;
+    --text-primary:#e8ebf1;
+    --text-secondary:#98a2b8;
+    --text-muted:#6b7688;
+    --accent:#22d3ee;
+    --accent-dim:#0e7490;
+    --accent-soft:rgba(34,211,238,0.1);
+    --green:#34d399;
+    --green-dim:rgba(52,211,153,0.14);
+    --red:#f87171;
+    --red-dim:rgba(248,113,113,0.14);
+    --amber:#fbbf24;
+    --amber-dim:rgba(251,191,36,0.14);
+    --gold:#fbbf24;
+    --gold-dim:rgba(251,191,36,0.14);
+    --radius:14px;
+    --radius-sm:9px;
+    --mono: 'SF Mono', 'Roboto Mono', 'Consolas', 'Menlo', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
+    --fs-xs:10px;
+    --fs-sm:11px;
+    --fs-base:13px;
+    --fs-lg:16px;
+    --fs-hero:28px;
+  }
+
+  *{box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(34,211,238,0.06), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 0%, rgba(52,211,153,0.04), transparent 60%);
+    background-attachment:fixed;
+    color:var(--text-primary);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding: 28px 20px 60px; }
+  @media (min-width:640px){ .wrap{ padding: 40px 32px 80px; } }
+
+  a{color:var(--accent);}
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    padding-bottom:28px;
+    margin-bottom:32px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .brand-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg, var(--accent), #0891b2);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    box-shadow:0 0 24px rgba(34,211,238,0.25);
+  }
+  .brand-mark svg{width:20px;height:20px;}
+  .brand-name{ font-size:var(--fs-lg); font-weight:700; letter-spacing:-0.02em; color:var(--text-primary); }
+  .brand-name .mono-tag{
+    font-family:var(--mono); font-size:var(--fs-sm); font-weight:600; color:var(--accent);
+    background:var(--accent-soft); padding:2px 7px; border-radius:5px; margin-left:8px;
+    vertical-align:2px; letter-spacing:0.02em;
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:var(--fs-base); font-family:var(--mono); color:var(--text-secondary);
+    background:var(--bg-elevated); border:1px solid var(--border); padding:6px 12px;
+    border-radius:999px; white-space:nowrap;
+  }
+  .status-dot{
+    width:7px;height:7px;border-radius:50%; background:var(--green);
+    box-shadow:0 0 8px var(--green); animation:pulse-dot 2.2s ease-in-out infinite; flex-shrink:0;
+  }
+  .status-dot.stale{ background:var(--amber); box-shadow:0 0 8px var(--amber); }
+  .status-dot.error{ background:var(--red); box-shadow:0 0 8px var(--red); animation:none; }
+  @keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+  .desc{ font-size:var(--fs-base); color:var(--text-secondary); max-width:680px; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:10px; font-size:var(--fs-sm); color:var(--text-muted); font-family:var(--mono); }
+  .meta-row span{ display:flex;align-items:center;gap:6px; }
+  .meta-row b{ color:var(--text-secondary); font-weight:600; }
+  .nav-link{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:var(--fs-sm); font-weight:600; color:var(--text-secondary);
+    background:var(--bg-elevated); border:1px solid var(--border);
+    padding:7px 14px; border-radius:999px; text-decoration:none; white-space:nowrap;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .nav-link:hover{ border-color:var(--accent); color:var(--accent); }
+  .nav-link.primary{ color:#0a0d14; background:var(--accent); border-color:var(--accent); }
+  .nav-link.primary:hover{ opacity:0.85; color:#0a0d14; }
+
+  /* ---------- Section shell ---------- */
+  section{ margin-bottom:52px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:6px; flex-wrap:wrap; }
+  .section-title{ font-size:var(--fs-lg); font-weight:700; letter-spacing:0.02em; display:flex; align-items:center; gap:8px; }
+  .section-title .idx{ font-family:var(--mono); color:var(--accent); font-size:var(--fs-sm); font-weight:600; }
+  .section-sub{ font-size:var(--fs-sm); color:var(--text-muted); margin-bottom:20px; }
+
+  /* ---------- Loading / error / empty states ---------- */
+  .state-box{
+    border:1px dashed var(--border); border-radius:var(--radius); padding:28px 20px;
+    text-align:center; color:var(--text-muted); font-size:var(--fs-base); background:var(--bg-elevated);
+  }
+  .state-box.error{ border-color:rgba(248,113,113,0.3); color:#e0a3a3; background:rgba(248,113,113,0.04); }
+  .state-box .state-title{ color:var(--text-secondary); font-weight:600; font-size:var(--fs-base); margin-bottom:5px; }
+  .spinner{
+    width:16px;height:16px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--accent);
+    animation:spin 0.8s linear infinite; display:inline-block; vertical-align:-3px; margin-right:8px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- Legend ---------- */
+  .legend{
+    display:flex; flex-wrap:wrap; gap:10px 18px; margin-bottom:18px;
+    font-size:var(--fs-xs); color:var(--text-muted);
+  }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; }
+
+  /* ---------- Screener table ---------- */
+  .table-scroll{
+    background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+    overflow-x:auto;
+  }
+  table.screener{ width:100%; border-collapse:collapse; min-width:860px; font-size:var(--fs-base); }
+  table.screener thead th{
+    text-align:left; font-size:var(--fs-xs); color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:0.05em; font-weight:600; padding:12px 14px; border-bottom:1px solid var(--border);
+    background:var(--bg-elevated); white-space:nowrap; position:sticky; top:0;
+  }
+  table.screener tbody td{
+    padding:12px 14px; border-bottom:1px solid var(--border-soft); white-space:nowrap; vertical-align:middle;
+  }
+  table.screener tbody tr:last-child td{ border-bottom:none; }
+  table.screener tbody tr{ transition:background .12s ease; }
+  table.screener tbody tr:hover{ background:var(--bg-card-hover); }
+  table.screener tbody tr.diamond-row{ background:rgba(251,191,36,0.045); }
+  table.screener tbody tr.diamond-row:hover{ background:rgba(251,191,36,0.09); }
+
+  .cell-ticker{ font-family:var(--mono); font-weight:700; }
+  .cell-ticker-name{ font-size:var(--fs-sm); color:var(--text-muted); font-weight:400; display:block; margin-top:1px; }
+  .cell-price{ font-family:var(--mono); font-weight:600; }
+  .cell-price-sub{ font-size:var(--fs-sm); color:var(--text-muted); font-family:var(--mono); margin-top:1px; }
+  .cell-mono{ font-family:var(--mono); }
+  .cell-mono.pos{ color:var(--green); }
+  .cell-mono.neg{ color:var(--red); }
+
+  .score-bar-wrap{ display:flex; align-items:center; gap:8px; }
+  .score-bar-track{ position:relative; width:64px; height:6px; border-radius:4px; background:#1c2432; overflow:hidden; flex-shrink:0; }
+  .score-bar-mid{ position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--border); }
+  .score-bar-fill{ position:absolute; top:0; bottom:0; border-radius:4px; }
+  .score-bar-fill.pos{ background:linear-gradient(90deg, rgba(52,211,153,0.5), var(--green)); left:50%; }
+  .score-bar-fill.neg{ background:linear-gradient(90deg, var(--red), rgba(248,113,113,0.5)); right:50%; }
+  .score-num{ font-family:var(--mono); font-weight:700; font-size:var(--fs-base); min-width:44px; text-align:right; }
+  .score-num.pos{ color:var(--green); } .score-num.neg{ color:var(--red); } .score-num.neu{ color:var(--text-secondary); }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); font-weight:700;
+    padding:3px 9px; border-radius:5px; font-family:var(--mono); white-space:nowrap;
+  }
+  .badge.buy2{ background:var(--green-dim); color:var(--green); }
+  .badge.buy1{ background:rgba(52,211,153,0.08); color:var(--green); border:1px solid var(--green-dim); }
+  .badge.hold{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
+  .badge.caution{ background:var(--red-dim); color:var(--red); }
+
+  .tag{ display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); font-weight:700; padding:2px 8px; border-radius:5px; font-family:var(--mono); }
+  .tag.up{ background:var(--green-dim); color:var(--green); }
+  .tag.down{ background:var(--red-dim); color:var(--red); }
+  .tag.flat{ background:var(--bg-elevated); color:var(--text-secondary); border:1px solid var(--border-soft); }
+  .tag.unknown{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
+
+  .confirm-check{ color:var(--green); font-weight:700; }
+  .confirm-dash{ color:var(--text-muted); }
+
+  .diamond-mark{ color:var(--gold); font-weight:700; font-size:15px; }
+  .diamond-badge{
+    display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-xs); font-weight:700;
+    padding:3px 9px; border-radius:5px; font-family:var(--mono);
+    background:var(--gold-dim); color:var(--gold); border:1px solid rgba(251,191,36,0.3);
+  }
+
+  footer{
+    margin-top:40px; padding-top:24px; border-top:1px solid var(--border-soft);
+    display:flex; flex-direction:column; gap:10px; font-size:var(--fs-xs); color:var(--text-muted);
+  }
+  footer .repo-link{
+    display:inline-flex; align-items:center; gap:6px; color:var(--text-secondary); text-decoration:none;
+    border:1px solid var(--border); padding:7px 12px; border-radius:8px; width:fit-content;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  footer .repo-link:hover{ border-color:var(--accent); color:var(--accent); }
+  footer .foot-note{ line-height:1.7; max-width:680px; }
+
+  @media (max-width:380px){
+    .brand-name{ font-size:14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 16 L9 10 L13 14 L21 5" stroke="#0a0d14" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">Trading Strategy Lab<span class="mono-tag">신호 스크리닝</span></div>
+        </div>
+      </div>
+      <div class="status-pill"><span class="status-dot" id="status-dot"></span><span id="last-updated">데이터 불러오는 중…</span></div>
+    </div>
+    <div class="desc">M7 7종목의 일봉 매매 신호(RSI · MACD · Bollinger Bands · 이동평균 교차 + 뉴스 감성 통합점수)를 주봉 추세 확인과 함께 한 번에 스캔합니다. 일봉 신호가 주봉 추세와 같은 방향일 때만 "확인"으로 표시되고, 2차 매수 신호가 주봉 상승추세와 함께 나타나는 가장 강한 경우만 ◆ 로 표시됩니다.</div>
+    <div class="meta-row">
+      <span>⚙ <b>GitHub Actions</b>로 매 평일 자동 갱신</span>
+      <span>📡 정적 페이지 · 백엔드 없음 · 실제 매매 미실행 (화면 표시 전용)</span>
+      <a class="nav-link" href="index.html">← SW1 퀀트 시그널 카드 보기</a>
+      <a class="nav-link" href="sw2.html">SW2 페이퍼 트레이딩 성과 →</a>
+    </div>
+  </header>
+
+  <section id="screener-section">
+    <div class="section-head">
+      <div class="section-title"><span class="idx">01</span> 멀티 타임프레임 신호 스크리너</div>
+    </div>
+    <div class="section-sub">통합점수 순으로 정렬 · 통합점수 = Quant Score(기술지표) × 60% + News Score(뉴스 감성) × 40% (뉴스 미입력 종목은 0으로 처리). 매매 신호 임계값·주봉 추세 로직은 기존 SW1/SW2 코드를 그대로 재사용하며, 이 화면은 그 결과를 한 테이블에 모아 보여주는 용도일 뿐 새로운 매매 로직을 추가하지 않습니다.</div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--green);"></span>매수 우위 (buy_1 / buy_2)</span>
+      <span><span class="dot" style="background:var(--red);"></span>주의 (caution)</span>
+      <span><span class="diamond-mark">◆</span> 2차 매수 + 주봉 상승추세 동시 확인 (최우선 관심)</span>
+      <span><span class="confirm-check">✓</span> 일봉 신호가 주봉 추세와 같은 방향</span>
+    </div>
+
+    <div id="screener-content">
+      <div class="state-box"><span class="spinner"></span>스크리닝 데이터를 불러오는 중입니다…</div>
+    </div>
+  </section>
+
+  <footer>
+    <a class="repo-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub 저장소 보기
+    </a>
+    <div class="foot-note">이 화면은 data/screener/latest.csv(scripts/generate_screener.py가 매 평일 GitHub Actions에서 생성)를 읽어 보여주는 읽기 전용 정적 스크리너입니다. 표시되는 신호·주봉 추세는 전부 SW1/SW2가 이미 계산해 쓰고 있는 로직을 그대로 재사용한 것이며, 이 화면 자체는 어떤 실거래/모의거래 결정도 내리지 않습니다.</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/";
+  var SCREENER_URL = BASE + "data/screener/latest.csv";
+  var STALE_THRESHOLD_DAYS = 4; // mirrors index.html's collect-daily-data.yml cadence assumption
+
+  var TICKER_NAMES = {
+    AAPL: "Apple Inc.",
+    MSFT: "Microsoft Corp.",
+    GOOGL: "Alphabet Inc.",
+    AMZN: "Amazon.com Inc.",
+    NVDA: "NVIDIA Corp.",
+    META: "Meta Platforms",
+    TSLA: "Tesla Inc."
+  };
+
+  function pipelineDaysStale(lastRunDate){
+    var a = Date.UTC(lastRunDate.getUTCFullYear(), lastRunDate.getUTCMonth(), lastRunDate.getUTCDate());
+    var now = new Date();
+    var b = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    return Math.round((b - a) / 86400000);
+  }
+
+  function fmtNum(v, digits){
+    if(v === null || v === undefined || isNaN(v)) return "—";
+    return Number(v).toLocaleString("en-US", { minimumFractionDigits:digits, maximumFractionDigits:digits });
+  }
+  function parseNumOrNull(s){
+    if(s === undefined || s === null) return null;
+    var t = String(s).trim();
+    if(t === "" || t.toLowerCase() === "nan") return null;
+    var n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  }
+  function parseBoolOrNull(s){
+    var t = String(s === undefined || s === null ? "" : s).trim().toLowerCase();
+    if(t === "true") return true;
+    if(t === "false") return false;
+    return null;
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  /* Minimal defensive CSV parser: no quoted-comma fields in this dataset. */
+  function parseCSV(text){
+    if(!text) return [];
+    var lines = text.replace(/\r\n/g,"\n").split("\n").filter(function(l){ return l.trim().length > 0; });
+    if(lines.length < 1) return [];
+    var headers = lines[0].split(",").map(function(h){ return h.trim(); });
+    var rows = [];
+    for(var i=1;i<lines.length;i++){
+      var cells = lines[i].split(",");
+      var row = {};
+      for(var j=0;j<headers.length;j++){
+        row[headers[j]] = cells[j] !== undefined ? cells[j].trim() : "";
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function fetchText(url){
+    return fetch(url, { cache:"no-store" }).then(function(res){
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.text();
+    });
+  }
+
+  function stateBox(title, sub, isError){
+    return '<div class="state-box' + (isError ? ' error' : '') + '">' +
+      '<div class="state-title">' + escapeHtml(title) + '</div>' +
+      (sub ? '<div>' + escapeHtml(sub) + '</div>' : '') +
+    '</div>';
+  }
+
+  function signalBadge(signal){
+    var map = {
+      buy_2: { label:"2차 매수", cls:"buy2" },
+      buy_1: { label:"1차 매수", cls:"buy1" },
+      caution: { label:"주의", cls:"caution" },
+      hold: { label:"관망", cls:"hold" }
+    };
+    var m = map[signal] || { label: signal || "—", cls:"hold" };
+    return '<span class="badge ' + m.cls + '">' + escapeHtml(m.label) + '</span>';
+  }
+
+  function weeklyTrendTag(trend){
+    var map = {
+      up: { label:"상승", cls:"up" },
+      down: { label:"하락", cls:"down" },
+      flat: { label:"횡보", cls:"flat" }
+    };
+    var m = map[trend];
+    if(!m) return '<span class="tag unknown">데이터 부족</span>';
+    return '<span class="tag ' + m.cls + '">' + escapeHtml(m.label) + '</span>';
+  }
+
+  function rsiCell(rsi){
+    if(rsi === null) return '<span class="cell-mono">—</span>';
+    var cls = rsi >= 70 ? "neg" : (rsi <= 30 ? "pos" : "");
+    return '<span class="cell-mono ' + cls + '">' + rsi.toFixed(1) + '</span>';
+  }
+  function macdCell(macd){
+    if(macd === null) return '<span class="cell-mono">—</span>';
+    var cls = macd >= 0 ? "pos" : "neg";
+    var arrow = macd >= 0 ? "▲" : "▼";
+    return '<span class="cell-mono ' + cls + '">' + arrow + ' ' + macd.toFixed(3) + '</span>';
+  }
+  function bbCell(bb){
+    if(bb === null) return '<span class="cell-mono">—</span>';
+    var suffix = bb >= 0.8 ? " 상단권" : (bb <= 0.2 ? " 하단권" : "");
+    return '<span class="cell-mono">' + bb.toFixed(2) + suffix + '</span>';
+  }
+  function maCrossCell(v){
+    var t = (v || "").toLowerCase().trim();
+    if(t === "golden") return '<span class="tag up">▲ 골든</span>';
+    if(t === "dead") return '<span class="tag down">▼ 데드</span>';
+    return '<span class="cell-mono">—</span>';
+  }
+
+  function scoreBar(v){
+    var cls = v === null ? "neu" : (v >= 0 ? "pos" : "neg");
+    var numStr = v === null ? "—" : (v>=0?"+":"") + v.toFixed(2);
+    var track = '<div class="score-bar-track"><div class="score-bar-mid"></div>';
+    if(v !== null){
+      var clamped = Math.max(-1, Math.min(1, v));
+      var pct = Math.abs(clamped) * 50;
+      track += '<div class="score-bar-fill ' + (clamped>=0?"pos":"neg") + '" style="width:' + pct.toFixed(1) + '%;"></div>';
+    }
+    track += '</div>';
+    return '<div class="score-bar-wrap">' + track + '<span class="score-num ' + cls + '">' + numStr + '</span></div>';
+  }
+
+  function buildRow(row){
+    var ticker = row.ticker || "?";
+    var close = parseNumOrNull(row.close);
+    var rsi = parseNumOrNull(row.rsi);
+    var macd = parseNumOrNull(row.macd_hist);
+    var bb = parseNumOrNull(row.bb_pct_b);
+    var integrated = parseNumOrNull(row.integrated_score);
+    var confirmed = parseBoolOrNull(row.confirmed);
+    var diamond = parseBoolOrNull(row.diamond);
+    var weeklyTrend = (row.weekly_trend || "").trim();
+
+    var confirmCell = diamond
+      ? '<span class="diamond-badge">◆ 다중확인</span>'
+      : (confirmed ? '<span class="confirm-check">✓ 주봉확인</span>' : '<span class="confirm-dash">—</span>');
+
+    return '<tr class="' + (diamond ? "diamond-row" : "") + '">' +
+      '<td><span class="cell-ticker">' + escapeHtml(ticker) + (diamond ? ' <span class="diamond-mark">◆</span>' : '') + '</span>' +
+        '<span class="cell-ticker-name">' + escapeHtml(TICKER_NAMES[ticker] || "") + '</span></td>' +
+      '<td><span class="cell-price">' + (close===null?"—":"$" + fmtNum(close,2)) + '</span>' +
+        '<span class="cell-price-sub">' + escapeHtml(row.date || "") + '</span></td>' +
+      '<td>' + signalBadge(row.signal) + '</td>' +
+      '<td>' + scoreBar(integrated) + '</td>' +
+      '<td>' + rsiCell(rsi) + '</td>' +
+      '<td>' + macdCell(macd) + '</td>' +
+      '<td>' + bbCell(bb) + '</td>' +
+      '<td>' + maCrossCell(row.ma_cross) + '</td>' +
+      '<td>' + weeklyTrendTag(weeklyTrend) + '</td>' +
+      '<td>' + confirmCell + '</td>' +
+    '</tr>';
+  }
+
+  function renderTable(rows){
+    rows = rows.slice().sort(function(a,b){
+      var sa = parseNumOrNull(a.integrated_score);
+      var sb = parseNumOrNull(b.integrated_score);
+      if(sa === null) sa = -Infinity;
+      if(sb === null) sb = -Infinity;
+      return sb - sa;
+    });
+    var body = rows.map(buildRow).join("");
+    return '<div class="table-scroll"><table class="screener">' +
+      '<thead><tr>' +
+        '<th>종목</th><th>현재가</th><th>일봉 신호</th><th>통합점수</th><th>RSI(14)</th>' +
+        '<th>MACD Hist</th><th>BB %B</th><th>MA 교차</th><th>주봉 추세</th><th>확인</th>' +
+      '</tr></thead>' +
+      '<tbody>' + body + '</tbody>' +
+    '</table></div>';
+  }
+
+  function updateStatusPill(rows){
+    var dot = document.getElementById("status-dot");
+    var label = document.getElementById("last-updated");
+    var dates = rows.map(function(r){ return r.date; }).filter(Boolean).sort();
+    if(dates.length === 0){
+      dot.className = "status-dot error";
+      label.textContent = "날짜 정보 없음";
+      return;
+    }
+    var lastDate = dates[dates.length - 1];
+    var parsed = new Date(lastDate + "T00:00:00Z");
+    if(isNaN(parsed.getTime())){
+      dot.className = "status-dot";
+      label.textContent = lastDate + " 기준";
+      return;
+    }
+    var staleDays = pipelineDaysStale(parsed);
+    if(staleDays > STALE_THRESHOLD_DAYS){
+      dot.className = "status-dot stale";
+      label.textContent = lastDate + " 기준 (" + staleDays + "일 경과 — 갱신 지연 가능)";
+    } else {
+      dot.className = "status-dot";
+      label.textContent = lastDate + " 기준";
+    }
+  }
+
+  function loadScreener(){
+    var el = document.getElementById("screener-content");
+    fetchText(SCREENER_URL).then(function(text){
+      var rows = parseCSV(text);
+      if(rows.length === 0){
+        el.innerHTML = stateBox("스크리닝 데이터가 아직 없습니다", "data/screener/latest.csv 가 아직 생성되지 않았습니다 — 다음 collect-daily-data 실행을 기다려 주세요.");
+        document.getElementById("status-dot").className = "status-dot error";
+        document.getElementById("last-updated").textContent = "데이터 없음";
+        return;
+      }
+      el.innerHTML = renderTable(rows);
+      updateStatusPill(rows);
+    }).catch(function(err){
+      el.innerHTML = stateBox("스크리닝 데이터를 불러오지 못했습니다", "data/screener/latest.csv 를 확인해 주세요 (" + err.message + ")", true);
+      document.getElementById("status-dot").className = "status-dot error";
+      document.getElementById("last-updated").textContent = "로드 실패";
+    });
+  }
+
+  loadScreener();
+})();
+</script>
+</body>
+</html>
