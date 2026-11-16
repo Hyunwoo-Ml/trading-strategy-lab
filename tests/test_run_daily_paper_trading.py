@@ -15,8 +15,24 @@ import run_daily_paper_trading as script  # noqa: E402
 @pytest.fixture
 def wired_script(tmp_path, monkeypatch):
     """Points the script's module-level paths at a scratch directory so
-    tests never touch the real data/ folder, then reloads it fresh."""
+    tests never touch the real data/ folder, then reloads it fresh.
+
+    2026-11-16: importlib.reload() re-runs the module's top-level code but
+    does NOT clear attributes that were only ever set dynamically from
+    outside the module (write_signals() below stamps `_test_signal_calls`
+    onto `script`, not onto the module source) -- so without this reset the
+    counter kept accumulating across every test in the whole file/session.
+    That silently shifted each later test's write_signals() date further
+    into _SIGNAL_DATES, and once enough tests had run the date landed
+    exactly on a real FOMC/CPI date in sw1.calendar.events' hardcoded
+    calendar (e.g. 2026-10-14 is a CPI release day), tripping the event-
+    blackout gate in an unrelated test and failing it for a reason that
+    had nothing to do with what it was checking. Resetting here makes
+    every test's own write_signals() sequence start at _SIGNAL_DATES[0]
+    (2026-09-01), independent of how many tests ran before it or how many
+    tests get added later."""
     importlib.reload(script)
+    monkeypatch.setattr(script, "_test_signal_calls", 0, raising=False)
     data_dir = tmp_path / "data"
     monkeypatch.setattr(script, "DATA_DIR", data_dir)
     monkeypatch.setattr(script, "SIGNALS_PATH", data_dir / "signals" / "latest.csv")
