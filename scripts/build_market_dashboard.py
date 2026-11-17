@@ -85,9 +85,20 @@ def write_outputs(watchlist: dict, details: dict, macro: dict, out_dir: Path = M
         )
 
 
+def load_previous(out_dir: Path) -> dict:
+    """Last run's per-ticker details, used to carry forward option snapshots."""
+    previous = {}
+    for path in (out_dir / "tickers").glob("*.json"):
+        try:
+            previous[path.stem] = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+    return previous
+
+
 def main(source=None, out_dir: Path = MARKET_DIR) -> int:
     source = source or YahooFredSource()
-    watchlist, details, macro = build_all(source)
+    watchlist, details, macro = build_all(source, previous=load_previous(out_dir))
     if not watchlist["rows"]:
         print("[ERROR] no tickers loaded -- nothing written")
         return 1
