@@ -41,6 +41,9 @@
   .chip-value{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;}
   .chip-change{font-family:var(--mono);font-size:12px;font-weight:600;white-space:nowrap;}
   .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--text-secondary);}
+  .chip.fed{min-width:168px;}
+  .chip.fed .chip-value{font-family:inherit;}
+  .strip-note{font-size:11px;color:var(--text-muted);margin:-14px 0 22px;}
 
   /* summary cards */
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:30px;}
@@ -112,9 +115,10 @@
     <h1 class="page-title">시장 한눈에</h1>
     <span class="status-pill"><span class="status-dot" id="status-dot"></span><span id="as-of">불러오는 중…</span></span>
   </div>
-  <p class="page-sub">미국 장 마감 후 매일 자동 갱신 · 공개 데이터(Yahoo Finance, FRED)로 계산한 참고 지표</p>
+  <p class="page-sub">상단 시세는 미국 장중 15분 간격, 나머지는 장 마감 후 매일 자동 갱신 · 공개 데이터(Yahoo Finance, FRED, CME 연방기금금리 선물)로 계산한 참고 지표</p>
 
   <div class="strip" id="strip" aria-label="주요 시장 지표"></div>
+  <p class="strip-note" id="strip-note"></p>
   <div class="cards" id="cards"></div>
 
   <h2 class="section-title">워치리스트</h2>
@@ -158,14 +162,44 @@
   }
 
   /* ---------- strip + cards ---------- */
-  function renderStrip(strip){
-    document.getElementById("strip").innerHTML = (strip || []).map(function(s){
+  var LIVE_URL = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/data-live/live.json";
+
+  function fedChip(f){
+    if (!f || f.error || !f.meeting) return "";
+    var md = Number(f.meeting.slice(5, 7)) + "/" + Number(f.meeting.slice(8, 10));
+    var sides = [["동결", f.hold], ["인하", f.cut], ["인상", f.hike]].filter(function(x){ return x[1] > 0.005; })
+      .sort(function(a, b){ return b[1] - a[1]; });
+    if (!sides.length) return "";
+    var pct = function(x){ return Math.round(x[1] * 100) + "%"; };
+    var main = sides[0], rest = sides.slice(1);
+    var moveNote = (main[0] !== "동결" ? " " + f.move_bp + "bp" : "");
+    var tip = "연방기금금리 선물로 계산한 근사치예요. CME FedWatch 공식 수치와 다를 수 있어요." +
+      (f.current_range ? " 현재 목표 범위 " + f.current_range + "." : "") +
+      " 시장이 반영한 변화 " + signed(f.implied_change_bp, 1, "bp") + ".";
+    return '<div class="chip fed" title="' + esc(tip) + '"><div class="chip-label">다음 FOMC ' + md + ' (선물 기준)</div>' +
+      '<div class="chip-value">' + main[0] + moveNote + ' ' + pct(main) + '</div>' +
+      '<div class="chip-change flat">' + (rest.length ? rest.map(function(x){ return x[0] + " " + pct(x); }).join(" · ") : "다른 결과 0%") + '</div></div>';
+  }
+
+  function renderStrip(strip, live){
+    var useLive = live && live.strip && live.strip.some(function(s){ return s.last != null; });
+    var items = useLive ? live.strip.map(function(s, i){ return s.last == null && strip && strip[i] ? strip[i] : s; }) : (strip || []);
+    document.getElementById("strip").innerHTML = (live ? fedChip(live.fedwatch) : "") + items.map(function(s){
       var value = s.last == null ? "—" : s.ticker === "^TNX" ? num(s.last, 3) + "%" : num(s.last, s.last >= 1000 ? 0 : 2);
       var ch = s.unit === "bp" ? signed(s.change, 1, "bp") : signed(s.change, 2, "%");
       return '<div class="chip"><div class="chip-label">' + esc(s.label) + '</div>' +
         '<div class="chip-value">' + value + '</div>' +
         '<div class="chip-change ' + cls(s.change) + '">' + ch + '</div></div>';
     }).join("");
+    var note = document.getElementById("strip-note");
+    if (useLive){
+      var k = new Date(new Date(live.generated_at).getTime() + 9 * 3600000);  // KST = UTC+9, no DST
+      var two = function(n){ return (n < 10 ? "0" : "") + n; };
+      var kst = (k.getUTCMonth() + 1) + "/" + k.getUTCDate() + " " + two(k.getUTCHours()) + ":" + two(k.getUTCMinutes());
+      note.textContent = "시세 " + kst + " (한국시간) 기준 · 미국 장중 15분 간격 갱신, 시세 자체도 약 15분 지연될 수 있어요.";
+    } else {
+      note.textContent = "시세는 장 마감 기준이에요.";
+    }
   }
 
   function pctile(p){ return p == null ? "—" : "1년 중 " + Math.round(p * 100) + "% 위치"; }
@@ -356,11 +390,15 @@
     label.textContent = asOf + " 장 마감 기준" + (days > 4 ? " (" + days + "일 전, 갱신 지연)" : "");
   }
 
-  Promise.all([fetchJSON("watchlist.json"), fetchJSON("macro.json").catch(function(){ return null; })]).then(function(res){
-    var w = res[0], m = res[1];
+  var live = fetch(LIVE_URL, {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+  Promise.all([fetchJSON("watchlist.json"), fetchJSON("macro.json").catch(function(){ return null; }), live]).then(function(res){
+    var w = res[0], m = res[1], lv = res[2];
+    // Ignore a live snapshot older than the end-of-day data (e.g. the live job stopped).
+    if (lv && m && m.strip && m.strip[0] && m.strip[0].as_of && lv.generated_at.slice(0, 10) < m.strip[0].as_of) lv = null;
     state.rows = w.rows || []; state.groups = w.groups || [];
     setStatus(w.as_of, w.generated_at);
-    if (m){ renderStrip(m.strip); renderCards(m); }
+    if (m || lv) renderStrip(m && m.strip, lv);
+    if (m) renderCards(m);
     renderGroupFilters(); renderTable();
     if (w.failures && w.failures.length){
       document.getElementById("count").textContent += " · 불러오지 못한 종목: " + w.failures.map(function(f){ return f.ticker; }).join(", ");
