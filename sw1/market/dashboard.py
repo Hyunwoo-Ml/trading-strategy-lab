@@ -29,10 +29,12 @@ import pandas as pd
 
 from sw1.indicators.io import to_market_dates
 from sw1.market.analyst import target_summary
+from sw1.market.flow import flow as build_flow
+from sw1.market.flow import move_check
 from sw1.market.macro_fit import FACTORS as MACRO_FACTORS
 from sw1.market.macro_fit import macro_fit
 from sw1.market.news import merge as merge_news
-from sw1.market.news import keep_for_ticker, news_tone, parse_yahoo_news
+from sw1.market.news import keep_for_macro, keep_for_ticker, news_tone, parse_yahoo_news
 from sw1.market.options import ExpiryChain, analyze_chains, chain_quality
 from sw1.market.signal_stats import evaluate_all, headline_signal
 from sw1.market.trend import compute_trend_position, compute_trend_strength
@@ -167,6 +169,7 @@ def build_ticker(source: MarketSource, member: Member, with_options: bool = True
         "options": options,
         "options_error": options_error,
         "options_stale": False,
+        "flow": build_flow(close, options, as_of.isoformat(), _pct(last, close.iloc[-2]) if len(close) > 1 else None),
         "history_bars": len(hist),
         "chart": [
             {"d": d.date().isoformat(), "c": round(float(c), 4)}
@@ -191,6 +194,7 @@ def summary_row(detail: dict) -> dict:
         "trend_label": detail["trend"]["label"],
         "pct_from_high": detail["position"]["pct_from_high"],
         "return_20d": detail["position"]["return_20d"],
+        "return_5d": detail["position"].get("return_5d"),
         "above_ma50": (detail["position"]["pct_vs_ma50"] or 0) > 0 if detail["position"]["pct_vs_ma50"] is not None else None,
         "signal": {
             "key": head.get("key"),
@@ -209,6 +213,7 @@ def summary_row(detail: dict) -> dict:
         "options_stale": bool(detail.get("options_stale")),
         "options_as_of": opt.get("as_of"),
         "news_tone": detail.get("news_tone"),
+        "next_earnings": detail.get("next_earnings"),
         "target_tone": (detail.get("analyst") or {}).get("tone"),
         "macro_fit": (detail.get("macro") or {}).get("label"),
     }
@@ -394,10 +399,12 @@ def enrich(detail: dict, source: MarketSource, factor_closes: dict, now: datetim
     """Add the news, analyst-target and macro-fit pieces to one ticker's detail."""
     t = detail["ticker"]
     items = parse_yahoo_news(_optional(source, "news", t), t, "company")
-    if detail.get("group") != INDEX_GROUP:  # an ETF's list is market news; a stock's must name the company
-        items = keep_for_ticker(items, t, detail.get("name"))
+    # an ETF's list is market news (keep macro-topic items); a stock's must name the company
+    items = keep_for_macro(items) if detail.get("group") == INDEX_GROUP else keep_for_ticker(items, t, detail.get("name"))
     detail["news"] = merge_news(items, limit=12, now=now, max_age_days=10)
     detail["news_tone"] = news_tone(items, now)
+    ne = _optional(source, "next_earnings", t)
+    detail["next_earnings"] = ne.isoformat() if hasattr(ne, "isoformat") else (str(ne)[:10] if ne else None)
     detail["analyst"] = target_summary(_optional(source, "upgrades", t), _optional(source, "price_targets", t), now, detail["close"])
     chart = detail.get("chart") or []
     close = pd.Series([p["c"] for p in chart], index=pd.to_datetime([p["d"] for p in chart]))
@@ -415,7 +422,10 @@ def build_all(source: MarketSource, universe: list[Member] | None = None, with_o
     for m in universe:
         try:
             detail = build_ticker(source, m, with_options=with_options)
-            details[m.ticker] = carry_forward_options(detail, previous.get(m.ticker))
+            prev = previous.get(m.ticker) or {}
+            if detail.get("flow") is not None:
+                detail["flow"]["move_check"] = move_check(prev.get("options"), detail["as_of"], detail["change_pct"])
+            details[m.ticker] = carry_forward_options(detail, prev or None)
             if detail.get("options_error"):
                 log(f"[WARN] {m.ticker} options: {detail['options_error']}" + (" (kept previous snapshot)" if details[m.ticker]["options_stale"] else ""))
         except Exception as exc:  # noqa: BLE001 -- one bad ticker must not stop the run
