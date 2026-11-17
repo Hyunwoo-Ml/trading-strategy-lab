@@ -1,0 +1,19 @@
+name: translate-eval
+
+# Temporary (Fin-tip_lab): compares free offline EN->KO translation models on
+# real headlines. Runs only on pushes to the test/translate-eval branch.
+on:
+  push:
+    branches: [test/translate-eval]
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ctranslate2 sentencepiece requests huggingface_hub
+      - run: python scripts/eval_translate.py
