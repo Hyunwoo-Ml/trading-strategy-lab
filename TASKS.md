@@ -2164,3 +2164,109 @@ price_model_2의 0.16) -- 즉 지금 당장 MAX_TRANCHE_FRACTION만 올려봐야
 필요), baseline/conservative 무매매 문제(이슈 #12 이후 뉴스 입력이 재개되면 재관찰), PR #8 정리,
 PR #11의 새 market 모듈 활용 여부도 계속 보류 중. KIS 실계좌 연동과 사업화/포스팅 자동화
 파이프라인은 계속 현우님 지시 대기.
+
+
+---
+
+## 2026-11-17 세션 (자동 재개, 스케줄 실행 #5): 밀린 현황 따라잡기 + PR #8 정리 + 라이브 대시보드에 "뉴스 입력 공백" 캐비앗 추가
+
+**배경**: 스케줄 실행으로 재개. `git clone`으로 main 확인한 결과, TASKS.md의 마지막 기록(세션 #4,
+커밋 `3f46c4e`)과 현재 main 사이에 **이 세션들이 전혀 기록하지 못한 상당한 작업**이 이미 들어가
+있었음 — 현우님이 직접(또는 다른 대화에서 Claude와 함께) 작업한 것으로 보이는 PR #11/#13/#14와
+그 사이 커밋들. TASKS.md만 보고 다음 할 일을 판단하면 이미 끝난 일을 중복하거나(예: 사이징 추가
+튜닝) 이미 있는 기능을 다시 만들 뻔했어서, 이번 세션은 먼저 실제 코드/데이터를 직접 까서 현재
+상태를 재확인하는 데 시간을 썼음. 아래는 그 확인 결과 + 이번 세션이 실제로 추가한 것.
+
+**확인 결과 — TASKS.md 백로그 중 이미 완료돼 있던 항목들 (문서화되지 않았던 것)**:
+- **RISK_FRACTION 0.004 → 0.008, MAX_TRANCHE_FRACTION 0.12 → 0.20** (`sw2/sizing.py`, 커밋
+  `9301f88` 부근 "2026-09-22 retune" 문서화 — 날짜 라벨은 오래전이지만 실제 상수값은 최근에
+  이렇게 올라가 있었음). 세션 #4가 "지금 당장 MAX_TRANCHE_FRACTION만 올려도 효과 없다"고 남긴
+  경고와 달리, RISK_FRACTION 자체를 올려 cap 근처까지 fraction이 올라오도록 구조적으로 손댄
+  상태 — 세션 #4가 제안한 "RISK_FRACTION을 추가로 올리거나 buy_1/buy_2 임계값을 조정" 중
+  전자가 이미 이뤄져 있었음.
+- **historical-backtest에 max_drawdown 지표 추가** (백로그 항목 (a), "리스크 지표 전혀 없음"):
+  `scripts/run_historical_backtest.py`가 `sw1.validation.backtest.max_drawdown()`을 호출해
+  `data/backtest/results.json`의 각 모델/벤치마크 payload에 `max_drawdown.{max_drawdown_pct,
+  peak_date, trough_date, peak_equity, trough_equity}`로 이미 기록 중이고, `docs/sw2.html`
+  섹션 02 카드에도 "최대 낙폭(MDD) -16.68%" 식으로 호버 시 고점/저점 날짜까지 노출되고 있었음.
+- **baseline/conservative 뉴스 블렌드 백테스트 불공정성 캐비앗** (백로그 항목 (b)): `results.json`
+  의 `config.scope_notes`와 각 모델 payload의 `news_blend_weight` 필드, `docs/sw2.html`의 해당
+  모델 카드에 "⚠ 뉴스 비중 40% 무효화(이 백테스트 한정)" 배지(호버 시 상세 설명)로 이미 반영
+  중이었음.
+- **PR #11의 `sw1/market/*` 모듈** (세션 #2가 "아직 SW1/SW2 파이프라인에 연결 안 된 독립
+  라이브러리"로 남겨뒀던 것): PR #13(`feature/market-pipeline`)·#14(`feature/market-pages`)로
+  실제 배선 완료 — `scripts/build_market_dashboard.py`가 Yahoo/FRED에서 받아 `sw1/market/
+  dashboard.py`로 조립하고, 신규 `docs/market.html`(시장 한눈에: VIX/VXN, 실질금리, 시장 폭,
+  옵션 감마 레벨, 56종목 워치리스트)과 `docs/ticker.html`(종목별 상세 + 신호 과거 성적표)로
+  노출, `market-dashboard.yml` 워크플로로 매일 자동 갱신. 직접 열어서 확인: 56종목 전부 정상
+  렌더링, 모바일(375px) 레이아웃도 `overflow-x:auto` 래퍼로 정상 스크롤, 콘솔 에러 없음.
+- **PR #8이 고치려던 DST 혼합 오프셋 버그는 이미 다른 경로로 고쳐져 있었음** (세션 #2/#3/#4가
+  반복해서 "판단 보류"로 남겨둔 항목): `sw1/indicators/io.py`의 `read_indicators_csv()`/
+  `to_market_dates()`(커밋 `cc87aa4`, 2026-11-16)가 `data/indicators/{TICKER}.csv`의 혼합
+  DST 오프셋 인덱스를 미리 tz-naive 날짜로 변환하고, `scripts/run_daily_paper_trading.py`와
+  `scripts/generate_screener.py` 둘 다 이 함수를 통해서만 `compute_weekly_trend()`에 데이터를
+  넘기는 것을 `grep`으로 직접 확인함 — PR #8이 제안한 `sw1/indicators/weekly.py` 자체 수정 없이
+  이미 막혀 있는 버그였음.
+
+**이번 세션이 직접 한 일**:
+1. **PR #8에 설명 코멘트 작성** — 위 확인 내용을 코멘트로 남겨 "이미 해결됨, main과 merge
+   conflict 상태이니 닫아도 된다"고 명시. **PR을 직접 닫으려 시도했으나 Claude Code auto-mode
+   classifier가 "Close with comment" 클릭을 destructive action으로 분류해 거부함** — 코멘트만
+   게시됨 (`#issuecomment-6942691393`), PR은 여전히 Open 상태. **다음 세션 또는 현우님이 PR #8을
+   직접 닫아주세요** (판단은 이미 끝났고, 닫는 동작 자체만 막혔습니다).
+2. **이슈 #12(뉴스/시황 입력 공백 알림) 상태 확인 — "기존 이슈에 코멘트만 추가" 경로 라이브
+   검증 완료**: 세션 #4가 "아직 라이브로 못 봄"이라 남겨뒀던 두 경로 중 하나. 이슈 #12는 여전히
+   Open 상태이고, `news-staleness-check.yml`의 주간 실행이 중복 이슈를 새로 만들지 않고 기존
+   이슈에 코멘트만 추가해 일수를 60일→63일로 갱신한 것을 직접 확인함 (중복 생성 방지 로직이
+   의도대로 동작). 남은 한 경로("복구 시 코멘트+자동 닫힘")는 현우님이 실제로 뉴스/시황을
+   입력해야 트리거되므로 계속 보류.
+3. **`docs/sw2.html`에 "뉴스 입력 공백" 라이브 캐비앗 추가 (커밋 `c4408b3`, 실제 코드 변경)**:
+   백테스트 섹션(02)에는 이미 있던 "뉴스 비중 N% 무효화" 캐비앗이 라이브 섹션(01)에는 전혀
+   없었음 — 그런데 실제로 뉴스/시황 입력이 63일째 비어 있어(이슈 #12), baseline/conservative의
+   **라이브** 통합점수도 지금 이 순간 `quant_score × 0.6`만으로 계산되고 있는 중(뉴스 40%가
+   사실상 버려짐)인데, 대시보드에는 이 사실이 전혀 안 보였음 — 현우님이 "왜 baseline/
+   conservative가 이렇게 미적지근하게 움직이지?"를 볼 때 원인을 추측할 단서가 없는 상태였음.
+   - `docs/sw2.html`: `MODELS` 배열에 `newsBlendWeight`(baseline/conservative=0.4, 나머지=0)
+     추가. 신규 `loadNewsStaleness()` — `data/signals/latest.csv`의 `news_days_ago`를 읽어
+     `scripts/check_news_staleness.py`의 `read_news_days_ago()`+`build_report()`와 정확히
+     같은 규칙(가장 최신 입력 종목 기준으로 `NEWS_WINDOW_DAYS=14`일 초과 시에만 stale)으로
+     클라이언트에서 재현. 가져오기 실패 시 `{isStale:false}`로 조용히 넘어감(캐비앗 없이 정상
+     렌더링 — 페이지를 깨뜨리느니 캐비앗을 안 띄우는 쪽). `renderEquityChart`/`loadEquitySection`
+     을 이 결과를 받아 섹션 01 모델 카드에 전달하도록 배선, baseline/conservative 카드에 백테스트
+     섹션과 같은 스타일(`.mdd-line`, `var(--amber)`)로 "⚠ 뉴스 입력 공백으로 뉴스 비중 40%
+     사실상 무효화(라이브)" 표시(호버 시 메커니즘 상세 설명 + 이슈 #12 링크 안내).
+   - 트레이딩 로직/파라미터는 전혀 건드리지 않는 순수 읽기 전용 UI 캐비앗이라 히스토리컬
+     백테스트 재검증 절차는 해당 없음(기존 pipeline-health-check/news-staleness-check 세션들과
+     같은 분류).
+   - **검증**: 로컬 `python -m pytest -q` 452 passed(파이썬 미변경, 회귀 대상 없음). 브라우저
+     GitHub 에디터에서 6개 anchor 기반 surgical replace로 적용 후 전체 문서 SHA-256을 로컬
+     타겟 파일과 완전 일치 확인(`e80af550...`, 73,824바이트) 후 커밋, `raw.githubusercontent.com`
+     재fetch로 바이트 단위 재확인. GitHub Actions `tests` #237 성공, `pages-build-deployment`
+     #326 성공. **jsdom으로 실제 DOM 렌더링까지 시뮬레이션 검증**(`npm install jsdom`) — (1)
+     현재 라이브 상태와 동일한 "전원 63일째 stale" 데이터로는 baseline/conservative에만 캐비앗
+     표시, technical_only/price_model_1/price_model_2에는 미표시; (2) 한 종목이라도 최근(3일전)
+     입력이 있는 "일부만 fresh" 데이터로는 캐비앗이 사라짐(혼재 상태는 알림 안 함, check_news_
+     staleness.py와 동일 규칙); (3) `latest.csv` fetch가 404로 실패해도 페이지가 깨지지 않고
+     캐비앗만 조용히 숨겨짐 — 세 경우 모두 기대대로 동작 확인. 이후 실제 라이브 페이지
+     (`https://hyunwoo-ml.github.io/trading-strategy-lab/sw2.html`)를 캐시 무효화해 직접 열어
+     baseline/conservative 카드에 캐비앗 2개만 정확히 떠 있는 것을 최종 확인함.
+
+**이번 세션이 보기만 하고 손대지 않은 것**:
+- PR #8: 코멘트만 남기고 닫지 못함(위 1번 참고) — 다음 세션 또는 현우님이 닫아주세요.
+- 사이징/임계값 튜닝: RISK_FRACTION/MAX_TRANCHE_FRACTION은 이미 올라가 있고(위 참고), 남은
+  아이디어는 buy_1/buy_2 임계값 인하뿐 — 이번 세션은 "이미 된 일 재확인 + 캐비앗 추가"에
+  집중했고 새 튜닝은 하지 않음(백로그 소모로 치지 않음, 신중한 단독 검증이 여전히 필요).
+- baseline/conservative 무매매: 뉴스 입력이 재개되면(이슈 #12) 자연스럽게 재관찰 가능 —
+  이번 세션의 캐비앗 추가로 "왜 미적지근한지"에 대한 가설(뉴스 공백)이 대시보드에 명시적으로
+  드러났으니, 현우님이 뉴스/시황을 입력한 뒤 변화가 있는지 보는 것으로 검증 가능해짐.
+- `price_model_1`/`price_model_2`의 뉴스 게이트(블렌드가 아니라 "뉴스 점수가 너무 낮으면 진입
+  보류"하는 다른 메커니즘)는 이번 캐비앗 대상에서 제외 — 뉴스가 비어 있으면 오히려 게이트가
+  느슨해지는(차단이 안 걸리는) 반대 방향 효과라 같은 문구로 설명하면 오도될 수 있어서 의도적으로
+  범위에서 뺌. 필요하면 다음 세션이 별도 문구로 다룰 것.
+- 새로 발견된 PR #15(`fix/near-money-oi-gate`)/#16(`fix/ticker-signal-table-mobile`)은 이번
+  세션 조사 중에 이미 머지된 상태로 발견됨(현우님 직접 작업으로 보임) — 손대지 않음.
+
+**다음 세션이 할 일**: 1순위 — PR #8을 실제로 닫을 것(판단은 끝났음, 닫기만 남음). main의
+`tests` 체크 계속 그린 유지 확인. 2순위 — buy_1/buy_2 임계값 인하 아이디어를 신중히 단독
+검증(여전히 미시도). 이슈 #12가 현우님의 실제 입력으로 닫히는지 계속 지켜볼 것. KIS 실계좌
+연동과 사업화/포스팅 자동화 파이프라인은 계속 현우님 지시 대기.
