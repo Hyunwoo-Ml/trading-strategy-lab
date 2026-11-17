@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fin-tip_lab — 종목 상세</title>
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+<style>
+  :root{
+    --bg:#0a0d14; --bg-elevated:#10141d; --bg-card:#121722; --bg-card-hover:#151b28;
+    --border:#1f2632; --border-soft:#181e29;
+    --text-primary:#e8ebf1; --text-secondary:#98a2b8; --text-muted:#6b7688;
+    --accent:#22d3ee; --accent-soft:rgba(34,211,238,0.1);
+    --green:#34d399; --green-dim:rgba(52,211,153,0.14);
+    --red:#f87171; --red-dim:rgba(248,113,113,0.14);
+    --amber:#fbbf24; --amber-dim:rgba(251,191,36,0.14);
+    --radius:14px;
+    --mono:'SF Mono','Roboto Mono','Consolas','Menlo',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--bg);}
+  body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 16px 40px;}
+  @media (min-width:640px){ .wrap{padding:32px 32px 56px;} }
+  a{color:var(--accent);}
+  .muted{color:var(--text-muted);} .num{font-family:var(--mono);}
+  .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--text-secondary);}
+
+  .topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+  .back{font-size:12px;color:var(--text-secondary);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:5px 11px;}
+  .back:hover{color:var(--accent);border-color:var(--accent);}
+  select{font:inherit;font-size:13px;color:var(--text-primary);background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:6px 10px;max-width:100%;}
+
+  .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .hero h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-0.02em;font-family:var(--mono);}
+  .hero .name{font-size:13px;color:var(--text-secondary);}
+  .price{font-family:var(--mono);font-size:26px;font-weight:800;text-align:right;}
+  .price small{display:block;font-size:13px;font-weight:600;}
+  .asof{font-size:11px;color:var(--text-muted);text-align:right;}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;}
+  @media (min-width:900px){ .grid.two{grid-template-columns:1.6fr 1fr;} .grid.half{grid-template-columns:1fr 1fr;} }
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;min-width:0;}
+  .card h2{font-size:13px;font-weight:800;margin:0 0 10px;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .rows{display:grid;gap:4px;}
+  .row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-secondary);}
+  .row b{font-family:var(--mono);color:var(--text-primary);font-weight:600;white-space:nowrap;}
+  .note{font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.6;}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .pill.good{background:var(--green-dim);color:var(--green);} .pill.bad{background:var(--red-dim);color:var(--red);}
+  .pill.mid{background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border);} .pill.warn{background:var(--amber-dim);color:var(--amber);}
+
+  .big-score{font-family:var(--mono);font-size:30px;font-weight:800;}
+  .comp{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:12px;color:var(--text-secondary);margin-top:8px;}
+  .bar{position:relative;height:6px;border-radius:4px;background:#1c2432;}
+  .bar i{position:absolute;top:0;bottom:0;border-radius:4px;}
+  .bar .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--border);}
+
+  svg text{font-family:var(--mono);}
+  .chart-wrap{width:100%;overflow:hidden;}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);margin-top:6px;}
+  .legend span::before{content:"";display:inline-block;width:12px;height:2px;margin-right:5px;vertical-align:middle;background:currentColor;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;font-size:11px;color:var(--text-muted);font-weight:600;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:7px 8px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  tr.recent td{background:rgba(34,211,238,0.05);}
+  .scroll{overflow-x:auto;}
+  .sig{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;white-space:nowrap;}
+  .sig.strong_buy{background:var(--amber-dim);color:var(--amber);} .sig.buy{background:var(--green-dim);color:var(--green);}
+  .sig.sell{background:var(--red-dim);color:var(--red);} .sig.caution{background:var(--bg-elevated);color:var(--amber);border:1px solid var(--amber-dim);}
+  .state-box{border:1px dashed var(--border);border-radius:var(--radius);padding:26px 18px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg-elevated);}
+  .state-box.error{border-color:rgba(248,113,113,0.3);color:#e0a3a3;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="market.html">← 시장 한눈에</a>
+    <label class="muted" for="picker" style="font-size:12px">종목</label>
+    <select id="picker" aria-label="종목 선택"></select>
+  </div>
+  <div id="content"><div class="state-box">종목 데이터를 불러오는 중…</div></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/data/market/";
+  var TREND_LABEL = {very_strong:"매우 강세", strong:"강세", neutral:"중립", weak:"약세", very_weak:"매우 약세"};
+  var SIG_KIND = {strong_buy:"◆ 강력매수", buy:"매수", sell:"매도", caution:"주의"};
+  var COMP_LABEL = {short:"20일선 대비", mid:"50일선 대비", long:"200일선 대비", stack:"이동평균 배열", momentum:"20일 모멘텀"};
+  var GAMMA = {positive:["양감마 · 변동을 누그러뜨리는 쪽","good"], negative:["음감마 · 변동을 키우는 쪽","bad"], flip:["감마 플립 근처 · 성격이 바뀌는 경계","warn"]};
+
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function num(v, d){ return (v == null || isNaN(v)) ? "—" : Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+  function signed(v, d, u){ if (v == null || isNaN(v)) return "—"; return (v > 0 ? "+" : "") + num(v, d) + (u || ""); }
+  function cls(v){ return v == null ? "flat" : v > 0 ? "up" : v < 0 ? "down" : "flat"; }
+  function money(v){ if (v == null) return "—"; var a = Math.abs(v), s = v < 0 ? "−" : "";
+    return s + "$" + (a >= 1e9 ? num(a/1e9, 2) + "B" : a >= 1e6 ? num(a/1e6, 1) + "M" : a >= 1e3 ? num(a/1e3, 0) + "K" : num(a, 0)); }
+  function pctFrom(level, close){ return level == null || !close ? null : (level / close - 1) * 100; }
+  function fetchJSON(path){ return fetch(BASE + path, {cache:"no-store"}).then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); }
+
+  /* ---------- price chart (1y close + option levels) ---------- */
+  function priceChart(d){
+    var pts = d.chart || []; if (pts.length < 2) return '<div class="muted">차트 데이터 없음</div>';
+    var o = d.options || {}, W = 760, H = 260, L = 8, R = 64, T = 10, B = 22;
+    var levels = [
+      ["콜월", o.call_wall, "#34d399"], ["풋월", o.put_wall, "#f87171"], ["감마 플립", o.gamma_flip, "#fbbf24"]
+    ].filter(function(x){ return x[1] != null; });
+    var vals = pts.map(function(p){ return p.c; });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    levels.forEach(function(x){ if (x[1] > lo * 0.85 && x[1] < hi * 1.15){ lo = Math.min(lo, x[1]); hi = Math.max(hi, x[1]); } });
+    var pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+    function X(i){ return L + (W - L - R) * i / (pts.length - 1); }
+    function Y(v){ return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); }
+    var path = pts.map(function(p, i){ return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(p.c).toFixed(1); }).join(" ");
+    var up = pts[pts.length-1].c >= pts[0].c;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="1년 종가 차트와 옵션 레벨">';
+    for (var g = 0; g <= 4; g++){
+      var v = lo + (hi - lo) * g / 4, y = Y(v);
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="#1c2432" stroke-width="1"/>' +
+             '<text x="' + (W - R + 6) + '" y="' + (y + 4) + '" font-size="10" fill="#6b7688">' + num(v, v >= 100 ? 0 : 2) + '</text>';
+    }
+    levels.forEach(function(x){
+      if (x[1] < lo || x[1] > hi) return;
+      var y = Y(x[1]);
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="' + x[2] + '" stroke-width="1" stroke-dasharray="4 4" opacity="0.85"/>' +
+             '<text x="' + (W - R - 4) + '" y="' + (y - 4) + '" font-size="10" text-anchor="end" fill="' + x[2] + '">' + x[0] + ' ' + num(x[1], 2) + '</text>';
+    });
+    svg += '<path d="' + path + '" fill="none" stroke="' + (up ? "#34d399" : "#f87171") + '" stroke-width="1.6"/>';
+    var last = pts[pts.length-1];
+    svg += '<circle cx="' + X(pts.length-1) + '" cy="' + Y(last.c) + '" r="3" fill="#e8ebf1"/>';
+    [0, Math.floor(pts.length/2), pts.length-1].forEach(function(i){
+      svg += '<text x="' + X(i) + '" y="' + (H - 6) + '" font-size="10" fill="#6b7688" text-anchor="' + (i === 0 ? "start" : i === pts.length-1 ? "end" : "middle") + '">' + pts[i].d + '</text>';
+    });
+    return svg + '</svg>';
+  }
+
+  /* ---------- GEX by strike (horizontal bars) ---------- */
+  function gexChart(o, close){
+    var rows = (o.gex_by_strike || []).filter(function(r){ return r.strike >= close * 0.88 && r.strike <= close * 1.12; });
+    if (!rows.length) return '<div class="muted">행사가별 데이터 없음</div>';
+    if (rows.length > 40){ var step = Math.ceil(rows.length / 40); rows = rows.filter(function(_, i){ return i % step === 0; }); }
+    rows = rows.slice().sort(function(a, b){ return b.strike - a.strike; });
+    var maxAbs = Math.max.apply(null, rows.map(function(r){ return Math.max(Math.abs(r.call_gex), Math.abs(r.put_gex)); })) || 1;
+    var W = 360, rowH = 13, H = rows.length * rowH + 8, mid = 200, half = 150;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="행사가별 감마 노출">';
+    svg += '<line x1="' + mid + '" x2="' + mid + '" y1="0" y2="' + H + '" stroke="#1f2632"/>';
+    var spotDrawn = false;
+    rows.forEach(function(r, i){
+      var y = 4 + i * rowH;
+      if (!spotDrawn && r.strike < close){
+        svg += '<line x1="40" x2="' + W + '" y1="' + (y - 1) + '" y2="' + (y - 1) + '" stroke="#22d3ee" stroke-dasharray="3 3"/>' +
+               '<text x="' + (W - 2) + '" y="' + (y - 3) + '" font-size="9" text-anchor="end" fill="#22d3ee">현재가 ' + num(close, 2) + '</text>';
+        spotDrawn = true;
+      }
+      var cw = Math.abs(r.call_gex) / maxAbs * half, pw = Math.abs(r.put_gex) / maxAbs * half;
+      if (cw > 0.3) svg += '<rect x="' + mid + '" y="' + y + '" width="' + cw.toFixed(1) + '" height="' + (rowH - 4) + '" fill="#34d399" opacity="0.85"/>';
+      if (pw > 0.3) svg += '<rect x="' + (mid - pw).toFixed(1) + '" y="' + y + '" width="' + pw.toFixed(1) + '" height="' + (rowH - 4) + '" fill="#f87171" opacity="0.85"/>';
+      svg += '<text x="36" y="' + (y + 8) + '" font-size="9" text-anchor="end" fill="#98a2b8">' + num(r.strike, r.strike >= 100 ? 0 : 1) + '</text>';
+    });
+    return svg + '</svg><div class="legend"><span style="color:#34d399">콜 감마 (+)</span><span style="color:#f87171">풋 감마 (−)</span><span style="color:#22d3ee">현재가</span></div>';
+  }
+
+  function trendCard(d){
+    var t = d.trend || {}, comps = t.components || {};
+    var html = '<div class="card"><h2>추세 강도</h2><div class="big-score ' + cls(t.score) + '">' + signed(t.score, 0) + ' <span style="font-size:15px">' + esc(TREND_LABEL[t.label] || "") + '</span></div><div class="comp">';
+    Object.keys(COMP_LABEL).forEach(function(k){
+      var v = comps[k] || 0, w = Math.abs(v) / 3 * 50;
+      html += '<span>' + COMP_LABEL[k] + '</span><div class="bar"><div class="mid"></div>' +
+        (v ? '<i style="' + (v > 0 ? "left:50%;background:#34d399" : "right:50%;background:#f87171") + ';width:' + w + '%"></i>' : '') +
+        '</div><b class="num ' + cls(v) + '">' + signed(v, 0) + '</b>';
+    });
+    return html + '</div><div class="note">각 항목 −3~+3, 합계 −15~+15. 이동평균과 수익률만으로 계산해서 차트에서 직접 확인할 수 있어요.</div></div>';
+  }
+
+  function positionCard(d){
+    var p = d.position || {};
+    var span = p.high_52w - p.low_52w, at = span > 0 ? (p.close - p.low_52w) / span * 100 : 50;
+    return '<div class="card"><h2>추세 위치</h2>' +
+      '<div class="row"><span>1년 저 ' + num(p.low_52w, 2) + '</span><span>1년 고 ' + num(p.high_52w, 2) + '</span></div>' +
+      '<div class="bar" style="margin:6px 0 10px"><i style="left:0;width:' + at.toFixed(1) + '%;background:#22d3ee"></i></div><div class="rows">' +
+      '<div class="row">52주 고점 대비<b class="' + cls(p.pct_from_high) + '">' + signed(p.pct_from_high, 1, "%") + '</b></div>' +
+      '<div class="row">20일선 ' + num(p.ma20, 2) + '<b class="' + cls(p.pct_vs_ma20) + '">' + signed(p.pct_vs_ma20, 1, "%") + '</b></div>' +
+      '<div class="row">50일선 ' + num(p.ma50, 2) + '<b class="' + cls(p.pct_vs_ma50) + '">' + signed(p.pct_vs_ma50, 1, "%") + '</b></div>' +
+      '<div class="row">200일선 ' + num(p.ma200, 2) + '<b class="' + cls(p.pct_vs_ma200) + '">' + signed(p.pct_vs_ma200, 1, "%") + '</b></div>' +
+      '<div class="row">50·200일선<b>' + (p.golden_stack == null ? "—" : p.golden_stack ? "정배열" : "역배열") + '</b></div>' +
+      '<div class="row">수익률 1일 / 5일 / 20일<b>' + signed(p.return_1d, 1, "%") + ' / ' + signed(p.return_5d, 1, "%") + ' / ' + signed(p.return_20d, 1, "%") + '</b></div>' +
+      '<div class="row">거래량 (20일 평균 대비)<b>' + (d.volume_ratio_20d == null ? "—" : num(d.volume_ratio_20d, 2) + "배") + '</b></div>' +
+      '</div></div>';
+  }
+
+  function levelsCard(d){
+    var o = d.options;
+    if (!o){
+      var why = !d.options_error ? "이 종목은 옵션 데이터가 없어요."
+        : /open interest/.test(d.options_error) ? "오늘은 공개 옵션 데이터의 미결제약정이 비어 있어서 레벨을 계산하지 않았어요. 보통 데이터 제공처의 장외 시간 갱신 때문이고, 다음 수집 때 다시 채워져요."
+        : "옵션 데이터를 불러오지 못했어요.";
+      return '<div class="card"><h2>옵션 레벨</h2><div class="muted" style="font-size:13px">' + why + '</div></div>';
+    }
+    var g = GAMMA[o.regime] || ["—","mid"], c = d.close;
+    var em = o.expected_move_pct;
+    var list = [
+      ["콜월", o.call_wall], ["1일 콜월 (최근접 만기)", o.day1_call_wall],
+      ["예상 범위 상단", em != null ? c * (1 + em / 100) : null],
+      ["감마 플립", o.gamma_flip], ["1일 플립", o.day1_flip],
+      ["예상 범위 하단", em != null ? c * (1 - em / 100) : null],
+      ["1일 풋월", o.day1_put_wall], ["풋월", o.put_wall]
+    ].filter(function(x){ return x[1] != null; }).sort(function(a, b){ return b[1] - a[1]; });
+    var rows = list.map(function(x){ var p = pctFrom(x[1], c); return '<div class="row">' + x[0] + ' ' + num(x[1], 2) + '<b class="' + cls(p) + '">' + signed(p, 2, "%") + '</b></div>'; }).join("");
+    return '<div class="card"><h2>옵션 레벨 <span class="pill ' + g[1] + '">' + g[0] + '</span></h2><div class="rows">' + rows +
+      '<div class="row" style="margin-top:6px">총 감마 노출 (1% 움직임당)<b class="' + cls(o.total_gex) + '">' + money(o.total_gex) + '</b></div>' +
+      '<div class="row">하루 예상 변동폭<b>' + (em == null ? "—" : "±" + num(em, 2) + "%") + '</b></div>' +
+      '<div class="row">P/C 비율 · 미결제약정<b>' + num(o.pc_ratio_oi, 2) + '</b></div>' +
+      '<div class="row">P/C 비율 · 거래량<b>' + num(o.pc_ratio_volume, 2) + '</b></div>' +
+      '</div>' + (d.options_stale ? '<div class="note" style="color:#fbbf24">오늘 옵션 데이터가 비어 있어서 ' + esc(o.as_of) + ' 스냅샷을 보여주고 있어요.</div>' : '') + '<div class="note">공개 미결제약정과 내재변동성으로 추정한 값이에요. 딜러가 콜은 매수, 풋은 매도 포지션이라고 가정하는 일반적인 방식이고, 실제 포지션은 알 수 없어요. ' + esc(o.as_of || "") + ' 기준.</div></div>';
+  }
+
+  function gexCard(d){
+    var o = d.options; if (!o) return "";
+    var exp = (o.by_expiry || []).map(function(e){
+      return '<tr><td class="num">' + esc(e.expiry) + '</td><td class="num">' + e.days + '일</td><td class="num ' + cls(e.gex) + '">' + money(e.gex) + '</td><td class="num">' + Math.round(e.share * 100) + '%</td></tr>';
+    }).join("");
+    var big = (o.big_oi_strikes || []).map(function(b){ return '<span class="pill ' + (b.side === "call" ? "good" : "bad") + '">' + (b.side === "call" ? "콜 " : "풋 ") + num(b.strike, 0) + ' · ' + num(b.oi, 0) + '</span>'; }).join(" ");
+    return '<div class="grid half"><div class="card"><h2>행사가별 감마 노출 (현재가 ±12%)</h2><div class="chart-wrap">' + gexChart(o, d.close) + '</div></div>' +
+      '<div class="card"><h2>만기별 감마</h2><div class="scroll"><table><thead><tr><th>만기</th><th>남은 기간</th><th>순감마</th><th>비중</th></tr></thead><tbody>' + exp + '</tbody></table></div>' +
+      (big ? '<div class="note">미결제약정이 큰 행사가 (위: 콜, 아래: 풋)</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + big + '</div>' : '') +
+      '<div class="note">비중은 각 만기의 콜+풋 감마 크기 합이 전체에서 차지하는 비율이에요.</div></div></div>';
+  }
+
+  function signalsCard(d){
+    var rows = (d.signals || []).slice().sort(function(a, b){
+      var ra = a.bars_ago == null ? 1e9 : a.bars_ago * (a.timeframe === "1w" ? 5 : 1);
+      var rb = b.bars_ago == null ? 1e9 : b.bars_ago * (b.timeframe === "1w" ? 5 : 1);
+      return ra - rb;
+    }).map(function(s){
+      var unit = s.timeframe === "1w" ? "주" : "거래일";
+      var when = s.last_date ? esc(s.last_date) + ' <span class="muted">(' + (s.bars_ago === 0 ? "오늘" : s.bars_ago + (s.timeframe === "1w" ? "주 전" : "일 전")) + ')</span>' : '<span class="muted">없음</span>';
+      return '<tr class="' + (s.recent ? "recent" : "") + '"><td><span class="sig ' + esc(s.kind) + '">' + SIG_KIND[s.kind] + '</span><div style="margin-top:3px">' + esc(s.label) + '</div><div class="muted" style="font-size:11px">' + (s.timeframe === "1w" ? "주봉" : "일봉") + ' · ' + s.horizon + unit + ' 뒤 기준</div></td>' +
+        '<td class="num">' + when + '</td>' +
+        '<td class="num">' + s.n + '회' + (s.low_sample ? ' <span class="pill warn">표본 적음</span>' : '') + '</td>' +
+        '<td class="num">' + signed(s.mean_fwd_pct, 2, "%") + '<div class="muted" style="font-size:11px">평소 ' + signed(s.baseline_pct, 2, "%") + '</div></td>' +
+        '<td class="num ' + cls(s.excess_pct) + '">' + signed(s.excess_pct, 2, "%p") + '</td>' +
+        '<td class="num">' + (s.win_rate == null ? "—" : Math.round(s.win_rate * 100) + "%") + '</td></tr>';
+    }).join("");
+    return '<div class="card"><h2>신호와 과거 성적표 <span class="muted" style="font-weight:500;font-size:11px">이 종목 ' + (d.history_bars || 0).toLocaleString() + '거래일 기준</span></h2>' +
+      '<div class="scroll"><table><thead><tr><th>신호</th><th>마지막 발생</th><th>과거 발생</th><th>N일 뒤 평균</th><th>평소 대비</th><th>오른 비율</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="note">강조된 줄은 최근(일봉 10거래일, 주봉 2주 안)에 뜬 신호예요. "평소"는 아무 날에나 샀을 때의 같은 기간 평균 수익률이고, "평소 대비"가 플러스면 그 신호가 이 종목에서 역사적으로 평균보다 나았다는 뜻이에요. 과거 성과가 미래 수익을 보장하지 않아요.</div></div>';
+  }
+
+  function render(d){
+    document.title = "Fin-tip_lab — " + d.ticker + " 상세";
+    var html = '<div class="hero"><div><h1>' + esc(d.ticker) + '</h1><div class="name">' + esc(d.name) + ' · ' + esc(d.group) + '</div></div>' +
+      '<div><div class="price">' + num(d.close, 2) + '<small class="' + cls(d.change_pct) + '">' + signed(d.change_pct, 2, "%") + '</small></div><div class="asof">' + esc(d.as_of) + ' 장 마감</div></div></div>';
+    html += '<div class="grid two"><div class="card"><h2>1년 종가와 옵션 레벨</h2><div class="chart-wrap">' + priceChart(d) + '</div>' +
+      '<div class="legend"><span style="color:#34d399">콜월</span><span style="color:#f87171">풋월</span><span style="color:#fbbf24">감마 플립</span></div></div>' + levelsCard(d) + '</div>';
+    html += '<div class="grid half">' + trendCard(d) + positionCard(d) + '</div>';
+    html += gexCard(d);
+    html += '<div class="grid">' + signalsCard(d) + '</div>';
+    document.getElementById("content").innerHTML = html;
+  }
+
+  function load(){
+    var t = decodeURIComponent((location.hash || "#QQQ").slice(1)).toUpperCase().replace(/[^A-Z0-9.^=-]/g, "");
+    var picker = document.getElementById("picker");
+    if (picker.value !== t) picker.value = t;
+    document.getElementById("content").innerHTML = '<div class="state-box">' + esc(t) + ' 불러오는 중…</div>';
+    fetchJSON("tickers/" + encodeURIComponent(t) + ".json").then(render).catch(function(err){
+      document.getElementById("content").innerHTML = '<div class="state-box error">' + esc(t) + ' 데이터를 불러올 수 없어요. (' + esc(err.message) + ')</div>';
+    });
+  }
+
+  fetchJSON("watchlist.json").then(function(w){
+    var picker = document.getElementById("picker"), html = "";
+    (w.groups || []).forEach(function(g){
+      html += '<optgroup label="' + esc(g) + '">' + (w.rows || []).filter(function(r){ return r.group === g; }).map(function(r){
+        return '<option value="' + esc(r.ticker) + '">' + esc(r.ticker) + ' · ' + esc(r.name) + '</option>';
+      }).join("") + '</optgroup>';
+    });
+    picker.innerHTML = html;
+    picker.addEventListener("change", function(){ location.hash = picker.value; });
+  }).catch(function(){}).then(load);
+  window.addEventListener("hashchange", load);
+})();
+</script>
+</body>
+</html>
