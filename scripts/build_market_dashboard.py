@@ -29,6 +29,7 @@ from sw1.market.dashboard import build_all  # noqa: E402
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MARKET_DIR = PROJECT_ROOT / "data" / "market"
 FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
+USER_AGENT = "Fin-tip_lab/1.0 (+https://github.com/Hyunwoo-Ml/trading-strategy-lab)"
 
 
 class YahooFredSource:
@@ -63,6 +64,20 @@ class YahooFredSource:
         time.sleep(self.pause)
         chain = self._t(ticker).option_chain(expiry)
         return chain.calls, chain.puts
+
+    def news(self, ticker: str) -> list:
+        return self._t(ticker).news or []
+
+    def upgrades(self, ticker: str):
+        return self._t(ticker).upgrades_downgrades
+
+    def price_targets(self, ticker: str) -> dict | None:
+        return self._t(ticker).analyst_price_targets
+
+    def fetch_text(self, url: str) -> str:
+        resp = requests.get(url, timeout=20, headers={"User-Agent": USER_AGENT})
+        resp.raise_for_status()
+        return resp.text
 
     def fred(self, series_id: str) -> pd.Series:
         resp = requests.get(FRED_CSV.format(series=series_id), timeout=30)
