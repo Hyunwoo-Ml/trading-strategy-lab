@@ -3,7 +3,15 @@ from datetime import date, timedelta
 import pandas as pd
 import pytest
 
-from sw1.validation.backtest import DrawdownResult, PeriodReturn, bucket_equity_by_period, max_drawdown, total_return
+from sw1.validation.backtest import (
+    DrawdownResult,
+    PeriodReturn,
+    SharpeResult,
+    bucket_equity_by_period,
+    max_drawdown,
+    sharpe_ratio,
+    total_return,
+)
 
 
 def _equity_df(rows: list[tuple[str, float]]) -> pd.DataFrame:
@@ -209,3 +217,84 @@ def test_to_dict_has_expected_keys():
     )
     d = result.to_dict()
     assert set(d.keys()) == {"max_drawdown_pct", "peak_date", "trough_date", "peak_equity", "trough_equity"}
+
+
+# -- sharpe_ratio --
+
+
+def test_sharpe_ratio_empty_is_all_none():
+    result = sharpe_ratio(pd.DataFrame(columns=["equity"]))
+    assert result == SharpeResult(sharpe_ratio=None, annualized_return=None, annualized_volatility=None)
+
+
+def test_sharpe_ratio_needs_at_least_two_daily_returns():
+    # a single row has zero daily returns, two rows has exactly one -- both
+    # are below the "need a standard deviation" floor.
+    single = _equity_df([("2024-01-02", 100_000.0)])
+    assert sharpe_ratio(single).sharpe_ratio is None
+
+    two_rows = _equity_df([("2024-01-01", 100_000.0), ("2024-01-02", 101_000.0)])
+    assert sharpe_ratio(two_rows).sharpe_ratio is None
+
+
+def test_sharpe_ratio_flat_curve_has_zero_variance_and_is_none():
+    # every daily return is exactly 0.0 -- std is 0, so the ratio (which
+    # divides by std) is undefined rather than +/-inf.
+    df = _equity_df([("2024-01-01", 100_000.0), ("2024-01-02", 100_000.0), ("2024-01-03", 100_000.0)])
+    result = sharpe_ratio(df)
+    assert result == SharpeResult(sharpe_ratio=None, annualized_return=None, annualized_volatility=None)
+
+
+def test_sharpe_ratio_positive_for_a_noisy_uptrend():
+    df = _equity_df(
+        [
+            ("2024-01-01", 100_000.0),
+            ("2024-01-02", 101_000.0),
+            ("2024-01-03", 100_500.0),
+            ("2024-01-04", 102_000.0),
+        ]
+    )
+    result = sharpe_ratio(df)
+    assert result.sharpe_ratio == pytest.approx(10.211553371369826)
+    assert result.annualized_return == pytest.approx(4.324551542168438)
+    assert result.annualized_volatility == pytest.approx(0.16431288150826073)
+    assert result.sharpe_ratio > 0
+
+
+def test_sharpe_ratio_negative_for_a_losing_streak():
+    df = _equity_df(
+        [
+            ("2024-01-01", 100_000.0),
+            ("2024-01-02", 99_000.0),
+            ("2024-01-03", 98_500.0),
+            ("2024-01-04", 97_000.0),
+        ]
+    )
+    result = sharpe_ratio(df)
+    assert result.sharpe_ratio == pytest.approx(-31.48010039312533)
+    assert result.sharpe_ratio < 0
+
+
+def test_sharpe_ratio_inf_daily_return_is_dropped_not_raised():
+    # equity touching exactly 0 makes pct_change() divide by zero on the
+    # NEXT day -- must be dropped like a NaN, never propagate as +/-inf or
+    # raise.
+    df = _equity_df(
+        [
+            ("2024-01-01", 100_000.0),
+            ("2024-01-02", 0.0),
+            ("2024-01-03", 500.0),
+            ("2024-01-04", 510.0),
+        ]
+    )
+    result = sharpe_ratio(df)
+    assert result.sharpe_ratio is not None
+    import math
+
+    assert math.isfinite(result.sharpe_ratio)
+
+
+def test_sharpe_ratio_to_dict_has_expected_keys():
+    result = SharpeResult(sharpe_ratio=1.5, annualized_return=0.2, annualized_volatility=0.1)
+    d = result.to_dict()
+    assert set(d.keys()) == {"sharpe_ratio", "annualized_return", "annualized_volatility"}
