@@ -12,8 +12,10 @@ this:
      runs each ticker through the model's decide() to get a trade signal.
   3. Applies a risk-based position rule (sw2.sizing.risk_based_tranche_dollars,
      see Task #22) to the portfolio: buy_1 opens a position, buy_2 adds a
-     second tranche, stop_loss/take_profit close it out, hold/caution do
-     nothing.
+     second tranche (or, on a ticker with no existing position, opens one at
+     the normal buy_1 size instead of being dropped -- see
+     process_model_for_day's 2026-11-18 comment), stop_loss/take_profit
+     close it out, hold/caution do nothing.
   4. Marks the portfolio to market at today's close prices and appends to
      its equity curve.
   5. Persists the updated portfolio state and equity curve back to data/,
@@ -230,6 +232,18 @@ def process_model_for_day(model: TradingModel, portfolio: Portfolio, signals_df:
 
         if signal.signal == "buy_1" and ticker not in portfolio.positions:
             portfolio.buy(run_date, ticker, price, tranche_dollars, "buy_1")
+        elif signal.signal == "buy_2" and ticker not in portfolio.positions:
+            # 2026-11-18: a signal that jumps straight to buy_2 on a ticker
+            # with no existing position used to fall through both branches
+            # and buy nothing at all -- see sw1/scoring/integrate.py's
+            # TradeThresholds docstring (2026-11-17 buy_1_score change) for
+            # the full postmortem. The integrated score already cleared a
+            # HIGHER bar than buy_1 requires, so silently skipping the entry
+            # was strictly worse than opening one at the normal buy_1 size;
+            # this first touch is now treated as a buy_1-sized entry. Uses
+            # a distinct action label (not "buy_1") so trade history still
+            # shows the real signal that triggered it.
+            portfolio.buy(run_date, ticker, price, tranche_dollars, "buy_1_from_buy_2")
         elif (
             signal.signal == "buy_2"
             and ticker in portfolio.positions
