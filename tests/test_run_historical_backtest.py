@@ -123,6 +123,45 @@ def test_each_benchmark_has_max_drawdown(wired_script, monkeypatch):
         assert mdd["max_drawdown_pct"] <= 0.0
 
 
+# -- sharpe_ratio wiring (2026-11-17 follow-up: total_return/max_drawdown
+# alone can't tell a smooth ride from a choppy one across the whole curve --
+# see sw1.validation.backtest.SharpeResult's docstring for the exact
+# convention (daily returns, 0% risk-free rate, sqrt(252) annualization)) --
+
+
+def test_each_model_has_sharpe_ratio_with_expected_shape(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script, seed_offset=42)  # volatile enough for a well-defined (nonzero-variance) curve
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    for name, payload in output["models"].items():
+        assert "sharpe_ratio" in payload, name
+        sr = payload["sharpe_ratio"]
+        assert set(sr.keys()) == {"sharpe_ratio", "annualized_return", "annualized_volatility"}
+        # a long, randomly-walked 3y daily equity curve is never flat/too
+        # short -- this should never fall back to the all-None case.
+        assert sr["sharpe_ratio"] is not None
+        assert sr["annualized_volatility"] is not None
+        assert sr["annualized_volatility"] >= 0.0  # a standard deviation-derived figure is never negative
+
+
+def test_each_benchmark_has_sharpe_ratio(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script, seed_offset=7)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    for name, payload in output["benchmarks"].items():
+        assert "sharpe_ratio" in payload, name
+        sr = payload["sharpe_ratio"]
+        assert set(sr.keys()) == {"sharpe_ratio", "annualized_return", "annualized_volatility"}
+        assert sr["sharpe_ratio"] is not None
+
+
+def test_sharpe_ratio_scope_note_is_present(wired_script, monkeypatch):
+    _mock_fetch(monkeypatch, wired_script)
+    wired_script.main()
+    output = json.loads(wired_script.OUTPUT_PATH.read_text(encoding="utf-8"))
+    assert any("샤프" in note for note in output["config"]["scope_notes"])
+
+
 # -- news_blend_weight wiring (2026-10-03 follow-up to the RISK_FRACTION 2x
 # session's "알려진 한계" item (b): baseline/conservative blend quant_score
 # with news_score, but news_score is forced neutral in this backtest -- see
