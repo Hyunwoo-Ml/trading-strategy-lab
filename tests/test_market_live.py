@@ -117,3 +117,13 @@ def test_script_writes_headlines_next_to_live(tmp_path):
     assert script.main(source=NewsSource(), out_path=tmp_path / "live.json") == 0
     heads = json.loads((tmp_path / "headlines.json").read_text(encoding="utf-8"))
     assert heads["company"] and heads["macro"]
+
+
+def test_headlines_get_korean_titles_from_the_translator(tmp_path):
+    from sw1.market.translate import Translator
+
+    tr = Translator(backend=lambda texts: [f"한글 {t}" for t in texts])
+    assert script.main(source=NewsSource(), out_path=tmp_path / "live.json", translator=tr) == 0
+    heads = json.loads((tmp_path / "headlines.json").read_text(encoding="utf-8"))
+    items = heads["macro"] + heads["company"]
+    assert items and all(i["title_ko"] == f"한글 {i['title']}" for i in items)

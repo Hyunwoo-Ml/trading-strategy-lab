@@ -88,7 +88,7 @@ def build_live(source: MarketSource, now_utc: datetime | None = None) -> dict:
     }
 
 
-def build_headlines(source: MarketSource, now_utc: datetime | None = None, limit: int = 40) -> dict:
+def build_headlines(source: MarketSource, now_utc: datetime | None = None, limit: int = 40, translator=None) -> dict:
     """Main-page headlines: 지정학·매크로 (official feeds + market-wide Yahoo
     lists) and 기업 (Yahoo lists of the biggest names). Each source that fails
     is skipped and listed under `errors`."""
@@ -112,9 +112,12 @@ def build_headlines(source: MarketSource, now_utc: datetime | None = None, limit
                 bucket += keep_for_macro(got) if kind == "macro" else keep_for_ticker(got, t)
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{t}: {str(exc)[:80]}")
+    macro, company = merge(macro, limit, now_utc), merge(company, limit, now_utc)
+    if translator is not None:
+        translator.annotate(macro + company)
     return {
         "generated_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "macro": merge(macro, limit, now_utc),
-        "company": merge(company, limit, now_utc),
+        "macro": macro,
+        "company": company,
         "errors": errors,
     }

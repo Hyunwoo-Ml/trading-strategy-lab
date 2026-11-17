@@ -1,0 +1,6 @@
+# Fin-tip_lab: Korean headlines with a free offline model (Meta NLLB-200,
+# int8 CTranslate2 build). Installed only by the market-live and
+# market-dashboard workflows; without these packages headlines stay English.
+ctranslate2>=4.0
+sentencepiece>=0.2
+huggingface_hub>=0.23

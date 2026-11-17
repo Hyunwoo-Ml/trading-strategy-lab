@@ -275,11 +275,11 @@
     var items = d.news || [];
     var body = items.length ? items.slice(0, 8).map(function(it){
       var imp = IMPACT[it.impact] || IMPACT.neutral;
-      return '<div class="news-row"><a href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer">' + esc(it.title) + '</a>' +
+      return '<div class="news-row"><a href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer"' + (it.title_ko ? ' title="원문: ' + esc(it.title) + '"' : '') + '>' + esc(it.title_ko || it.title) + '</a>' +
         '<div class="meta"><span class="pill ' + imp[1] + '">' + imp[0] + '</span><span>' + esc(it.source) + '</span><span>' + ago(it.time) + '</span></div></div>';
     }).join("") : '<div class="note" style="margin-top:0">최근 종목 뉴스가 없어요.</div>';
     return '<div class="card"><h2>종목 뉴스 ' + tonePill(d.news_tone) + '</h2>' + body +
-      '<div class="note">최근 3일 헤드라인의 논조를 단어 규칙으로 합친 값이에요. 헤드라인 원문은 영어예요.</div></div>';
+      '<div class="note">최근 3일 헤드라인의 논조를 단어 규칙으로 합친 값이에요. 헤드라인은 자동 번역이라 어색할 수 있어요(마우스를 올리면 영어 원문).</div></div>';
   }
 
   function analystCard(d){
