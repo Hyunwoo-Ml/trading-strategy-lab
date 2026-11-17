@@ -35,7 +35,8 @@ def test_partly_priced_cut():
 
 def test_more_than_one_step_splits_between_25_and_50bp():
     o = odds_from_prices(DEC, price_for(3.88, 3.88 - 0.25 * 1.4), 100 - 3.88)
-    assert o.cut == pytest.approx(1.0) and o.hold == 0 and o.move_bp == 50
+    assert o.cut == pytest.approx(1.0) and o.hold == 0 and o.move_bp == 25  # 60% on 25bp, 40% on 50bp
+    assert [x["change_bp"] for x in o.outcomes] == [-25, -50]
 
 
 def test_hike():
@@ -55,3 +56,11 @@ def test_next_month_contract_is_used_for_the_end_rate_when_it_has_no_meeting():
     jan = date(2027, 1, 27)  # Feb 2027 has no meeting
     o = odds_from_prices(jan, 96.0, price_prev_month=None, effective_rate=3.63, price_next_month=100 - 3.38)
     assert o.cut == pytest.approx(1.0, abs=1e-3) and o.move_bp == 25
+
+
+def test_outcomes_split_between_the_two_nearest_moves():
+    # what the market priced on 2026-11-17: Nov 96.12, Dec 95.93 -> about +27bp
+    o = odds_from_prices(DEC, 95.93, 96.12)
+    assert o.hike == pytest.approx(1.0) and o.move_bp == 25
+    assert [x["change_bp"] for x in o.outcomes] == [25, 50]
+    assert o.outcomes[0]["prob"] == pytest.approx(0.93, abs=0.01)

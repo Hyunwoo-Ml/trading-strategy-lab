@@ -167,17 +167,16 @@
   function fedChip(f){
     if (!f || f.error || !f.meeting) return "";
     var md = Number(f.meeting.slice(5, 7)) + "/" + Number(f.meeting.slice(8, 10));
-    var sides = [["동결", f.hold], ["인하", f.cut], ["인상", f.hike]].filter(function(x){ return x[1] > 0.005; })
-      .sort(function(a, b){ return b[1] - a[1]; });
+    var name = function(bp){ return bp === 0 ? "동결" : (bp < 0 ? "인하 " : "인상 ") + Math.abs(bp) + "bp"; };
+    var sides = (f.outcomes || []).filter(function(o){ return o.prob > 0.005; }).map(function(o){ return [name(o.change_bp), o.prob]; });
     if (!sides.length) return "";
     var pct = function(x){ return Math.round(x[1] * 100) + "%"; };
     var main = sides[0], rest = sides.slice(1);
-    var moveNote = (main[0] !== "동결" ? " " + f.move_bp + "bp" : "");
     var tip = "연방기금금리 선물로 계산한 근사치예요. CME FedWatch 공식 수치와 다를 수 있어요." +
       (f.current_range ? " 현재 목표 범위 " + f.current_range + "." : "") +
       " 시장이 반영한 변화 " + signed(f.implied_change_bp, 1, "bp") + ".";
     return '<div class="chip fed" title="' + esc(tip) + '"><div class="chip-label">다음 FOMC ' + md + ' (선물 기준)</div>' +
-      '<div class="chip-value">' + main[0] + moveNote + ' ' + pct(main) + '</div>' +
+      '<div class="chip-value">' + main[0] + ' ' + pct(main) + '</div>' +
       '<div class="chip-change flat">' + (rest.length ? rest.map(function(x){ return x[0] + " " + pct(x); }).join(" · ") : "다른 결과 0%") + '</div></div>';
   }
 
