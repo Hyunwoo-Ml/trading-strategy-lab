@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+
+import numpy as np
 from datetime import date, timedelta
 
 import pandas as pd
@@ -107,3 +109,48 @@ def test_big_oi_strikes_list_calls_above_and_puts_below_spot():
     snap = analyze_chains([chain(calls, puts)], spot=100.0, as_of=AS_OF)
     tops = {(b["side"], b["strike"]) for b in snap.big_oi_strikes}
     assert ("call", 115.0) in tops and ("put", 85.0) in tops
+
+
+from sw1.market.options import bs_price, chain_quality, implied_vol  # noqa: E402
+
+
+@pytest.mark.parametrize("is_call", [True, False])
+def test_implied_vol_inverts_black_scholes(is_call):
+    strikes = np.array([80.0, 95.0, 100.0, 105.0, 120.0])
+    prices = bs_price(100.0, strikes, 30 / 365, np.full(5, 0.42), is_call)
+    iv = implied_vol(prices, 100.0, strikes, 30 / 365, is_call)
+    assert iv == pytest.approx(np.full(5, 0.42), abs=1e-4)
+
+
+def test_implied_vol_is_nan_without_a_usable_price():
+    iv = implied_vol(np.array([np.nan, 0.0, 1e-9]), 100.0, np.array([100.0, 100.0, 150.0]), 30 / 365, True)
+    assert np.isnan(iv).all()
+
+
+def test_placeholder_iv_is_recomputed_from_the_option_price():
+    """Yahoo's off-hours placeholder IV (~0.0156) must not reach the math."""
+    t = (30 + 1) / 365
+    calls = side(STRIKES, 1000, iv=0.015625)
+    puts = side(STRIKES, 1000, iv=0.015625)
+    calls["lastPrice"] = bs_price(100.0, np.array(STRIKES, float), t, np.full(len(STRIKES), 0.35), True)
+    puts["lastPrice"] = bs_price(100.0, np.array(STRIKES, float), t, np.full(len(STRIKES), 0.35), False)
+    snap = analyze_chains([chain(calls, puts)], spot=100.0, as_of=AS_OF)
+    assert snap.atm_iv == pytest.approx(0.35, abs=1e-3)
+    assert snap.expected_move_pct == pytest.approx(round(0.35 * math.sqrt(1 / 252) * 100, 2), abs=0.01)
+
+
+def test_mid_price_is_preferred_over_last_trade():
+    t = (30 + 1) / 365
+    calls = side([100], 1000, iv=0.0)
+    fair = float(bs_price(100.0, np.array([100.0]), t, np.array([0.25]), True)[0])
+    calls["bid"], calls["ask"], calls["lastPrice"] = fair - 0.05, fair + 0.05, fair * 3  # stale last trade
+    snap = analyze_chains([chain(calls, side([100], 0, iv=0.0))], spot=100.0, as_of=AS_OF)
+    assert snap.atm_iv == pytest.approx(0.25, abs=2e-3)
+
+
+def test_chain_quality_rejects_zeroed_open_interest():
+    many = list(range(50, 151))
+    zeroed = side(many, [0] * (len(many) - 3) + [300, 300, 261])  # what Yahoo returned pre-market
+    ok, reason = chain_quality([chain(zeroed, side(many, 0))])
+    assert not ok and "open interest" in reason
+    assert chain_quality([chain(side(many, 500), side(many, 500))])[0]
