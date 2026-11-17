@@ -126,4 +126,4 @@ def test_headlines_get_korean_titles_from_the_translator(tmp_path):
     assert script.main(source=NewsSource(), out_path=tmp_path / "live.json", translator=tr) == 0
     heads = json.loads((tmp_path / "headlines.json").read_text(encoding="utf-8"))
     items = heads["macro"] + heads["company"]
-    assert items and all(i["title_ko"] == f"한글 {i['title']}" for i in items)
+    assert items and all(i["title_ko"].startswith("한글 ") for i in items)

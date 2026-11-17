@@ -1,6 +1,6 @@
 """Headline translation (sw1/market/translate.py) with a fake backend --
 the real NLLB model only runs in the market workflows."""
-from sw1.market.translate import VERSION, Translator, cache_from, postprocess, preprocess
+from sw1.market.translate import VERSION, Translator, _replace, cache_from, postprocess, prepare, preprocess
 
 
 class Fake:
@@ -15,7 +15,7 @@ class Fake:
 
 def test_preprocess_strips_column_labels_and_expands_jargon():
     assert preprocess("Morning Bid: Chip wreck") == "Chip wreck"
-    assert preprocess("Nvidia Dims Wall Street Pre-Bell") == "Nvidia Dims Wall Street before the opening bell"
+    assert preprocess("Nvidia Dims Wall Street Pre-Bell") == "엔비디아 Dims Wall Street before the opening bell"
     assert preprocess("Fed cuts 25 bps") == "Fed cuts 25 basis points"
 
 
@@ -66,13 +66,13 @@ def test_cache_from_previous_output():
 
 
 def test_preprocess_cleans_real_headlines():
-    assert preprocess("Tesla commits $3.30bn to expand German gigafactory") == "Tesla commits $3.3 billion to expand German gigafactory"
-    assert preprocess("Lilly agrees to acquire Calytrix Bio for $1.5bn") == "Lilly agrees to acquire Calytrix Bio for $1.5 billion"
-    assert preprocess("Update: Market Chatter: Amazon Lobbying Fails") == "Amazon Lobbying Fails"
+    assert preprocess("Tesla commits $3.30bn to expand German gigafactory") == "테슬라 commits $3.3 billion to expand German gigafactory"
+    assert preprocess("Kazakhstan unveils $85M push") == "Kazakhstan unveils $85 million push"
+    assert preprocess("Update: Market Chatter: Amazon Lobbying Fails") == "아마존 Lobbying Fails"
     assert preprocess("Exclusive-Trump's China data center curb advances") == "Trump's China data center curb advances"
     assert preprocess("Stocks slip ahead of Nvidia earnings, Home Depot shares slide: AlphaCheck") == \
-        "Stocks slip ahead of Nvidia earnings report, Home Depot shares slide"
-    assert preprocess("Nvidia earnings report due") == "Nvidia earnings report due"
+        "Stocks slip ahead of 엔비디아 earnings report, 홈디포 share price slide"
+    assert preprocess("Nvidia earnings report due") == "엔비디아 earnings report due"
     assert preprocess("It’s not just AI — the dollar ‘wrecking ball’") == "It's not just AI, the dollar 'wrecking ball'"
     assert preprocess("Oil edges higher on tanker attacks") == "Oil rises slightly on tanker attacks"
     assert preprocess("Equity Futures Mixed Pre-Bell") == "stock index futures Mixed before the opening bell"
@@ -92,3 +92,42 @@ def test_particles_follow_the_replaced_word():
     assert postprocess("칩 주식은 하락") == "반도체주는 하락"
     assert postprocess("탱커를 공격") == "유조선을 공격"
     assert postprocess("연방준비제도이사회 의장") == "연준이사회 의장"  # not a particle
+
+
+def test_company_names_and_market_slang():
+    assert preprocess("Why Is Applied Materials Stock Down Over 5%?") == "Why Is 어플라이드 머티리얼즈 share price Down Over 5%?"
+    assert preprocess("ServiceNow Stock's (NOW) Historic Sell-Off May Have Gone Too Far") == \
+        "서비스나우 share price's Historic sharp drop May Have Gone Too Far"
+    assert preprocess("Salesforce Sells Off Before Anthropic's IPO") == "세일즈포스 falls sharply Before 앤트로픽's IPO"
+    assert preprocess("Signal: Buy the Dip on Bloom Energy Stock") == "Signal: buy on the decline on 블룸 에너지 Stock"
+    assert preprocess("Apple outage today") == "애플 service disruption today"
+    assert preprocess("Applied Optoelectronics falls 8% on stock offering plan") == \
+        "어플라이드 옵토일렉트로닉스 falls 8% on stock offering plan"  # "stock offering" stays
+    text, found = prepare("Dear Palo Alto Networks Stock Fans", "ticker")
+    assert text == "Dear PANW Stock Fans" and found == [("팔로알토 네트웍스", "PANW")]
+    assert prepare("ServiceNow slides", "ticker")[0] == "서비스나우 slides"  # NOW is an English word: no ticker
+
+
+def test_mangled_names_are_retried_with_tickers():
+    calls = []
+
+    def model(texts):
+        calls.append(list(texts))
+        out = []
+        for t in texts:
+            if "팔로알토 네트웍스" in t:      # the model drops a rare syllable
+                out.append("귀여운 팔로알토네 ⁇ 스 주가 팬")
+            elif "PANW" in t:
+                out.append("귀여운 PANW 주가 팬들")
+            elif "CRM" in t:
+                out.append("ANTHR의 IPO 전에 CRM가 급격히 떨어집니다")
+            else:
+                out.append("세일즈포스는 엔트로픽의 IPO 전에 급격히 하락했습니다")
+        return out
+
+    tr = Translator(backend=model)
+    got = tr.translate(["Dear Palo Alto Networks Stock Fans", "Salesforce Sells Off Before Anthropic's IPO"])
+    assert got["Dear Palo Alto Networks Stock Fans"] == "귀여운 팔로알토 네트웍스 주가 팬들"
+    assert got["Salesforce Sells Off Before Anthropic's IPO"] == "세일즈포스는 앤트로픽의 IPO 전에 급격히 하락했습니다"
+    assert len(calls) == 2 and calls[1] == ["Dear PANW Stock Fans"]  # only the mangled one is retried
+    assert _replace("ANTHR의 IPO 전에 CRM가 하락", "CRM", "세일즈포스") == "ANTHR의 IPO 전에 세일즈포스가 하락"
