@@ -12,7 +12,10 @@ Outputs (plain dicts, ready for json.dump):
 
 A ticker that fails to load is listed under `failures` instead of
 stopping the run, and every optional block (options, rates, ...) degrades
-to None on its own.
+to None on its own. When today's option snapshot fails the quality check
+(Yahoo off-hours data with open interest zeroed out), the last good
+snapshot from the previous run is carried forward for up to
+MAX_STALE_OPTION_DAYS and marked `options_stale`.
 """
 from __future__ import annotations
 
@@ -25,13 +28,18 @@ import numpy as np
 import pandas as pd
 
 from sw1.indicators.io import to_market_dates
-from sw1.market.options import ExpiryChain, analyze_chains
+from sw1.market.options import ExpiryChain, analyze_chains, chain_quality
 from sw1.market.signal_stats import evaluate_all, headline_signal
 from sw1.market.trend import compute_trend_position, compute_trend_strength
 from sw1.market.universe import INDEX_GROUP, Member, members
 
 MAX_OPTION_EXPIRIES = 6
 MAX_OPTION_DAYS = 45
+MAX_STALE_OPTION_DAYS = 7
+
+
+class OptionsDataError(RuntimeError):
+    """Option chains came back but the data is unusable (e.g. OI all zero)."""
 
 
 class MarketSource(Protocol):
@@ -108,7 +116,10 @@ def build_options(source: MarketSource, ticker: str, spot: float, as_of: date) -
         chains.append(ExpiryChain(expiry=d, calls=calls, puts=puts))
     if not chains:
         return None
-    return asdict(analyze_chains(chains, spot=spot, as_of=as_of))
+    ok, reason = chain_quality(chains)
+    if not ok:
+        raise OptionsDataError(reason)
+    return dict(asdict(analyze_chains(chains, spot=spot, as_of=as_of)), quality_ok=True)
 
 
 def build_ticker(source: MarketSource, member: Member, with_options: bool = True) -> dict:
@@ -150,6 +161,7 @@ def build_ticker(source: MarketSource, member: Member, with_options: bool = True
         "headline_signal": asdict(head) if head else None,
         "options": options,
         "options_error": options_error,
+        "options_stale": False,
         "history_bars": len(hist),
         "chart": [
             {"d": d.date().isoformat(), "c": round(float(c), 4)}
@@ -189,7 +201,24 @@ def summary_row(detail: dict) -> dict:
         "gamma_regime": opt.get("regime"),
         "expected_move_pct": opt.get("expected_move_pct"),
         "pc_ratio_oi": opt.get("pc_ratio_oi"),
+        "options_stale": bool(detail.get("options_stale")),
+        "options_as_of": opt.get("as_of"),
     }
+
+
+def carry_forward_options(detail: dict, previous: dict | None) -> dict:
+    """If today's options are missing because the data was bad, reuse the
+    previous run's snapshot (marked stale) as long as it is recent."""
+    if detail.get("options") is not None or not detail.get("options_error") or not previous:
+        return detail
+    prev_opt = previous.get("options")
+    # Only snapshots that passed the quality check can be carried forward.
+    if not prev_opt or not prev_opt.get("as_of") or not prev_opt.get("quality_ok"):
+        return detail
+    age = (date.fromisoformat(detail["as_of"]) - date.fromisoformat(prev_opt["as_of"])).days
+    if 0 <= age <= MAX_STALE_OPTION_DAYS:
+        detail = dict(detail, options=prev_opt, options_stale=True)
+    return detail
 
 
 # ---------------------------------------------------------------- macro
@@ -341,12 +370,19 @@ def build_breadth(rows: list[dict]) -> dict:
 
 # ---------------------------------------------------------------- everything
 
-def build_all(source: MarketSource, universe: list[Member] | None = None, with_options: bool = True, log=print):
+def build_all(source: MarketSource, universe: list[Member] | None = None, with_options: bool = True, log=print,
+              previous: dict | None = None):
+    """`previous`: ticker -> detail dict from the last run (for carrying
+    forward option snapshots when today's are unusable)."""
     universe = universe or members()
+    previous = previous or {}
     details, failures = {}, []
     for m in universe:
         try:
-            details[m.ticker] = build_ticker(source, m, with_options=with_options)
+            detail = build_ticker(source, m, with_options=with_options)
+            details[m.ticker] = carry_forward_options(detail, previous.get(m.ticker))
+            if detail.get("options_error"):
+                log(f"[WARN] {m.ticker} options: {detail['options_error']}" + (" (kept previous snapshot)" if details[m.ticker]["options_stale"] else ""))
         except Exception as exc:  # noqa: BLE001 -- one bad ticker must not stop the run
             failures.append({"ticker": m.ticker, "error": str(exc)[:200]})
             log(f"[WARN] {m.ticker}: {exc}")
