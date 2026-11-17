@@ -41,7 +41,8 @@ class FedOdds:
     hold: float  # probabilities, 0..1, summing to 1
     cut: float
     hike: float
-    move_bp: int  # size of the move the cut/hike side refers to (25 or 50)
+    move_bp: int  # size of the most likely non-hold move, in bp (e.g. 25)
+    outcomes: list  # [{"change_bp": -25, "prob": 0.7}, {"change_bp": 0, "prob": 0.3}], most likely first
     futures: dict  # contract symbol -> price, for transparency
 
 
@@ -105,8 +106,9 @@ def odds_from_prices(meeting: date, price_meeting_month: float | None, price_pre
     hold = outcomes.get(0, 0.0)
     cut = sum(p for k, p in outcomes.items() if k < 0)
     hike = sum(p for k, p in outcomes.items() if k > 0)
-    moving = [k for k, p in outcomes.items() if k != 0 and p > 1e-9]
-    move = 25 * max((abs(k) for k in moving), default=1)
+    ranked = sorted(((k, p) for k, p in outcomes.items() if p > 0.0005), key=lambda kp: -kp[1])
+    moving = [k for k, _ in ranked if k != 0]
+    move = 25 * abs(moving[0]) if moving else 25
     rng = None
     if target_upper is not None:
         rng = f"{target_upper - 0.25:.2f}–{target_upper:.2f}%"
@@ -114,5 +116,6 @@ def odds_from_prices(meeting: date, price_meeting_month: float | None, price_pre
         meeting=meeting.isoformat(), current_range=rng,
         implied_change_bp=round(change * 100, 1),
         hold=round(hold, 3), cut=round(cut, 3), hike=round(hike, 3), move_bp=move,
+        outcomes=[{"change_bp": int(k * 25), "prob": round(p, 3)} for k, p in ranked],
         futures={},
     )
