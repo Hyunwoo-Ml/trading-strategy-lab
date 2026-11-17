@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 from sw1.market.dashboard import MarketSource, build_strip, normalize_history
 from sw1.market.fedwatch import FOMC_DECISIONS, contract_code, next_month, odds_from_prices, prev_month
-from sw1.market.news import FEEDS, MACRO_NEWS_TICKERS, merge, parse_rss, parse_yahoo_news
+from sw1.market.news import FEEDS, MACRO_NEWS_TICKERS, keep_for_macro, keep_for_ticker, merge, parse_rss, parse_yahoo_news
 
 NEW_YORK = ZoneInfo("America/New_York")
 # Big names whose Yahoo headlines make up the 기업 뉴스 tab.
@@ -108,7 +108,8 @@ def build_headlines(source: MarketSource, now_utc: datetime | None = None, limit
             if news is None:
                 break
             try:
-                bucket += parse_yahoo_news(news(t), None if kind == "macro" else t, kind)
+                got = parse_yahoo_news(news(t), None if kind == "macro" else t, kind)
+                bucket += keep_for_macro(got) if kind == "macro" else keep_for_ticker(got, t)
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{t}: {str(exc)[:80]}")
     return {
