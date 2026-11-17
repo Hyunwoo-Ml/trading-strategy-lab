@@ -15,8 +15,11 @@ from zoneinfo import ZoneInfo
 
 from sw1.market.dashboard import MarketSource, build_strip, normalize_history
 from sw1.market.fedwatch import FOMC_DECISIONS, contract_code, next_month, odds_from_prices, prev_month
+from sw1.market.news import FEEDS, MACRO_NEWS_TICKERS, merge, parse_rss, parse_yahoo_news
 
 NEW_YORK = ZoneInfo("America/New_York")
+# Big names whose Yahoo headlines make up the 기업 뉴스 tab.
+COMPANY_NEWS_TICKERS = ("AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "AVGO", "TSM", "PLTR")
 DECISION_HOUR_ET = 14  # statements come out at 2pm New York time
 
 
@@ -82,4 +85,35 @@ def build_live(source: MarketSource, now_utc: datetime | None = None) -> dict:
         "generated_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "strip": build_strip(source),
         "fedwatch": build_fedwatch(source, now_utc),
+    }
+
+
+def build_headlines(source: MarketSource, now_utc: datetime | None = None, limit: int = 40) -> dict:
+    """Main-page headlines: 지정학·매크로 (official feeds + market-wide Yahoo
+    lists) and 기업 (Yahoo lists of the biggest names). Each source that fails
+    is skipped and listed under `errors`."""
+    now_utc = now_utc or datetime.now(timezone.utc)
+    macro, company, errors = [], [], []
+    fetch_text = getattr(source, "fetch_text", None)
+    for label, url, base in FEEDS:
+        if fetch_text is None:
+            break
+        try:
+            macro += parse_rss(fetch_text(url), label, base)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{label}: {str(exc)[:80]}")
+    news = getattr(source, "news", None)
+    for tickers, bucket, kind in ((MACRO_NEWS_TICKERS, macro, "macro"), (COMPANY_NEWS_TICKERS, company, "company")):
+        for t in tickers:
+            if news is None:
+                break
+            try:
+                bucket += parse_yahoo_news(news(t), None if kind == "macro" else t, kind)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{t}: {str(exc)[:80]}")
+    return {
+        "generated_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "macro": merge(macro, limit, now_utc),
+        "company": merge(company, limit, now_utc),
+        "errors": errors,
     }
