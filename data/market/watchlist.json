@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T13:07:54+00:00",
+ "generated_at": "2026-11-17T13:49:08+00:00",
  "as_of": "2026-11-16",
  "groups": [
   "지수·ETF",
@@ -25,6 +25,7 @@
    "trend_label": "neutral",
    "pct_from_high": -5.02,
    "return_20d": -3.46,
+   "return_5d": -1.69,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "negative",
@@ -32,7 +33,8 @@
    "pc_ratio_oi": 2.622,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "neutral"
   },
@@ -48,6 +50,7 @@
    "trend_label": "weak",
    "pct_from_high": -12.89,
    "return_20d": -7.88,
+   "return_5d": -2.59,
    "above_ma50": false,
    "signal": {
     "key": "rsi_oversold",
@@ -61,11 +64,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 2.33,
+   "expected_move_pct": 2.35,
    "pc_ratio_oi": 1.03,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "neutral"
   },
@@ -81,6 +85,7 @@
    "trend_label": "neutral",
    "pct_from_high": -4.68,
    "return_20d": -0.62,
+   "return_5d": -1.46,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_down",
@@ -98,7 +103,8 @@
    "pc_ratio_oi": 1.085,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "neutral"
   },
@@ -114,14 +120,16 @@
    "trend_label": "neutral",
    "pct_from_high": -10.3,
    "return_20d": 0.61,
+   "return_5d": -3.39,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "negative",
-   "expected_move_pct": 1.63,
+   "expected_move_pct": 1.68,
    "pc_ratio_oi": 2.544,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "neutral"
   },
@@ -137,6 +145,7 @@
    "trend_label": "weak",
    "pct_from_high": -30.95,
    "return_20d": -15.78,
+   "return_5d": -5.23,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -155,6 +164,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "neutral"
   },
@@ -170,6 +180,7 @@
    "trend_label": "neutral",
    "pct_from_high": -9.51,
    "return_20d": 0.32,
+   "return_5d": -3.15,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_down",
@@ -187,7 +198,8 @@
    "pc_ratio_oi": 0.617,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "neutral"
   },
@@ -203,6 +215,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -28.83,
    "return_20d": -7.05,
+   "return_5d": -7.01,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -216,11 +229,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 2.97,
+   "expected_move_pct": 2.86,
    "pc_ratio_oi": 0.543,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": null,
    "macro_fit": "unfavorable"
   },
@@ -236,6 +250,7 @@
    "trend_label": "strong",
    "pct_from_high": -0.98,
    "return_20d": 2.95,
+   "return_5d": 0.67,
    "above_ma50": true,
    "signal": {
     "key": "strong_buy_dip",
@@ -249,11 +264,12 @@
     "low_sample": false
    },
    "gamma_regime": "positive",
-   "expected_move_pct": 1.87,
+   "expected_move_pct": 1.85,
    "pc_ratio_oi": 0.964,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-28",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -269,6 +285,7 @@
    "trend_label": "neutral",
    "pct_from_high": -6.8,
    "return_20d": -2.91,
+   "return_5d": -4.99,
    "above_ma50": false,
    "signal": {
     "key": "ma20_reclaim",
@@ -282,11 +299,12 @@
     "low_sample": false
    },
    "gamma_regime": "positive",
-   "expected_move_pct": 3.41,
+   "expected_move_pct": 3.34,
    "pc_ratio_oi": 0.73,
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": "2027-01-27",
    "target_tone": "positive",
    "macro_fit": "unfavorable"
   },
@@ -302,6 +320,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -34.73,
    "return_20d": -28.08,
+   "return_5d": -12.61,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -315,11 +334,12 @@
     "low_sample": false
    },
    "gamma_regime": "flip",
-   "expected_move_pct": 9.1,
+   "expected_move_pct": 9.08,
    "pc_ratio_oi": 0.679,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": "2026-11-17",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -335,6 +355,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -29.44,
    "return_20d": -17.57,
+   "return_5d": -1.54,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -348,11 +369,12 @@
     "low_sample": false
    },
    "gamma_regime": "flip",
-   "expected_move_pct": 4.09,
+   "expected_move_pct": 3.65,
    "pc_ratio_oi": 0.388,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -368,6 +390,7 @@
    "trend_label": "strong",
    "pct_from_high": -9.25,
    "return_20d": -1.79,
+   "return_5d": -3.44,
    "above_ma50": true,
    "signal": {
     "key": "macd_turn_up",
@@ -381,11 +404,12 @@
     "low_sample": false
    },
    "gamma_regime": "positive",
-   "expected_move_pct": 2.93,
+   "expected_move_pct": 3.5,
    "pc_ratio_oi": 0.585,
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -401,6 +425,7 @@
    "trend_label": "weak",
    "pct_from_high": -19.44,
    "return_20d": -11.2,
+   "return_5d": -2.33,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -414,11 +439,12 @@
     "low_sample": false
    },
    "gamma_regime": "positive",
-   "expected_move_pct": 3.38,
+   "expected_move_pct": 3.45,
    "pc_ratio_oi": 0.49,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-27",
    "target_tone": "positive",
    "macro_fit": "favorable"
   },
@@ -434,6 +460,7 @@
    "trend_label": "neutral",
    "pct_from_high": -22.48,
    "return_20d": 3.17,
+   "return_5d": 0.45,
    "above_ma50": true,
    "signal": {
     "key": "ma20_reclaim",
@@ -447,11 +474,12 @@
     "low_sample": false
    },
    "gamma_regime": "positive",
-   "expected_move_pct": 3.78,
+   "expected_move_pct": 3.81,
    "pc_ratio_oi": 1.242,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-27",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -467,6 +495,7 @@
    "trend_label": "weak",
    "pct_from_high": -30.53,
    "return_20d": -0.36,
+   "return_5d": 4.36,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -480,11 +509,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 5.27,
+   "expected_move_pct": 4.98,
    "pc_ratio_oi": 0.908,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": "2026-12-09",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -500,6 +530,7 @@
    "trend_label": "weak",
    "pct_from_high": -23.13,
    "return_20d": -11.13,
+   "return_5d": -3.9,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -517,9 +548,10 @@
    "pc_ratio_oi": 1.196,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-14",
    "target_tone": "positive",
-   "macro_fit": "neutral"
+   "macro_fit": "favorable"
   },
   {
    "ticker": "AMD",
@@ -533,6 +565,7 @@
    "trend_label": "neutral",
    "pct_from_high": -22.35,
    "return_20d": -6.28,
+   "return_5d": -0.85,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -546,11 +579,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 7.05,
+   "expected_move_pct": 6.55,
    "pc_ratio_oi": 0.894,
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": "2027-02-02",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -566,6 +600,7 @@
    "trend_label": "weak",
    "pct_from_high": -40.73,
    "return_20d": -20.54,
+   "return_5d": -1.93,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -579,11 +614,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 6.96,
+   "expected_move_pct": 7.16,
    "pc_ratio_oi": 0.956,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": "2026-12-23",
    "target_tone": "neutral",
    "macro_fit": "neutral"
   },
@@ -599,6 +635,7 @@
    "trend_label": "neutral",
    "pct_from_high": -32.25,
    "return_20d": -2.89,
+   "return_5d": -1.72,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -616,7 +653,8 @@
    "pc_ratio_oi": 0.83,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-03",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -632,14 +670,16 @@
    "trend_label": "very_weak",
    "pct_from_high": -54.04,
    "return_20d": -38.69,
+   "return_5d": -5.98,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "negative",
-   "expected_move_pct": 8.55,
+   "expected_move_pct": 7.69,
    "pc_ratio_oi": 0.842,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": "2026-12-01",
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -655,6 +695,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -60.64,
    "return_20d": -39.73,
+   "return_5d": -6.57,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -668,11 +709,12 @@
     "low_sample": false
    },
    "gamma_regime": "positive",
-   "expected_move_pct": 6.24,
+   "expected_move_pct": 5.99,
    "pc_ratio_oi": 0.509,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": "negative",
+   "next_earnings": "2027-01-28",
    "target_tone": "negative",
    "macro_fit": "favorable"
   },
@@ -688,6 +730,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -51.5,
    "return_20d": -15.22,
+   "return_5d": -5.48,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -705,7 +748,8 @@
    "pc_ratio_oi": 0.976,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": null,
+   "next_earnings": "2027-02-11",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -721,6 +765,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -51.29,
    "return_20d": -22.55,
+   "return_5d": -4.74,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -738,7 +783,8 @@
    "pc_ratio_oi": 0.945,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": null,
+   "next_earnings": "2027-01-27",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -754,6 +800,7 @@
    "trend_label": "weak",
    "pct_from_high": -29.1,
    "return_20d": -14.48,
+   "return_5d": -7.04,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -771,9 +818,10 @@
    "pc_ratio_oi": 0.962,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": "2027-01-27",
    "target_tone": null,
-   "macro_fit": "unfavorable"
+   "macro_fit": "neutral"
   },
   {
    "ticker": "ARM",
@@ -787,6 +835,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -60.17,
    "return_20d": -23.24,
+   "return_5d": -6.04,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -804,7 +853,8 @@
    "pc_ratio_oi": 0.875,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-03",
    "target_tone": "negative",
    "macro_fit": "favorable"
   },
@@ -820,6 +870,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -65.35,
    "return_20d": -40.99,
+   "return_5d": -8.73,
    "above_ma50": false,
    "signal": {
     "key": "bb_lower_break",
@@ -833,11 +884,12 @@
     "low_sample": true
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 8.79,
+   "expected_move_pct": 8.59,
    "pc_ratio_oi": 0.751,
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "negative",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -853,6 +905,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -49.46,
    "return_20d": -7.43,
+   "return_5d": -2.05,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -870,9 +923,10 @@
    "pc_ratio_oi": 0.433,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": "negative",
-   "macro_fit": "unfavorable"
+   "macro_fit": "neutral"
   },
   {
    "ticker": "STX",
@@ -886,6 +940,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -54.32,
    "return_20d": -24.49,
+   "return_5d": -1.41,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -903,9 +958,10 @@
    "pc_ratio_oi": 0.839,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-26",
    "target_tone": "negative",
-   "macro_fit": "unfavorable"
+   "macro_fit": "neutral"
   },
   {
    "ticker": "ORCL",
@@ -919,6 +975,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -51.66,
    "return_20d": -8.1,
+   "return_5d": -0.58,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -932,11 +989,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 5.65,
+   "expected_move_pct": 5.86,
    "pc_ratio_oi": 0.757,
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": "2026-12-14",
    "target_tone": "neutral",
    "macro_fit": "unfavorable"
   },
@@ -952,6 +1010,7 @@
    "trend_label": "weak",
    "pct_from_high": -45.45,
    "return_20d": -29.52,
+   "return_5d": -7.44,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -969,7 +1028,8 @@
    "pc_ratio_oi": 1.125,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2026-11-24",
    "target_tone": null,
    "macro_fit": "favorable"
   },
@@ -985,6 +1045,7 @@
    "trend_label": "neutral",
    "pct_from_high": -13.71,
    "return_20d": 2.22,
+   "return_5d": 0.46,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1003,6 +1064,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "favorable"
   },
@@ -1018,6 +1080,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -75.84,
    "return_20d": -40.89,
+   "return_5d": -23.45,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1035,7 +1098,8 @@
    "pc_ratio_oi": 0.602,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-04",
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -1051,6 +1115,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -63.85,
    "return_20d": -18.39,
+   "return_5d": 1.84,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1069,6 +1134,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "favorable"
   },
@@ -1084,6 +1150,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -62.63,
    "return_20d": -37.07,
+   "return_5d": -24.26,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -1101,7 +1168,8 @@
    "pc_ratio_oi": 0.678,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-11",
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -1117,6 +1185,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -51.83,
    "return_20d": -34.57,
+   "return_5d": -8.41,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -1134,9 +1203,10 @@
    "pc_ratio_oi": 0.73,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-02",
    "target_tone": "negative",
-   "macro_fit": "unfavorable"
+   "macro_fit": "neutral"
   },
   {
    "ticker": "COHR",
@@ -1150,6 +1220,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -52.35,
    "return_20d": -12.32,
+   "return_5d": -9.66,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1167,7 +1238,8 @@
    "pc_ratio_oi": 0.892,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-03",
    "target_tone": "negative",
    "macro_fit": "favorable"
   },
@@ -1183,6 +1255,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -79.76,
    "return_20d": -42.25,
+   "return_5d": -13.32,
    "above_ma50": false,
    "signal": {
     "key": "rsi_oversold",
@@ -1200,9 +1273,10 @@
    "pc_ratio_oi": 0.42,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": "negative",
-   "macro_fit": "unfavorable"
+   "macro_fit": "neutral"
   },
   {
    "ticker": "VRT",
@@ -1216,6 +1290,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -49.83,
    "return_20d": -8.45,
+   "return_5d": -5.89,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1233,7 +1308,8 @@
    "pc_ratio_oi": 1.194,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "favorable"
   },
@@ -1249,6 +1325,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -34.97,
    "return_20d": -15.9,
+   "return_5d": -7.93,
    "above_ma50": false,
    "signal": {
     "key": "bb_lower_break",
@@ -1266,7 +1343,8 @@
    "pc_ratio_oi": 1.076,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": "2027-01-27",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -1282,6 +1360,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -27.44,
    "return_20d": -13.05,
+   "return_5d": -2.81,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1300,6 +1379,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -1315,6 +1395,7 @@
    "trend_label": "neutral",
    "pct_from_high": -26.18,
    "return_20d": 5.72,
+   "return_5d": 0.78,
    "above_ma50": true,
    "signal": {
     "key": "macd_turn_up",
@@ -1332,7 +1413,8 @@
    "pc_ratio_oi": 1.561,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1348,6 +1430,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -79.37,
    "return_20d": -15.46,
+   "return_5d": -14.2,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1366,6 +1449,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "positive",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -1381,6 +1465,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -48.74,
    "return_20d": -21.63,
+   "return_5d": -8.56,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -1399,6 +1484,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "negative",
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1414,6 +1500,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -90.61,
    "return_20d": -5.52,
+   "return_5d": -9.04,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "negative",
@@ -1422,6 +1509,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": null,
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -1437,6 +1525,7 @@
    "trend_label": "weak",
    "pct_from_high": -23.28,
    "return_20d": -17.39,
+   "return_5d": -5.21,
    "above_ma50": false,
    "signal": {
     "key": "rsi_oversold",
@@ -1450,11 +1539,12 @@
     "low_sample": false
    },
    "gamma_regime": "flip",
-   "expected_move_pct": 4.75,
+   "expected_move_pct": 4.77,
    "pc_ratio_oi": 0.959,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-02-01",
    "target_tone": "positive",
    "macro_fit": "favorable"
   },
@@ -1470,6 +1560,7 @@
    "trend_label": "weak",
    "pct_from_high": -18.75,
    "return_20d": -11.39,
+   "return_5d": -0.05,
    "above_ma50": false,
    "signal": {
     "key": "bb_lower_break",
@@ -1487,7 +1578,8 @@
    "pc_ratio_oi": 0.863,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "positive",
+   "next_earnings": "2026-12-02",
    "target_tone": "positive",
    "macro_fit": "unfavorable"
   },
@@ -1503,6 +1595,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -42.73,
    "return_20d": -31.64,
+   "return_5d": -3.3,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "negative",
@@ -1511,6 +1604,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "negative",
+   "next_earnings": "2027-01-27",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -1526,6 +1620,7 @@
    "trend_label": "neutral",
    "pct_from_high": -19.96,
    "return_20d": -2.14,
+   "return_5d": -2.35,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "negative",
@@ -1534,6 +1629,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": "2026-12-01",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1549,6 +1645,7 @@
    "trend_label": "neutral",
    "pct_from_high": -24.72,
    "return_20d": -8.89,
+   "return_5d": -4.47,
    "above_ma50": false,
    "signal": {
     "key": "strong_buy_dip",
@@ -1566,7 +1663,8 @@
    "pc_ratio_oi": 0.84,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2026-11-18",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -1582,6 +1680,7 @@
    "trend_label": "strong",
    "pct_from_high": -43.4,
    "return_20d": 54.29,
+   "return_5d": 1.27,
    "above_ma50": true,
    "signal": {
     "key": "macd_turn_up",
@@ -1600,6 +1699,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "favorable"
   },
@@ -1615,6 +1715,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -46.75,
    "return_20d": -13.03,
+   "return_5d": -5.0,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -1628,11 +1729,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 3.09,
+   "expected_move_pct": 3.44,
    "pc_ratio_oi": 0.665,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-19",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -1648,6 +1750,7 @@
    "trend_label": "neutral",
    "pct_from_high": -25.3,
    "return_20d": 3.3,
+   "return_5d": -0.78,
    "above_ma50": true,
    "signal": {
     "key": "ma20_reclaim",
@@ -1665,7 +1768,8 @@
    "pc_ratio_oi": 0.703,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": "positive",
+   "next_earnings": "2027-01-27",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1681,6 +1785,7 @@
    "trend_label": "neutral",
    "pct_from_high": -23.88,
    "return_20d": 0.65,
+   "return_5d": -23.31,
    "above_ma50": false,
    "signal": {
     "key": "ma20_reclaim",
@@ -1698,7 +1803,8 @@
    "pc_ratio_oi": 0.779,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "unfavorable"
   },
@@ -1714,6 +1820,7 @@
    "trend_label": "neutral",
    "pct_from_high": -6.92,
    "return_20d": 1.4,
+   "return_5d": -1.13,
    "above_ma50": false,
    "signal": null,
    "gamma_regime": "flip",
@@ -1722,6 +1829,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "positive",
+   "next_earnings": "2027-01-14",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1737,6 +1845,7 @@
    "trend_label": "weak",
    "pct_from_high": -22.33,
    "return_20d": -0.62,
+   "return_5d": -0.93,
    "above_ma50": false,
    "signal": {
     "key": "dead_cross",
@@ -1749,12 +1858,13 @@
     "win_rate": 0.75,
     "low_sample": false
    },
-   "gamma_regime": "negative",
-   "expected_move_pct": 3.68,
+   "gamma_regime": "flip",
+   "expected_move_pct": 2.65,
    "pc_ratio_oi": 0.892,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": "2027-01-15",
    "target_tone": "negative",
    "macro_fit": "neutral"
   },
@@ -1770,6 +1880,7 @@
    "trend_label": "neutral",
    "pct_from_high": -17.86,
    "return_20d": 4.61,
+   "return_5d": -0.82,
    "above_ma50": false,
    "signal": {
     "key": "dead_cross",
@@ -1788,6 +1899,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "positive",
+   "next_earnings": "2027-01-14",
    "target_tone": "neutral",
    "macro_fit": "neutral"
   },
@@ -1803,6 +1915,7 @@
    "trend_label": "strong",
    "pct_from_high": -4.99,
    "return_20d": 1.26,
+   "return_5d": 3.62,
    "above_ma50": true,
    "signal": {
     "key": "ma20_reclaim",
@@ -1820,9 +1933,10 @@
    "pc_ratio_oi": 1.013,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": null,
+   "next_earnings": "2027-01-12",
    "target_tone": "positive",
-   "macro_fit": "favorable"
+   "macro_fit": "neutral"
   },
   {
    "ticker": "LLY",
@@ -1836,6 +1950,7 @@
    "trend_label": "very_strong",
    "pct_from_high": -0.82,
    "return_20d": 15.57,
+   "return_5d": 1.52,
    "above_ma50": true,
    "signal": {
     "key": "rsi_overbought",
@@ -1853,7 +1968,8 @@
    "pc_ratio_oi": 1.559,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "positive",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1869,6 +1985,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -47.43,
    "return_20d": -25.34,
+   "return_5d": -13.51,
    "above_ma50": false,
    "signal": {
     "key": "rsi_oversold",
@@ -1882,11 +1999,12 @@
     "low_sample": false
    },
    "gamma_regime": "negative",
-   "expected_move_pct": 4.76,
+   "expected_move_pct": 4.65,
    "pc_ratio_oi": 0.652,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -1902,6 +2020,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -57.8,
    "return_20d": -28.86,
+   "return_5d": -11.95,
    "above_ma50": false,
    "signal": {
     "key": "rsi_oversold",
@@ -1919,7 +2038,8 @@
    "pc_ratio_oi": 0.507,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": null,
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -1935,6 +2055,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -50.03,
    "return_20d": 3.85,
+   "return_5d": -11.34,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_down",
@@ -1952,7 +2073,8 @@
    "pc_ratio_oi": 0.579,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "neutral",
+   "news_tone": null,
+   "next_earnings": "2027-01-29",
    "target_tone": "positive",
    "macro_fit": "neutral"
   },
@@ -1968,6 +2090,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -56.6,
    "return_20d": -29.15,
+   "return_5d": -14.67,
    "above_ma50": false,
    "signal": {
     "key": "rsi_oversold",
@@ -1985,7 +2108,8 @@
    "pc_ratio_oi": 0.602,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   },
@@ -2001,6 +2125,7 @@
    "trend_label": "neutral",
    "pct_from_high": -61.81,
    "return_20d": 11.7,
+   "return_5d": -2.53,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -2019,6 +2144,7 @@
    "options_stale": false,
    "options_as_of": "2026-11-16",
    "news_tone": "negative",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "favorable"
   },
@@ -2034,6 +2160,7 @@
    "trend_label": "very_weak",
    "pct_from_high": -63.3,
    "return_20d": -14.07,
+   "return_5d": -25.16,
    "above_ma50": false,
    "signal": {
     "key": "macd_turn_up",
@@ -2051,7 +2178,8 @@
    "pc_ratio_oi": 0.776,
    "options_stale": false,
    "options_as_of": "2026-11-16",
-   "news_tone": "negative",
+   "news_tone": "neutral",
+   "next_earnings": null,
    "target_tone": "negative",
    "macro_fit": "unfavorable"
   }

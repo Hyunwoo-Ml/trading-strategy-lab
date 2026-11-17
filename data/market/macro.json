@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T13:07:54+00:00",
+ "generated_at": "2026-11-17T13:49:08+00:00",
  "as_of": "2026-11-16",
  "strip": [
   {
@@ -21,60 +21,60 @@
   {
    "ticker": "^TNX",
    "label": "미 10년물 금리",
-   "last": 5.121,
-   "change": -3.3,
+   "last": 5.145,
+   "change": 2.4,
    "unit": "bp",
-   "as_of": "2026-11-16"
+   "as_of": "2026-11-17"
   },
   {
    "ticker": "DX-Y.NYB",
    "label": "달러인덱스",
-   "last": 103.578,
-   "change": 0.03,
+   "last": 103.761,
+   "change": 0.2,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "CL=F",
    "label": "WTI 원유",
-   "last": 86.28,
-   "change": 0.65,
+   "last": 86.97,
+   "change": 1.46,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "GC=F",
    "label": "금",
-   "last": 3861.3,
-   "change": 0.22,
+   "last": 3843.8999,
+   "change": -0.24,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "BTC-USD",
    "label": "비트코인",
-   "last": 65091.1719,
-   "change": 0.36,
+   "last": 64891.9805,
+   "change": 0.06,
    "unit": "pct",
    "as_of": "2026-11-16"
   },
   {
    "ticker": "^VIX",
    "label": "VIX",
-   "last": 22.7,
-   "change": -0.92,
+   "last": 23.03,
+   "change": 0.52,
    "unit": "pct",
    "as_of": "2026-11-17"
   }
  ],
  "volatility": {
-  "vix": 22.700000762939453,
+  "vix": 23.030000686645508,
   "vix3m": 23.020000457763672,
   "vix9d": 23.149999618530273,
   "vvix": 114.2300033569336,
   "vxn": 32.900001525878906,
   "vxn_pctile_1y": 0.984,
-  "term_ratio": 0.986,
+  "term_ratio": 1.0,
   "term_label": "flat",
   "qqq_realized_vol_20d": 36.54,
   "vol_premium": -3.64
