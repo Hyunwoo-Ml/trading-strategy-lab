@@ -2,7 +2,7 @@
   "model_name": "technical_only",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 70398.82409780452,
+  "cash": 48667.097735956195,
   "positions": {
     "AMZN": {
       "ticker": "AMZN",
@@ -16,6 +16,20 @@
       "shares": 31.940530052437566,
       "entry_price": 357.45001220703125,
       "entry_date": "2026-09-28",
+      "tranche_count": 1
+    },
+    "AAPL": {
+      "ticker": "AAPL",
+      "shares": 30.769877417382293,
+      "entry_price": 352.7799987792969,
+      "entry_date": "2026-11-16",
+      "tranche_count": 1
+    },
+    "GOOGL": {
+      "ticker": "GOOGL",
+      "shares": 38.25954205216304,
+      "entry_price": 283.7200012207031,
+      "entry_date": "2026-11-16",
       "tranche_count": 1
     }
   },
@@ -100,6 +114,24 @@
       "price": 606.72998046875,
       "cash_delta": 9300.088653290466,
       "fee": 9.309398051341809
+    },
+    {
+      "date": "2026-11-16",
+      "ticker": "AAPL",
+      "action": "buy_1",
+      "shares": 30.769877417382293,
+      "price": 352.7799987792969,
+      "cash_delta": -10865.863180924165,
+      "fee": 10.865863180924165
+    },
+    {
+      "date": "2026-11-16",
+      "ticker": "GOOGL",
+      "action": "buy_1",
+      "shares": 38.25954205216304,
+      "price": 283.7200012207031,
+      "cash_delta": -10865.863180924165,
+      "fee": 10.865863180924165
     }
   ],
   "equity_curve": [
@@ -310,10 +342,16 @@
     {
       "date": "2026-11-13",
       "equity": 95076.30283308645
+    },
+    {
+      "date": "2026-11-16",
+      "equity": 94311.73522073038
     }
   ],
   "last_known_prices": {
-    "AMZN": 266.6600036621094,
-    "TSLA": 390.2200012207031
+    "AMZN": 257.75,
+    "TSLA": 379.739990234375,
+    "AAPL": 352.7799987792969,
+    "GOOGL": 283.7200012207031
   }
 }

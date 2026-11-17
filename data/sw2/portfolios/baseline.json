@@ -2,7 +2,7 @@
   "model_name": "baseline",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 52238.264399137064,
+  "cash": 62782.93852136471,
   "positions": {
     "TSLA": {
       "ticker": "TSLA",
@@ -23,13 +23,6 @@
       "shares": 40.92312719732883,
       "entry_price": 278.989990234375,
       "entry_date": "2026-11-03",
-      "tranche_count": 1
-    },
-    "NVDA": {
-      "ticker": "NVDA",
-      "shares": 67.60105925989265,
-      "entry_price": 168.88999938964844,
-      "entry_date": "2026-11-11",
       "tranche_count": 1
     }
   },
@@ -87,6 +80,15 @@
       "price": 168.88999938964844,
       "cash_delta": -11428.571428571428,
       "fee": 11.428571428571427
+    },
+    {
+      "date": "2026-11-16",
+      "ticker": "NVDA",
+      "action": "stop_loss",
+      "shares": -67.60105925989265,
+      "price": 156.13999938964844,
+      "cash_delta": 10544.674122227647,
+      "fee": 10.555229351579227
     }
   ],
   "equity_curve": [
@@ -297,12 +299,16 @@
     {
       "date": "2026-11-13",
       "equity": NaN
+    },
+    {
+      "date": "2026-11-16",
+      "equity": NaN
     }
   ],
   "last_known_prices": {
-    "TSLA": 390.2200012207031,
-    "MSFT": 523.8800048828125,
-    "GOOGL": 295.7699890136719,
+    "TSLA": 379.739990234375,
+    "MSFT": 517.989990234375,
+    "GOOGL": 283.7200012207031,
     "NVDA": 162.85000610351562
   }
 }
