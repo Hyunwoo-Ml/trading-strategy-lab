@@ -81,21 +81,28 @@ class TradeThresholds:
     before. Lowering buy_1_score lets a moderately (not just strongly)
     bullish day open a position instead of sitting in "hold" doing
     nothing, which should increase time-in-market and deployed capital
-    on top of the sizing fix, independent of it. buy_2_score (0.60) is
-    deliberately left UNCHANGED this round: run_daily_paper_trading.
-    process_model_for_day()/_apply_price_criteria_day() only ever treat
-    buy_2 as an ADD to an existing position (`ticker in
-    portfolio.positions`); a fresh "buy_2"-classified signal with no
-    prior buy_1 on file buys nothing at all (neither branch's condition
-    matches). Moving buy_1 and buy_2 closer together without checking
-    this would make that "stuck -- score jumped straight past buy_1 into
-    buy_2 territory on day one, so nothing is ever bought" failure mode
-    much more frequent; it needs its own careful look (and arguably its
-    own fix -- e.g. treating a first-touch buy_2 as a buy_1-sized entry)
-    before buy_2_score itself gets touched. Verify this change by
+    on top of the sizing fix, independent of it. buy_2_score (0.60) was
+    deliberately left UNCHANGED that round: run_daily_paper_trading.
+    process_model_for_day() used to only ever treat buy_2 as an ADD to an
+    existing position (`ticker in portfolio.positions`), so a fresh
+    "buy_2"-classified signal with no prior buy_1 on file bought nothing
+    at all (neither branch's condition matched) -- moving buy_1 and buy_2
+    closer together without fixing that would have made this "stuck --
+    score jumped straight past buy_1 into buy_2 territory on day one, so
+    nothing is ever bought" failure mode much more frequent.
+
+    2026-11-18: that dispatch gap is now fixed -- process_model_for_day()
+    treats a first-touch buy_2 (no existing position) as a buy_1-sized
+    entry instead of silently dropping it (see its own comment for the
+    rationale and the distinct "buy_1_from_buy_2" trade-action label this
+    leaves in trade history). buy_2_score (0.60) itself is still
+    UNCHANGED here -- this was purely a dispatch-logic fix, not a
+    threshold retune -- but it's now safe to consider moving buy_2_score
+    in a future session without reopening the "nothing gets bought"
+    failure mode described above. Verify any threshold change by
     re-running the historical-backtest workflow and comparing
-    data/backtest/results.json's total_return/max_drawdown for baseline
-    and technical_only against the pre-change numbers recorded in
+    data/backtest/results.json's total_return/max_drawdown for the
+    affected models against the pre-change numbers recorded in
     TASKS.md."""
 
     buy_1_score: float = 0.20      # integrated score >= this -> 1차 매수 (2026-11-17: 0.30 -> 0.20, see above)
