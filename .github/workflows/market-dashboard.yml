@@ -24,7 +24,12 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -r requirements-translate.txt
+      - name: Cache the translation model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface/hub
+          key: nllb-200-600m-ct2-int8-v1
       - name: Build market dashboard data (Yahoo + FRED)
         run: python scripts/build_market_dashboard.py
       - name: Commit market data
