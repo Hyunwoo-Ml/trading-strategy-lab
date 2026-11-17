@@ -23,7 +23,7 @@ BATCH = 32
 
 # Bump when the rules below change: cached translations made under an older
 # version are ignored, so every headline is redone once with the new rules.
-VERSION = 2
+VERSION = 3
 
 LABEL = r"(Morning Bid|Market Chatter|Stock Market Today|Breakingviews|Exclusive|BREAKING|Update(?: \d+)?)"
 
@@ -39,6 +39,14 @@ PRE = (
     (r"\b(edges|ticks|inches) (lower|down)\b", "falls slightly"),
     (r"\b(Equity|Stock|Index) Futures\b", "stock index futures"),
     (r"\bExchange-Traded Funds\b", "ETFs"),
+    (r"\s*\((?:NYSE|NASDAQ|Nasdaq|NYSEARCA)?:?\s*[A-Z]{1,5}\)", ""),  # "(NOW)" read as the word "now"
+    (r"(?i)\bsell-?offs?\b", "sharp drop"),
+    (r"(?i)\bsells? off\b", "falls sharply"),
+    (r"(?i)\bbuy the dip\b", "buy on the decline"),
+    (r"(?i)\boutages?\b", "service disruption"),
+    # "Netflix Stock Down 47%": "stock"/"shares" here is the share price, not market share
+    (r"\b(?:[Ss]tock|[Ss]hares)\b(?='s|\s+(?i:down|up|fell|falls|rises|rose|sinks?|sank|jumps?|jumped|climbs?|slides?|slid|drops?|dropped|soars?|soared|plunges?|plunged|tumbles?|gains?|rall(?:y|ies)|surges?|slumps?|is down|is up))",
+     "share price"),
     (r"\bearnings\b(?! (report|results|call|season))", "earnings report"),
 )
 # Applied to the Korean output, in order (longer phrases first).
@@ -51,9 +59,45 @@ POST = (
     ("연방 준비 제도", "연준"), ("연방준비제도", "연준"), ("월 스트리트", "월가"),
     ("재무부 수익률", "국채 금리"), ("재무 수익률", "국채 금리"), ("국채 수익률", "국채 금리"),
     ("주식 미래에셋", "주가지수 선물"), ("주가 지수 선물", "주가지수 선물"), ("주식 선물", "주가지수 선물"),
-    ("거래소에서 거래되는 자금", "ETF"), ("이론 머스크", "일론 머스크"),
+    ("거래소에서 거래되는 자금", "ETF"), ("이론 머스크", "일론 머스크"), ("주식 지수 선물", "주가지수 선물"),
+    ("엔트로픽", "앤트로픽"), ("인트로피크", "앤트로픽"), ("주식 가격", "주가"),
     ("주식 시장", "증시"), ("수익 보고서", "실적 발표"), ("수익을 앞두고", "실적 발표를 앞두고"),
 )
+# Company names: the model translates them word by word ("Applied Materials"
+# -> "사용 된 재료"). The Korean name is put into the English title before
+# translation, which the model keeps. If it still mangles one (rare
+# syllables), the title is retried with the ticker in its place and the ticker
+# swapped for the Korean name afterwards -- not for tickers that are also
+# English words (NOW, BE, MS...), which the model would translate.
+# (English names, longest first) -> (Korean name, ticker or None)
+NAMES = (
+    ("Applied Optoelectronics", "어플라이드 옵토일렉트로닉스", "AAOI"), ("Applied Materials", "어플라이드 머티리얼즈", "AMAT"),
+    ("Palo Alto Networks", "팔로알토 네트웍스", "PANW"), ("Constellation Energy", "컨스텔레이션 에너지", "CEG"),
+    ("Bank of America", "뱅크오브아메리카", "BAC"), ("JPMorgan Chase", "JP모건", "JPM"), ("Berkshire Hathaway", "버크셔 해서웨이", "BRKB"),
+    ("ON Semiconductor", "온세미", None), ("Arista Networks", "아리스타", "ANET"), ("Morgan Stanley", "모건스탠리", None),
+    ("Goldman Sachs", "골드만삭스", None), ("Meta Platforms", "메타", "META"), ("Arm Holdings", "암홀딩스", None),
+    ("Bloom Energy", "블룸 에너지", None), ("Eos Energy", "이오스 에너지", "EOSE"), ("Lam Research", "램리서치", "LRCX"),
+    ("Rocket Lab", "로켓랩", "RKLB"), ("Super Micro", "슈퍼마이크로", "SMCI"), ("Supermicro", "슈퍼마이크로", "SMCI"),
+    ("UnitedHealth", "유나이티드헬스", "UNH"), ("Wells Fargo", "웰스파고", "WFC"), ("Home Depot", "홈디포", None),
+    ("GE Vernova", "GE 버노바", "GEV"), ("Tempus AI", "템퍼스 AI", None), ("Eli Lilly", "일라이릴리", "LLY"),
+    ("JPMorgan", "JP모건", "JPM"), ("JP Morgan", "JP모건", "JPM"), ("Palo Alto", "팔로알토", "PANW"),
+    ("ServiceNow", "서비스나우", None), ("CrowdStrike", "크라우드스트라이크", "CRWD"), ("Salesforce", "세일즈포스", "CRM"),
+    ("CoreWeave", "코어위브", "CRWV"), ("Robinhood", "로빈후드", "HOOD"), ("Coinbase", "코인베이스", None),
+    ("AppLovin", "앱러빈", None), ("Anthropic", "앤트로픽", "ANTHR"), ("OpenAI", "오픈AI", "OPNAI"),
+    ("SpaceX", "스페이스X", "SPACX"), ("Microsoft", "마이크로소프트", "MSFT"), ("Alphabet", "알파벳", "GOOGL"),
+    ("Google", "구글", "GOOGL"), ("Amazon", "아마존", "AMZN"), ("Nvidia", "엔비디아", "NVDA"), ("NVIDIA", "엔비디아", "NVDA"),
+    ("Broadcom", "브로드컴", "AVGO"), ("Qualcomm", "퀄컴", "QCOM"), ("Marvell", "마벨", "MRVL"), ("Micron", "마이크론", None),
+    ("Intel", "인텔", "INTC"), ("Sandisk", "샌디스크", "SNDK"), ("SanDisk", "샌디스크", "SNDK"), ("Seagate", "시게이트", "STX"),
+    ("Oracle", "오라클", "ORCL"), ("Arista", "아리스타", "ANET"), ("Nebius", "네비우스", "NBIS"), ("Lumentum", "루멘텀", None),
+    ("Coherent", "코히런트", "COHR"), ("Vertiv", "버티브", "VRT"), ("Vistra", "비스트라", "VST"), ("Oklo", "오클로", "OKLO"),
+    ("Palantir", "팔란티어", "PLTR"), ("Netflix", "넷플릭스", "NFLX"), ("Walmart", "월마트", "WMT"), ("Evercore", "에버코어", "EVR"),
+    ("Bernstein", "번스타인", None), ("Affirm", "어펌", "AFRM"), ("Circle", "서클", "CRCL"), ("SoFi", "소파이", "SOFI"),
+    ("IonQ", "아이온큐", "IONQ"), ("Apple", "애플", "AAPL"), ("Tesla", "테슬라", "TSLA"), ("Lilly", "일라이릴리", "LLY"),
+    ("BofA", "뱅크오브아메리카", "BAC"), ("Uber", "우버", "UBER"),
+    ("Meta", "메타", "META"), ("Dell", "델", "DELL"),
+)
+_NAME_RE = [(re.compile(r"\b" + re.escape(en) + r"\b"), ko, tick) for en, ko, tick in NAMES]
+
 MONEY = re.compile(r"\$(\d+(?:\.\d+)?)\s?(bn|billion|mn|million|m|tn|trillion)\b", re.I)
 MONEY_WORD = {"bn": "billion", "billion": "billion", "mn": "million", "million": "million", "m": "million",
               "tn": "trillion", "trillion": "trillion"}
@@ -68,11 +112,28 @@ def _money(m: re.Match) -> str:
 Backend = Callable[[list[str]], list[str]]
 
 
-def preprocess(title: str) -> str:
+def prepare(title: str, names: str = "ko") -> tuple[str, list[tuple[str, str | None]]]:
+    """English title ready for the model, and the company names found in it
+    as (Korean name, ticker). `names`: "ko" puts the Korean name in the text,
+    "ticker" puts the ticker (when there is a usable one)."""
     out = MONEY.sub(_money, title)
     for pattern, repl in PRE:
         out = re.sub(pattern, repl, out)
-    return out.strip(" ,")
+    found = []
+    for rx, ko, tick in _NAME_RE:
+        if rx.search(out):
+            found.append((ko, tick))
+            out = rx.sub(tick if names == "ticker" and tick else ko, out)
+    return out.strip(" ,"), found
+
+
+def preprocess(title: str) -> str:
+    return prepare(title)[0]
+
+
+def _keeps_names(text: str, found: list[tuple[str, str | None]]) -> bool:
+    flat = text.replace(" ", "")
+    return all(ko.replace(" ", "") in flat for ko, _ in found)
 
 
 PARTICLES = {"이": ("이", "가"), "가": ("이", "가"), "은": ("은", "는"), "는": ("은", "는"),
@@ -166,9 +227,21 @@ class Translator:
             backend = self._get_backend()
             if backend is not None:
                 try:
-                    ko = backend([preprocess(t) for t in todo])
-                    for t, k in zip(todo, ko):
-                        k = postprocess(k)
+                    first = [prepare(t, "ko") for t in todo]
+                    out = {t: postprocess(k) for t, k in zip(todo, backend([p for p, _ in first]))}
+                    # names the model mangled: retry with tickers, then put the Korean names back
+                    retry = [t for t, (_, found) in zip(todo, first)
+                             if found and not _keeps_names(out[t], found) and all(tick for _, tick in found)]
+                    if retry:
+                        second = [prepare(t, "ticker") for t in retry]
+                        for t, (_, found), k in zip(retry, second, backend([p for p, _ in second])):
+                            for ko_name, tick in sorted(found, key=lambda f: -len(f[1])):
+                                k = _replace(k, tick, ko_name)
+                            k = postprocess(k)
+                            if _keeps_names(k, found):
+                                out[t] = k
+                    for t in todo:
+                        k = out[t]
                         if k and re.search(r"[가-힣]", k):
                             self.cache[t] = k
                             self.translated += 1
