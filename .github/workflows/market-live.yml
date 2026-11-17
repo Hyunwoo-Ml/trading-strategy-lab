@@ -1,13 +1,16 @@
 name: market-live
 
 # Every 15 minutes in US trading hours (13:00-21:59 UTC covers both EDT and
-# EST sessions): refresh the main page's market strip and FedWatch odds.
+# EST sessions), hourly otherwise: refresh the main page's market strip,
+# FedWatch odds and headlines.
 # The output goes to the `data-live` branch as a single force-pushed commit,
 # so it adds no history and no Pages deploys on main. The page reads it from
 # raw.githubusercontent.com/<repo>/data-live/live.json.
 on:
   schedule:
     - cron: "*/15 13-21 * * 1-5"
+    # Hourly the rest of the time (headlines keep coming overnight and on weekends).
+    - cron: "7 * * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -39,6 +42,6 @@ jobs:
           git init -q -b data-live
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add live.json
+          git add -A
           git commit -q -m "live quotes $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data-live
