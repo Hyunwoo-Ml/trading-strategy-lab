@@ -116,7 +116,7 @@ def build_options(source: MarketSource, ticker: str, spot: float, as_of: date) -
         chains.append(ExpiryChain(expiry=d, calls=calls, puts=puts))
     if not chains:
         return None
-    ok, reason = chain_quality(chains)
+    ok, reason = chain_quality(chains, spot)
     if not ok:
         raise OptionsDataError(reason)
     return dict(asdict(analyze_chains(chains, spot=spot, as_of=as_of)), quality_ok=True)
