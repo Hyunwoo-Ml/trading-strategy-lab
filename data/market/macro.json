@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T07:30:51+00:00",
+ "generated_at": "2026-11-17T07:59:37+00:00",
  "as_of": "2026-11-16",
  "strip": [
   {
@@ -29,32 +29,32 @@
   {
    "ticker": "DX-Y.NYB",
    "label": "달러인덱스",
-   "last": 103.505,
-   "change": -0.04,
+   "last": 103.545,
+   "change": -0.0,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "CL=F",
    "label": "WTI 원유",
-   "last": 84.91,
-   "change": -0.94,
+   "last": 85.24,
+   "change": -0.56,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "GC=F",
    "label": "금",
-   "last": 3879.8999,
-   "change": 0.7,
+   "last": 3874.6001,
+   "change": 0.56,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "BTC-USD",
    "label": "비트코인",
-   "last": 64643.4102,
-   "change": -0.33,
+   "last": 64682.0781,
+   "change": -0.27,
    "unit": "pct",
    "as_of": "2026-11-16"
   },
