@@ -23,7 +23,7 @@ BATCH = 32
 
 # Bump when the rules below change: cached translations made under an older
 # version are ignored, so every headline is redone once with the new rules.
-VERSION = 4
+VERSION = 5
 
 LABEL = r"(Morning Bid|Market Chatter|Stock Market Today|Breakingviews|Exclusive|BREAKING|Update(?: \d+)?)"
 
@@ -60,7 +60,7 @@ POST = (
     ("탱커", "유조선"), ("탱크 공격", "유조선 공격"),
     ("연방 준비 제도", "연준"), ("연방준비제도", "연준"), ("월 스트리트", "월가"),
     ("재무부 수익률", "국채 금리"), ("재무 수익률", "국채 금리"), ("국채 수익률", "국채 금리"),
-    ("주식 미래에셋", "주가지수 선물"), ("주가 지수 선물", "주가지수 선물"), ("주식 선물", "주가지수 선물"),
+    ("주식 미래에셋", "주가지수 선물"), ("미래에셋", "선물"), ("주가 지수 선물", "주가지수 선물"), ("주식 선물", "주가지수 선물"),
     ("거래소에서 거래되는 자금", "ETF"), ("이론 머스크", "일론 머스크"), ("주식 지수 선물", "주가지수 선물"),
     ("엔트로픽", "앤트로픽"), ("인트로피크", "앤트로픽"), ("주식 가격", "주가"),
     ("기획재정 수익률", "국채 금리"), ("재무부 금리", "국채 금리"), ("석유 미래", "원유 선물"), ("원유 미래", "원유 선물"),
@@ -103,8 +103,10 @@ NAMES = (
 )
 _NAME_RE = [(re.compile(r"\b" + re.escape(en) + r"\b"), ko, tick) for en, ko, tick in NAMES]
 
-# Dollar amounts are written out in Korean units before translation: the model
-# got "$3.30bn" as 3조30억 and "$400 billion" as 400억 (should be 4,000억).
+# Dollar amounts: the model gets the Korean units wrong ("$400 billion" ->
+# 400억, should be 4,000억; "3.30bn" -> 3조30억) and garbles amounts written
+# in Korean in the source. So the source gets a plain "$400 billion", and the
+# amounts in the Korean output are then replaced, in order, with the right ones.
 MONEY = re.compile(r"\$(\d+(?:\.\d+)?)\s?(bn|billion|mn|million|m|tn|trillion)\b"
                    r"|\b(\d+(?:\.\d+)?) (billion|million|trillion) dollars?\b", re.I)
 SCALE = {"bn": 1e9, "billion": 1e9, "mn": 1e6, "million": 1e6, "m": 1e6, "tn": 1e12, "trillion": 1e12}
@@ -122,9 +124,61 @@ def korean_amount(dollars: float) -> str:
     return " ".join(p for p in parts if p) + " 달러"
 
 
-def _money(m: re.Match) -> str:
+def _amount(m: re.Match) -> float:
     num, unit = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
-    return korean_amount(float(num) * SCALE[unit.lower()])
+    return float(num) * SCALE[unit.lower()]
+
+
+def _money(m: re.Match) -> str:
+    """"$3.30bn" / "350 Billion Dollar" -> "$3.3 billion" / "$350 billion"."""
+    v = _amount(m)
+    unit = "trillion" if v >= 1e12 else "billion" if v >= 1e9 else "million"
+    num = f"{v / SCALE[unit]:.2f}".rstrip("0").rstrip(".")
+    return f"${num} {unit}"
+
+
+def amounts_in(title: str) -> list[tuple[str, str]]:
+    """The dollar amounts in an English title: (Korean amount, significant digits)."""
+    out = []
+    for m in MONEY.finditer(title):
+        v = _amount(m)
+        out.append((korean_amount(v), _digits(f"{v:.0f}")))
+    return out
+
+
+def _digits(s: str) -> str:
+    """Significant digits: "3천50억" -> "35", "$350 billion" -> "35", "1.5" -> "15"."""
+    return re.sub(r"\D", "", s).strip("0")
+
+
+KO_MONEY = re.compile(r"(?:\d[\d,]*(?:\.\d+)?\s?(?:조|억|만|천)\s?)+(?:\d[\d,]*\s?)?달러")
+
+
+def fix_amounts(text: str, amounts: list[tuple[str, str]]) -> str:
+    """Put the right Korean amounts in place of the model's. One amount: it is
+    replaced. Several: each is matched to the title's amount with the same
+    significant digits, and the text is left alone if that is ambiguous."""
+    found = list(KO_MONEY.finditer(text))
+    if not amounts or not found:
+        return text
+    if len(found) == 1 and len(amounts) == 1:
+        pairs = [(found[0], amounts[0][0])]
+    else:
+        by_digits = {}
+        for ko, dig in amounts:
+            by_digits.setdefault(dig, []).append(ko)
+        pairs = []
+        for m in found:
+            cands = by_digits.get(_digits(m.group()), [])
+            if len(cands) != 1:
+                return text
+            pairs.append((m, cands[0]))
+    for m, right in sorted(pairs, key=lambda p: -p[0].start()):
+        text = text[:m.start()] + right + text[m.end():]
+    return text
+    for m, right in reversed(list(zip(found, amounts))):
+        text = text[:m.start()] + right + text[m.end():]
+    return text
 
 
 Backend = Callable[[list[str]], list[str]]
@@ -250,7 +304,7 @@ class Translator:
             if backend is not None:
                 try:
                     first = [prepare(t, "ko") for t in todo]
-                    out = {t: postprocess(k) for t, k in zip(todo, backend([p for p, _ in first]))}
+                    out = {t: fix_amounts(postprocess(k), amounts_in(t)) for t, k in zip(todo, backend([p for p, _ in first]))}
                     # names the model mangled: retry with tickers, then put the Korean names back
                     retry = [t for t, (_, found) in zip(todo, first)
                              if found and not _keeps_names(out[t], found) and all(tick for _, tick in found)]
@@ -259,7 +313,7 @@ class Translator:
                         for t, (_, found), k in zip(retry, second, backend([p for p, _ in second])):
                             for ko_name, tick in sorted(found, key=lambda f: -len(f[1])):
                                 k = _replace(k, tick, ko_name)
-                            k = postprocess(k)
+                            k = fix_amounts(postprocess(k), amounts_in(t))
                             if _keeps_names(k, found):
                                 out[t] = k
                     for t in todo:

@@ -1,6 +1,6 @@
 """Headline translation (sw1/market/translate.py) with a fake backend --
 the real NLLB model only runs in the market workflows."""
-from sw1.market.translate import VERSION, korean_amount, Translator, _replace, cache_from, postprocess, prepare, preprocess
+from sw1.market.translate import VERSION, amounts_in, fix_amounts, korean_amount, Translator, _replace, cache_from, postprocess, prepare, preprocess
 
 
 class Fake:
@@ -66,8 +66,8 @@ def test_cache_from_previous_output():
 
 
 def test_preprocess_cleans_real_headlines():
-    assert preprocess("Tesla commits $3.30bn to expand German gigafactory") == "테슬라 commits 33억 달러 to expand German gigafactory"
-    assert preprocess("Kazakhstan unveils $85M push") == "Kazakhstan unveils 8,500만 달러 push"
+    assert preprocess("Tesla commits $3.30bn to expand German gigafactory") == "테슬라 commits $3.3 billion to expand German gigafactory"
+    assert preprocess("Kazakhstan unveils $85M push") == "Kazakhstan unveils $85 million push"
     assert preprocess("Update: Market Chatter: Amazon Lobbying Fails") == "아마존 Lobbying Fails"
     assert preprocess("Exclusive-Trump's China data center curb advances") == "Trump's China data center curb advances"
     assert preprocess("Stocks slip ahead of Nvidia earnings, Home Depot shares slide: AlphaCheck") == \
@@ -140,8 +140,8 @@ def test_dollar_amounts_in_korean_units():
     assert korean_amount(1.2e12) == "1조 2,000억 달러"
     assert korean_amount(8.5e7) == "8,500만 달러"
     assert preprocess("Amazon and Google Could Own $400 Billion of Anthropic Stock") == \
-        "아마존 and 구글 Could Own 4,000억 달러 of 앤트로픽 Stock"
-    assert preprocess('Trump Demands a "350 Billion Dollar" Military Bill') == 'Trump Demands a "3,500억 달러" Military Bill'
+        "아마존 and 구글 Could Own $400 billion of 앤트로픽 Stock"
+    assert preprocess('Trump Demands a "350 Billion Dollar" Military Bill') == 'Trump Demands a "$350 billion" Military Bill'
 
 
 def test_more_market_slang():
@@ -156,3 +156,23 @@ def test_more_market_slang():
     assert postprocess("시장 점유율이 늘었다") == "시장 점유율이 늘었다"
     assert postprocess("기금 관리자 는 테슬라 주식 을 사지 않음 의 이유") == "기금 관리자는 테슬라 주식을 사지 않음의 이유"
     assert postprocess("팔란티어 스톡이 두배가 될까") == "팔란티어 주식이 두배가 될까"
+
+
+def test_model_amounts_are_corrected():
+    t = "Amazon and Google Could Own $400 Billion of Anthropic Stock"
+    assert amounts_in(t) == [("4,000억 달러", "4")]
+    assert fix_amounts("아마존과 구글은 40억 달러의 앤트로픽 주식을 소유할 수 있습니다", amounts_in(t)) == \
+        "아마존과 구글은 4,000억 달러의 앤트로픽 주식을 소유할 수 있습니다"
+    t2 = 'Trump Demands a "350 Billion Dollar" Military Bill'
+    assert fix_amounts('트럼프는 "3천50억 달러"의 군사 법안을 요구합니다', amounts_in(t2)) == '트럼프는 "3,500억 달러"의 군사 법안을 요구합니다'
+    t3 = "IREN Tripled Revenue to $200 Million on $1.5bn Deal"
+    assert fix_amounts("IREN은 15억 달러 거래로 매출을 2억 달러로 늘렸다", amounts_in(t3)) == \
+        "IREN은 15억 달러 거래로 매출을 2억 달러로 늘렸다"  # matched by digits, not by order
+    assert fix_amounts("15억 달러와 20억 달러", amounts_in(t3)) == "15억 달러와 2억 달러"
+    assert fix_amounts("7억 달러와 9억 달러", amounts_in(t3)) == "7억 달러와 9억 달러"  # no match: left alone
+    assert fix_amounts("금액이 빠진 문장", amounts_in(t)) == "금액이 빠진 문장"  # model dropped it: left alone
+    assert "€" not in fix_amounts("가격은 93 달러", amounts_in("Brent near $93"))  # plain prices aren't touched
+
+
+def test_futures_never_become_mirae_asset():
+    assert postprocess("금 미래에셋은 약간 상승") == "금 선물은 약간 상승"
