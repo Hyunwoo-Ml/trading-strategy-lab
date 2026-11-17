@@ -848,6 +848,18 @@
   var EQUITY_URL = function(m){ return BASE + "data/sw2/equity/" + m + ".csv"; };
   var COMPARISONS_URL = BASE + "data/sw2/comparisons/latest.json";
   var BACKTEST_URL = BASE + "data/backtest/results.json";
+  var LATEST_SIGNALS_URL = BASE + "data/signals/latest.csv";
+
+  // 2026-11-17: scripts/check_news_staleness.py already runs this exact
+  // check weekly and opens/closes a GitHub Issue (#12) when M7 뉴스/시황
+  // input goes stale -- but that only reaches 현우 if he's watching GitHub
+  // Issues. This mirrors that script's read-only logic (same
+  // NEWS_WINDOW_DAYS, same "stale only if even the freshest ticker is past
+  // the window" rule) purely to decide whether to show a caveat on
+  // baseline/conservative's LIVE model cards below -- it never recomputes
+  // or touches news_score itself, and a fetch failure here just hides the
+  // caveat rather than breaking the page (see loadNewsStaleness()).
+  var NEWS_WINDOW_DAYS = 14;
 
   // 2026-09-25: run-paper-trading.yml runs Mon-Fri at 22:30 UTC, so the
   // normal maximum gap between two equity rows is the Fri->Mon weekend
@@ -882,12 +894,17 @@
     }
   }
 
+  // newsBlendWeight mirrors each model's CRITERIA_INFO description (통합점수
+  // = quant_score * (1-w) + 뉴스 감성점수 * w) -- used below to flag baseline/
+  // conservative's live cards when the news input itself has gone stale (see
+  // loadNewsStaleness()), the same structural "뉴스 비중 무효화" caveat the
+  // backtest section already shows, but for the LIVE paper-trading numbers.
   var MODELS = [
-    { key:"baseline", label:"Baseline", color:"#22d3ee" },
-    { key:"technical_only", label:"Technical Only", color:"#fbbf24" },
-    { key:"conservative", label:"Conservative", color:"#a78bfa" },
-    { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
-    { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
+    { key:"baseline", label:"Baseline", color:"#22d3ee", newsBlendWeight:0.4 },
+    { key:"technical_only", label:"Technical Only", color:"#fbbf24", newsBlendWeight:0 },
+    { key:"conservative", label:"Conservative", color:"#a78bfa", newsBlendWeight:0.4 },
+    { key:"price_model_1", label:"Price Model 1", color:"#fb923c", newsBlendWeight:0 },
+    { key:"price_model_2", label:"Price Model 2", color:"#f472b6", newsBlendWeight:0 }
   ];
 
   // 2026-09-22 user request: compare the backtest against simple
@@ -1131,6 +1148,33 @@
     });
   }
 
+  /* Mirrors scripts/check_news_staleness.py's read_news_days_ago() +
+     build_report()'s is_stale rule client-side: "stale" only when even the
+     most-recently-updated ticker's news_days_ago is past NEWS_WINDOW_DAYS
+     (a mix of some-fresh/some-stale tickers is left alone on purpose, same
+     as that script). Any failure (missing file, unparsable CSV) resolves
+     to {isStale:false, freshestDays:null} -- same fail-quiet stance as the
+     rest of this page: a caveat we can't verify is better left off than
+     shown wrong. */
+  function loadNewsStaleness(){
+    return fetchText(LATEST_SIGNALS_URL).then(function(text){
+      var rows = parseCSV(text);
+      var freshest = null;
+      rows.forEach(function(row){
+        if(!row.ticker) return;
+        var raw = row.news_days_ago;
+        if(raw === undefined || raw === null || raw === "") return;
+        var n = parseInt(raw, 10);
+        if(isNaN(n)) return;
+        if(freshest === null || n < freshest) freshest = n;
+      });
+      var isStale = freshest === null || freshest > NEWS_WINDOW_DAYS;
+      return { isStale: isStale, freshestDays: freshest };
+    }).catch(function(){
+      return { isStale: false, freshestDays: null };
+    });
+  }
+
   function stateBox(title, sub, isError){
     return '<div class="state-box' + (isError ? ' error' : '') + '">' +
       '<div class="state-title">' + escapeHtml(title) + '</div>' +
@@ -1155,7 +1199,7 @@
     });
   }
 
-  function renderEquityChart(results){
+  function renderEquityChart(results, newsStaleness){
     var allDates = [];
     results.forEach(function(r){
       r.rows.forEach(function(row){
@@ -1282,19 +1326,41 @@
       var first = r.rows[0];
       var totalRet = (first.equity && first.equity !== 0) ? (last.equity - first.equity) / first.equity : null;
       var retColorVar = totalRet === null ? "var(--text-muted)" : (totalRet >= 0 ? "var(--green)" : "var(--red)");
+      // Same structural issue the backtest section already flags (news_blend_weight
+      // of integrated_score effectively thrown away when news_score is neutral) --
+      // except here it's checked against the LIVE news_days_ago signal
+      // (loadNewsStaleness()), because it's currently actually happening, not just
+      // a backtest-data limitation. Only shown for models that blend news at all.
+      var newsCaveatHtml = "";
+      if(r.model.newsBlendWeight && newsStaleness && newsStaleness.isStale){
+        var newsPct = Math.round(r.model.newsBlendWeight * 100);
+        var quantPct = 100 - newsPct;
+        var freshTxt = newsStaleness.freshestDays === null ? "입력 이력 없음" : newsStaleness.freshestDays + "일 전";
+        var liveNewsCaveatTitle = "뉴스/시황 입력이 스코어링 윈도우(" + NEWS_WINDOW_DAYS + "일)를 넘겨(가장 최근 입력도 " +
+          freshTxt + ") news_score가 중립으로 처리되고 있습니다. 이 모델은 통합점수의 " + newsPct +
+          "%를 뉴스에 배분하므로, 지금 이 라이브 수익률도 그 " + newsPct + "%가 사실상 빠진 채 quant_score×" +
+          quantPct + "%만으로 매매 판단이 이뤄진 결과입니다 — 뉴스/시황을 입력하면(GitHub Issue #12 참고) 다시 반영됩니다.";
+        newsCaveatHtml = '<div class="mdd-line" style="color:var(--amber);" title="' + escapeHtml(liveNewsCaveatTitle) + '">⚠ 뉴스 입력 공백으로 뉴스 비중 ' +
+          newsPct + '% 사실상 무효화(라이브)</div>';
+      }
       return '<div class="model-summary">' +
         '<div class="name"><span class="legend-dot" style="background:' + r.model.color + ';"></span>' + escapeHtml(r.model.label) + infoIconHtml(r.model.key) + '</div>' +
         '<div class="eq">' + fmtUSD(last.equity) + '</div>' +
         '<div class="ret" style="color:' + retColorVar + ';">' + (totalRet === null ? "누적 수익률 계산 불가" : fmtPct(totalRet) + " 누적") + ' · ' + r.rows.length + '일치</div>' +
+        newsCaveatHtml +
       '</div>';
     }).join("");
     document.getElementById("model-summary-row").innerHTML = summaryHtml;
   }
 
   function loadEquitySection(){
-    return Promise.all(MODELS.map(loadEquityForModel)).then(function(results){
+    return Promise.all([
+      Promise.all(MODELS.map(loadEquityForModel)),
+      loadNewsStaleness()
+    ]).then(function(all){
+      var results = all[0], newsStaleness = all[1];
       try{
-        renderEquityChart(results);
+        renderEquityChart(results, newsStaleness);
       }catch(e){
         document.getElementById("equity-content").innerHTML = stateBox("차트를 그리는 중 오류가 발생했습니다", e.message, true);
       }
