@@ -43,6 +43,8 @@ MIN_IV = 0.03  # at or below this, Yahoo's IV is a placeholder; recompute it fro
 MIN_OPTION_PRICE = 0.01  # one cent: below this an IV can't be read from the price
 MIN_TOTAL_OI = 500  # fewer contracts than this across all chains = no real OI data
 MIN_OI_COVERAGE = 0.10  # and at least this share of listed contracts must have OI
+NEAR_MONEY_PCT = 0.15  # "near the money" = strikes within this fraction of spot
+MIN_NEAR_MONEY_OI = 200  # contracts needed near the money; after a split Yahoo can list only old far strikes
 MAX_IV = 5.0
 MIN_T_YEARS = 0.5 / 365  # floor so same-day expiries don't divide by ~0
 FLIP_NEAR_PCT = 0.01  # within 1% of the flip counts as "at the flip"
@@ -166,23 +168,30 @@ def fill_placeholder_iv(df: pd.DataFrame, spot: float, t_years: float, is_call: 
     return out
 
 
-def chain_quality(chains: list["ExpiryChain"]) -> tuple[bool, str]:
+def chain_quality(chains: list["ExpiryChain"], spot: float | None = None) -> tuple[bool, str]:
     """Whether the snapshot has real open interest. Off-hours Yahoo data
-    often has OI zeroed out across the board."""
+    often has OI zeroed out across the board, and right after a split the
+    chain can hold OI only on old, far-away strikes. With a spot price the
+    check looks only at strikes near the money."""
     total, listed, with_oi = 0.0, 0, 0
     for ch in chains:
         for df in (ch.calls, ch.puts):
             if df is None or len(df) == 0:
                 continue
             oi = pd.to_numeric(df["openInterest"], errors="coerce").fillna(0)
+            if spot is not None:
+                strikes = pd.to_numeric(df["strike"], errors="coerce")
+                oi = oi[(strikes - spot).abs() <= NEAR_MONEY_PCT * spot]
             total += float(oi.sum())
             listed += len(oi)
             with_oi += int((oi > 0).sum())
+    where = "near the money" if spot is not None else "listed"
     if listed == 0:
-        return False, "no contracts listed"
+        return False, f"no contracts {where}"
     coverage = with_oi / listed
-    if total < MIN_TOTAL_OI or coverage < MIN_OI_COVERAGE:
-        return False, f"open interest looks empty (total {int(total)}, {coverage:.0%} of contracts have any)"
+    floor = MIN_NEAR_MONEY_OI if spot is not None else MIN_TOTAL_OI
+    if total < floor or coverage < MIN_OI_COVERAGE:
+        return False, f"open interest looks empty {where} (total {int(total)}, {coverage:.0%} of contracts have any)"
     return True, "ok"
 
 

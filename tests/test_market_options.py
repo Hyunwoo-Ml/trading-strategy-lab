@@ -154,3 +154,15 @@ def test_chain_quality_rejects_zeroed_open_interest():
     ok, reason = chain_quality([chain(zeroed, side(many, 0))])
     assert not ok and "open interest" in reason
     assert chain_quality([chain(side(many, 500), side(many, 500))])[0]
+
+
+def test_chain_quality_rejects_open_interest_only_on_far_strikes():
+    """After a split Yahoo can list OI only on the old, far-away strikes."""
+    strikes = [2.0, 3.0, 55.0, 60.0, 65.0, 1500.0, 1600.0]
+    calls = side(strikes, [0, 0, 0, 0, 0, 5000, 4000])
+    puts = side(strikes, [15000, 5000, 0, 0, 0, 0, 0])
+    assert chain_quality([chain(calls, puts)])[0]  # looks fine in total...
+    ok, reason = chain_quality([chain(calls, puts)], spot=60.0)  # ...but nothing near the money
+    assert not ok and "near the money" in reason
+    near = side(strikes, [0, 0, 300, 300, 300, 0, 0])
+    assert chain_quality([chain(near, near)], spot=60.0)[0]
