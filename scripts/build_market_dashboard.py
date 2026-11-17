@@ -25,6 +25,7 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sw1.market.dashboard import build_all  # noqa: E402
+from sw1.market.translate import Translator, cache_from  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MARKET_DIR = PROJECT_ROOT / "data" / "market"
@@ -120,9 +121,15 @@ def load_previous(out_dir: Path) -> dict:
     return previous
 
 
-def main(source=None, out_dir: Path = MARKET_DIR) -> int:
-    source = source or YahooFredSource()
-    watchlist, details, macro = build_all(source, previous=load_previous(out_dir))
+def main(source=None, out_dir: Path = MARKET_DIR, translator=None) -> int:
+    previous = load_previous(out_dir)
+    if source is None:
+        source = YahooFredSource()
+        # reuse the last run's translations; only new headlines go to the model
+        translator = translator or Translator(cache=cache_from(d.get("news") for d in previous.values()))
+    watchlist, details, macro = build_all(source, previous=previous, translator=translator)
+    if translator is not None:
+        print(f"translated {translator.translated} new headlines ({len(translator.cache)} known)")
     if not watchlist["rows"]:
         print("[ERROR] no tickers loaded -- nothing written")
         return 1
