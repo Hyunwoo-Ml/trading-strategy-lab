@@ -81,6 +81,36 @@ def test_strong_buy_signal_opens_position_for_baseline(wired_script):
     assert state["cash"] < state["starting_cash"]
 
 
+def test_first_touch_buy_2_signal_opens_position_at_buy_1_size(wired_script):
+    # 2026-11-18: technical_only ignores news (quant_blend=1.0), so a
+    # quant_score of 0.9 alone gives it an integrated score of 0.9 --
+    # which clears buy_2_score (0.60), not just buy_1_score (0.20). On a
+    # ticker with NO existing position, that used to buy nothing at all:
+    # the buy_1 branch didn't match (signal was "buy_2") and the buy_2
+    # branch didn't match either (required `ticker in portfolio.positions`).
+    # See sw1/scoring/integrate.py's TradeThresholds docstring and this
+    # function's own 2026-11-18 comment for the fix -- treat it as a
+    # buy_1-sized entry instead of silently dropping it.
+    write_signals(wired_script, [{"ticker": "AAPL", "close": 200.0, "quant_score": 0.9, "news_score": None}])
+    assert wired_script.main() == 0
+
+    technical_state = json.loads((wired_script.PORTFOLIOS_DIR / "technical_only.json").read_text())
+    assert "AAPL" in technical_state["positions"]
+    assert technical_state["positions"]["AAPL"]["tranche_count"] == 1
+    assert technical_state["trades"][-1]["action"] == "buy_1_from_buy_2"
+
+    # baseline's quant_blend=0.6 keeps 0.9*0.6=0.54 below buy_2 (0.60), so
+    # it takes the ordinary buy_1 path on the same signal -- both models
+    # share DEFAULT_THRESHOLDS' stop_loss_pct, so the two entries should
+    # be sized identically even though they were triggered by different
+    # branches.
+    baseline_state = json.loads((wired_script.PORTFOLIOS_DIR / "baseline.json").read_text())
+    assert baseline_state["trades"][-1]["action"] == "buy_1"
+    technical_spent = technical_state["starting_cash"] - technical_state["cash"]
+    baseline_spent = baseline_state["starting_cash"] - baseline_state["cash"]
+    assert technical_spent == pytest.approx(baseline_spent)
+
+
 def test_technical_only_and_baseline_can_diverge_on_news(wired_script):
     # negative news should be able to keep baseline out of a buy that
     # technical_only (which ignores news) still takes
