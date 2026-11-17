@@ -65,6 +65,7 @@
   .legend span::before{content:"";display:inline-block;width:12px;height:2px;margin-right:5px;vertical-align:middle;background:currentColor;}
 
   table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.sigtable{min-width:640px;} table.sigtable td:first-child{min-width:190px;} table.sigtable td:nth-child(2){white-space:nowrap;}
   th{text-align:left;font-size:11px;color:var(--text-muted);font-weight:600;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
   td{padding:7px 8px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
   tr:last-child td{border-bottom:none;}
@@ -249,7 +250,7 @@
         '<td class="num">' + (s.win_rate == null ? "—" : Math.round(s.win_rate * 100) + "%") + '</td></tr>';
     }).join("");
     return '<div class="card"><h2>신호와 과거 성적표 <span class="muted" style="font-weight:500;font-size:11px">이 종목 ' + (d.history_bars || 0).toLocaleString() + '거래일 기준</span></h2>' +
-      '<div class="scroll"><table><thead><tr><th>신호</th><th>마지막 발생</th><th>과거 발생</th><th>N일 뒤 평균</th><th>평소 대비</th><th>오른 비율</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="scroll"><table class="sigtable"><thead><tr><th>신호</th><th>마지막 발생</th><th>과거 발생</th><th>N일 뒤 평균</th><th>평소 대비</th><th>오른 비율</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div class="note">강조된 줄은 최근(일봉 10거래일, 주봉 2주 안)에 뜬 신호예요. "평소"는 아무 날에나 샀을 때의 같은 기간 평균 수익률이고, "평소 대비"가 플러스면 그 신호가 이 종목에서 역사적으로 평균보다 나았다는 뜻이에요. 과거 성과가 미래 수익을 보장하지 않아요.</div></div>';
   }
 
