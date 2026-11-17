@@ -93,7 +93,7 @@ from sw1.indicators.technical import compute_all_technical_indicators  # noqa: E
 from sw1.indicators.weekly import resample_to_weekly  # noqa: E402
 from sw1.market.regime import MARKET_INDEX_TICKER  # noqa: E402
 from sw1.scoring.integrate import compute_quant_score  # noqa: E402
-from sw1.validation.backtest import bucket_equity_by_period, max_drawdown, total_return  # noqa: E402
+from sw1.validation.backtest import bucket_equity_by_period, max_drawdown, sharpe_ratio, total_return  # noqa: E402
 from sw2.ledger import Portfolio  # noqa: E402
 from sw2.models import default_registry  # noqa: E402
 from sw2.price_criteria_model import MarketContext, PriceCriteriaModel  # noqa: E402
@@ -152,6 +152,10 @@ SCOPE_NOTES = [
     "참고선입니다 -- yfinance가 자동 조정한 종가를 사용해 배당/분배금 재투자 효과를 근사치로 반영하며, "
     "거래비용·리밸런싱·손절은 전혀 적용하지 않습니다. TLT(iShares 20년+ 국채 ETF)는 만기 30년물 국채 그 "
     "자체가 아니라 장기 국채 익스포저에 대한 실용적 대용치입니다.",
+    "샤프 비율(sharpe_ratio)은 일별 수익률 기준, 무위험수익률 0%를 가정해 연율화(sqrt(252))한 값입니다 -- "
+    "전문 리스크 시스템처럼 실제 국채 금리를 빼는 대신 가장 단순한 0% 기준선을 썼으므로, 절대값 자체보다는 "
+    "이 리포지토리 안의 모델/벤치마크끼리 상대 비교하는 용도로 보시는 것이 정확합니다. 일별 수익률이 2개 "
+    "미만이거나 분산이 0(완전히 평평하거나 일직선인 곡선)이면 null로 표시됩니다.",
 ]
 
 
@@ -394,6 +398,7 @@ def _buy_and_hold_payload(ohlcv: pd.DataFrame, label: str, period_freq: str) -> 
         "final_equity": float(equity_df["equity"].iloc[-1]),
         "total_return": total_return(equity_df),
         "max_drawdown": max_drawdown(equity_df).to_dict(),
+        "sharpe_ratio": sharpe_ratio(equity_df).to_dict(),
         "n_trades": 1,
         "n_trading_days": len(equity_df),
         "periods": [p.to_dict() for p in periods],
@@ -525,6 +530,7 @@ def run_backtest(period_freq: str = PERIOD_FREQ) -> dict:
             "final_equity": float(equity_df["equity"].iloc[-1]) if not equity_df.empty else portfolio.starting_cash,
             "total_return": total_return(equity_df),
             "max_drawdown": max_drawdown(equity_df).to_dict(),
+            "sharpe_ratio": sharpe_ratio(equity_df).to_dict(),
             "n_trades": len(portfolio.trades),
             "n_trading_days": len(equity_df),
             "periods": [p.to_dict() for p in periods],
@@ -592,17 +598,21 @@ def main() -> int:
         mdd = payload.get("max_drawdown", {}).get("max_drawdown_pct")
         return f"{mdd:.1%}" if mdd is not None else "n/a"
 
+    def _sharpe_str(payload: dict) -> str:
+        sr = payload.get("sharpe_ratio", {}).get("sharpe_ratio")
+        return f"{sr:.2f}" if sr is not None else "n/a"
+
     n_models = len(result["models"])
     n_benchmarks = len(result.get("benchmarks", {}))
     print(f"[backtest] {n_models} models + {n_benchmarks} benchmarks backtested over {FETCH_PERIOD} history ({PERIOD_FREQ} periods)")
     for name, payload in result["models"].items():
         tr = payload["total_return"]
         tr_str = f"{tr:.1%}" if tr is not None else "n/a"
-        print(f"  {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, final_equity={payload['final_equity']:.2f}, trades={payload['n_trades']}")
+        print(f"  {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, sharpe={_sharpe_str(payload)}, final_equity={payload['final_equity']:.2f}, trades={payload['n_trades']}")
     for name, payload in result.get("benchmarks", {}).items():
         tr = payload["total_return"]
         tr_str = f"{tr:.1%}" if tr is not None else "n/a"
-        print(f"  [benchmark] {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, final_equity={payload['final_equity']:.2f}")
+        print(f"  [benchmark] {name}: total_return={tr_str}, max_drawdown={_mdd_str(payload)}, sharpe={_sharpe_str(payload)}, final_equity={payload['final_equity']:.2f}")
 
     data_quality = result.get("data_quality", {})
     total_nan_days = data_quality.get("total_nan_close_days", 0)
