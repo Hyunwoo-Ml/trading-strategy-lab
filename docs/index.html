@@ -156,6 +156,7 @@
     <button type="button" data-quick="strong" aria-pressed="false">강세 추세 (+6 이상)</button>
     <button type="button" data-quick="weak" aria-pressed="false">약세 추세 (−6 이하)</button>
     <button type="button" data-quick="neg_gamma" aria-pressed="false">음감마</button>
+    <button type="button" data-quick="earnings" aria-pressed="false">7일 안 실적 발표</button>
   </div>
   <div class="count" id="count"></div>
   <div id="table"><div class="state-box">워치리스트를 불러오는 중…</div></div>
@@ -316,10 +317,18 @@
       '<span class="nm">' + (s.timeframe === "1w" ? "주봉 · " : "") + when + '</span>';
   }
 
+  function earningsDays(r){
+    if (!r.next_earnings || !r.as_of) return null;
+    var days = Math.round((new Date(r.next_earnings) - new Date(r.as_of)) / 86400000);
+    return days >= 0 && days <= 7 ? days : null;
+  }
+
   function rowHtml(r){
     var g = GAMMA[r.gamma_regime];
     return '<tr>' +
-      '<td class="sticky"><a class="tk" href="ticker.html#' + encodeURIComponent(r.ticker) + '">' + esc(r.ticker) + '</a><span class="nm">' + esc(r.name) + '</span></td>' +
+      '<td class="sticky"><a class="tk" href="ticker.html#' + encodeURIComponent(r.ticker) + '">' + esc(r.ticker) + '</a>' +
+        (earningsDays(r) != null ? ' <span class="pill warn" title="다음 실적 발표 ' + esc(r.next_earnings) + '">실적 ' + esc(r.next_earnings.slice(5).replace("-", "/")) + '</span>' : '') +
+        '<span class="nm">' + esc(r.name) + '</span></td>' +
       '<td><span class="num">' + num(r.close, 2) + '</span><span class="nm num ' + cls(r.change_pct) + '">' + signed(r.change_pct, 2, "%") + '</span></td>' +
       '<td>' + signalCell(r) + '</td>' +
       '<td>' + trendCell(r) + '</td>' +
@@ -338,6 +347,7 @@
     if (q.strong && !(r.trend_score >= 6)) return false;
     if (q.weak && !(r.trend_score <= -6)) return false;
     if (q.neg_gamma && r.gamma_regime !== "negative") return false;
+    if (q.earnings && earningsDays(r) == null) return false;
     return true;
   }
 
