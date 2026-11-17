@@ -3,1119 +3,372 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fin-tip_lab — 퀀트 시그널</title>
+<title>Fin-tip_lab — 메인</title>
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/site.css">
 <script src="assets/site.js" defer></script>
 <style>
   :root{
-    --bg:#0a0d14;
-    --bg-elevated:#10141d;
-    --bg-card:#121722;
-    --bg-card-hover:#151b28;
-    --border:#1f2632;
-    --border-soft:#181e29;
-    --text-primary:#e8ebf1;
-    --text-secondary:#98a2b8;
-    --text-muted:#6b7688;
-    --accent:#22d3ee;
-    --accent-dim:#0e7490;
-    --accent-soft:rgba(34,211,238,0.1);
-    --green:#34d399;
-    --green-dim:rgba(52,211,153,0.14);
-    --red:#f87171;
-    --red-dim:rgba(248,113,113,0.14);
-    --amber:#fbbf24;
-    --amber-dim:rgba(251,191,36,0.14);
+    --bg:#0a0d14; --bg-elevated:#10141d; --bg-card:#121722; --bg-card-hover:#151b28;
+    --border:#1f2632; --border-soft:#181e29;
+    --text-primary:#e8ebf1; --text-secondary:#98a2b8; --text-muted:#6b7688;
+    --accent:#22d3ee; --accent-soft:rgba(34,211,238,0.1);
+    --green:#34d399; --green-dim:rgba(52,211,153,0.14);
+    --red:#f87171; --red-dim:rgba(248,113,113,0.14);
+    --amber:#fbbf24; --amber-dim:rgba(251,191,36,0.14);
     --radius:14px;
-    --radius-sm:9px;
-    --mono: 'SF Mono', 'Roboto Mono', 'Consolas', 'Menlo', monospace;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif;
-    /* Type scale: 5 steps only, used everywhere below instead of ad-hoc px values */
-    --fs-xs:10px;
-    --fs-sm:11px;
-    --fs-base:13px;
-    --fs-lg:16px;
-    --fs-hero:28px;
+    --mono:'SF Mono','Roboto Mono','Consolas','Menlo',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
   }
-
   *{box-sizing:border-box;}
   html{background:var(--bg);}
-  body{
-    margin:0;
-    background:var(--bg);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(34,211,238,0.06), transparent 60%),
-      radial-gradient(ellipse 700px 400px at 90% 0%, rgba(52,211,153,0.04), transparent 60%);
-    background-attachment:fixed;
-    color:var(--text-primary);
-    font-family:var(--sans);
-    -webkit-font-smoothing:antialiased;
-    line-height:1.5;
-  }
-  .wrap{
-    max-width:1180px;
-    margin:0 auto;
-    padding: 28px 20px 60px;
-  }
-  @media (min-width:640px){ .wrap{ padding: 40px 32px 80px; } }
-
+  body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 16px 40px;}
+  @media (min-width:640px){ .wrap{padding:32px 32px 56px;} }
   a{color:var(--accent);}
-  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
 
-  /* ---------- Header ---------- */
-  header.top{
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-    padding-bottom:28px;
-    margin-bottom:32px;
-    border-bottom:1px solid var(--border-soft);
-  }
-  .brand-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-  .brand{
-    display:flex;
-    align-items:center;
-    gap:12px;
-  }
-  .brand-mark{
-    width:38px;height:38px;border-radius:10px;
-    background:linear-gradient(135deg, var(--accent), #0891b2);
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;
-    box-shadow:0 0 24px rgba(34,211,238,0.25);
-  }
-  .brand-mark svg{width:20px;height:20px;}
-  .brand-name{
-    font-size:var(--fs-lg);
-    font-weight:700;
-    letter-spacing:-0.02em;
-    color:var(--text-primary);
-  }
-  .brand-name .mono-tag{
-    font-family:var(--mono);
-    font-size:var(--fs-sm);
-    font-weight:600;
-    color:var(--accent);
-    background:var(--accent-soft);
-    padding:2px 7px;
-    border-radius:5px;
-    margin-left:8px;
-    vertical-align:2px;
-    letter-spacing:0.02em;
-  }
-  .status-pill{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    font-size:var(--fs-base);
-    font-family:var(--mono);
-    color:var(--text-secondary);
-    background:var(--bg-elevated);
-    border:1px solid var(--border);
-    padding:6px 12px;
-    border-radius:999px;
-    white-space:nowrap;
-  }
-  .status-dot{
-    width:7px;height:7px;border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 8px var(--green);
-    animation:pulse-dot 2.2s ease-in-out infinite;
-    flex-shrink:0;
-  }
-  .status-dot.stale{
-    background:var(--amber);
-    box-shadow:0 0 8px var(--amber);
-  }
-  .status-dot.error{
-    background:var(--red);
-    box-shadow:0 0 8px var(--red);
-    animation:none;
-  }
-  @keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
-  .desc{
-    font-size:var(--fs-base);
-    color:var(--text-secondary);
-    max-width:640px;
-  }
-  .meta-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    font-size:var(--fs-sm);
-    color:var(--text-muted);
-    font-family:var(--mono);
-  }
-  .meta-row span{
-    display:flex;align-items:center;gap:6px;
-  }
-  .meta-row b{ color:var(--text-secondary); font-weight:600; }
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .page-title{font-size:20px;font-weight:800;letter-spacing:-0.02em;margin:0;}
+  .page-sub{font-size:12px;color:var(--text-muted);margin:0 0 22px;}
+  .status-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-family:var(--mono);color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);padding:5px 11px;border-radius:999px;white-space:nowrap;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .status-dot.stale{background:var(--amber);} .status-dot.error{background:var(--red);}
 
-  .news-input-link{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    font-size:var(--fs-sm);
-    font-weight:600;
-    color:#0a0d14;
-    background:var(--accent);
-    padding:7px 14px;
-    border-radius:999px;
-    text-decoration:none;
-    white-space:nowrap;
-    transition:opacity .15s ease;
-  }
-  .news-input-link:hover{ opacity:0.85; }
+  /* market strip */
+  .strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:22px;scrollbar-width:thin;}
+  .chip{flex:0 0 auto;min-width:128px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 13px;}
+  .chip-label{font-size:11px;color:var(--text-muted);white-space:nowrap;}
+  .chip-value{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap;}
+  .chip-change{font-family:var(--mono);font-size:12px;font-weight:600;white-space:nowrap;}
+  .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--text-secondary);}
 
-  /* ---------- Section shell ---------- */
-  section{ margin-bottom:52px; }
-  .section-head{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:6px;
-    flex-wrap:wrap;
-  }
-  .section-title{
-    font-size:var(--fs-lg);
-    font-weight:700;
-    letter-spacing:0.02em;
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .section-title .idx{
-    font-family:var(--mono);
-    color:var(--accent);
-    font-size:var(--fs-sm);
-    font-weight:600;
-  }
-  .section-sub{
-    font-size:var(--fs-sm);
-    color:var(--text-muted);
-    margin-bottom:20px;
-  }
-  .panel-title{
-    font-size:var(--fs-base);
-    color:var(--text-secondary);
-    font-weight:600;
-  }
+  /* summary cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:30px;}
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px;}
+  .card-title{font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+  .card-big{font-family:var(--mono);font-size:22px;font-weight:800;line-height:1.2;}
+  .card-rows{margin-top:8px;display:grid;gap:3px;}
+  .card-row{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text-secondary);}
+  .card-row b{font-family:var(--mono);color:var(--text-primary);font-weight:600;}
+  .card-note{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .pill.good{background:var(--green-dim);color:var(--green);}
+  .pill.bad{background:var(--red-dim);color:var(--red);}
+  .pill.mid{background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border);}
+  .pill.warn{background:var(--amber-dim);color:var(--amber);}
 
-  /* ---------- Loading / error / empty states ---------- */
-  .state-box{
-    border:1px dashed var(--border);
-    border-radius:var(--radius);
-    padding:28px 20px;
-    text-align:center;
-    color:var(--text-muted);
-    font-size:var(--fs-base);
-    background:var(--bg-elevated);
-  }
-  .state-box.error{ border-color:rgba(248,113,113,0.3); color:#e0a3a3; background:rgba(248,113,113,0.04); }
-  .state-box .state-title{ color:var(--text-secondary); font-weight:600; font-size:var(--fs-base); margin-bottom:5px; }
-  .spinner{
-    width:16px;height:16px;
-    border-radius:50%;
-    border:2px solid var(--border);
-    border-top-color:var(--accent);
-    animation:spin 0.8s linear infinite;
-    display:inline-block;
-    vertical-align:-3px;
-    margin-right:8px;
-  }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
+  /* watchlist */
+  .section-title{font-size:16px;font-weight:800;margin:0 0 4px;}
+  .section-sub{font-size:12px;color:var(--text-muted);margin:0 0 12px;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .filters button{font:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);border-radius:999px;padding:5px 11px;cursor:pointer;}
+  .filters button[aria-pressed="true"]{color:#0a0d14;background:var(--accent);border-color:var(--accent);}
+  .filters button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .filters.secondary button[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft);border-color:var(--accent);}
+  .count{font-size:12px;color:var(--text-muted);margin:6px 0 10px;}
 
-  /* ---------- M7 Card grid ---------- */
-  .m7-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(258px, 1fr));
-    gap:14px;
-  }
-  .m7-card{
-    background:var(--bg-card);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:18px 18px 16px;
-    transition:border-color .15s ease, transform .15s ease;
-  }
-  .m7-card:hover{ border-color:#2a3342; }
-  .m7-card-top{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    margin-bottom:14px;
-  }
-  .ticker-id{
-    font-family:var(--mono);
-    font-weight:700;
-    font-size:var(--fs-base);
-    letter-spacing:0.01em;
-  }
-  .ticker-name{
-    font-size:var(--fs-sm);
-    color:var(--text-muted);
-    margin-top:2px;
-  }
-  .price-block{ text-align:right; }
-  .price{
-    font-family:var(--mono);
-    font-size:var(--fs-base);
-    font-weight:600;
-  }
-  .price-sub{
-    font-size:var(--fs-sm);
-    color:var(--text-muted);
-    margin-top:2px;
-  }
+  .table-scroll{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:920px;font-size:13px;}
+  thead th{text-align:left;font-size:11px;color:var(--text-muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--bg-elevated);white-space:nowrap;}
+  thead th.sortable{cursor:pointer;user-select:none;}
+  thead th.sortable:hover{color:var(--text-primary);}
+  thead th .arrow{color:var(--accent);margin-left:3px;}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--border-soft);vertical-align:middle;white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--bg-card-hover);}
+  tr.group-row td{background:var(--bg-elevated);font-size:11px;font-weight:700;color:var(--text-secondary);padding:7px 12px;}
+  td.sticky, th.sticky{position:sticky;left:0;z-index:1;background:var(--bg-card);}
+  thead th.sticky{background:var(--bg-elevated);z-index:2;}
+  tbody tr:hover td.sticky{background:var(--bg-card-hover);}
+  .tk{font-family:var(--mono);font-weight:800;color:var(--text-primary);text-decoration:none;}
+  .tk:hover{color:var(--accent);}
+  .nm{display:block;font-size:11px;color:var(--text-muted);}
+  .num{font-family:var(--mono);}
+  .muted{color:var(--text-muted);}
 
-  .quant-block{
-    background:var(--bg-elevated);
-    border:1px solid var(--border-soft);
-    border-radius:var(--radius-sm);
-    padding:12px 14px;
-    margin-bottom:14px;
-  }
-  .quant-label-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:8px;
-  }
-  .quant-label{
-    font-size:var(--fs-xs);
-    color:var(--text-muted);
-    text-transform:uppercase;
-    letter-spacing:0.06em;
-    font-weight:600;
-  }
-  .quant-value{
-    font-family:var(--mono);
-    font-size:var(--fs-hero);
-    font-weight:800;
-    letter-spacing:-0.02em;
-    line-height:1;
-  }
-  .quant-value.pos{ color:var(--green); }
-  .quant-value.neg{ color:var(--red); }
-  .quant-value.neu{ color:var(--text-secondary); }
-  .quant-bar-track{
-    position:relative;
-    height:6px;
-    border-radius:4px;
-    background:#1c2432;
-    overflow:hidden;
-  }
-  .quant-bar-mid{
-    position:absolute;
-    left:50%; top:-3px; bottom:-3px;
-    width:1px;
-    background:var(--border);
-  }
-  .quant-bar-fill{
-    position:absolute;
-    top:0; bottom:0;
-    border-radius:4px;
-  }
-  .quant-bar-fill.pos{ background:linear-gradient(90deg, rgba(52,211,153,0.5), var(--green)); left:50%; }
-  .quant-bar-fill.neg{ background:linear-gradient(90deg, var(--red), rgba(248,113,113,0.5)); right:50%; }
+  .trend{display:flex;align-items:center;gap:8px;}
+  .trend-track{position:relative;width:58px;height:6px;border-radius:4px;background:#1c2432;flex-shrink:0;}
+  .trend-mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--border);}
+  .trend-fill{position:absolute;top:0;bottom:0;border-radius:4px;}
+  .trend-fill.pos{left:50%;background:var(--green);} .trend-fill.neg{right:50%;background:var(--red);}
+  .trend-txt{font-size:12px;font-weight:600;min-width:74px;}
 
-  .metric-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px 10px;
-    margin-bottom:12px;
-  }
-  .metric{
-    display:flex;
-    flex-direction:column;
-    gap:3px;
-  }
-  .metric-k{
-    font-size:var(--fs-sm);
-    color:var(--text-muted);
-    letter-spacing:0.03em;
-  }
-  .metric-v{
-    font-family:var(--mono);
-    font-size:var(--fs-base);
-    font-weight:600;
-    color:var(--text-primary);
-    display:flex;
-    align-items:center;
-    gap:5px;
-  }
-  .metric-v.pos{ color:var(--green); }
-  .metric-v.neg{ color:var(--red); }
+  .sig{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;}
+  .sig.strong_buy{background:var(--amber-dim);color:var(--amber);}
+  .sig.buy{background:var(--green-dim);color:var(--green);}
+  .sig.sell{background:var(--red-dim);color:var(--red);}
+  .sig.caution{background:var(--bg-elevated);color:var(--amber);border:1px solid var(--amber-dim);}
+  .sig-sub{display:block;font-size:11px;color:var(--text-muted);margin-top:2px;max-width:230px;white-space:normal;}
 
-  .tag{
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-    font-size:var(--fs-xs);
-    font-weight:700;
-    padding:2px 8px;
-    border-radius:5px;
-    font-family:var(--mono);
-  }
-  .tag.golden{ background:var(--green-dim); color:var(--green); }
-  .tag.dead{ background:var(--red-dim); color:var(--red); }
-  .tag.none{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
-
-  .card-footer-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding-top:12px;
-    border-top:1px solid var(--border-soft);
-    font-size:var(--fs-xs);
-    color:var(--text-muted);
-  }
-  .news-soon{
-    font-size:var(--fs-xs);
-    color:var(--amber);
-    background:var(--amber-dim);
-    padding:2px 7px;
-    border-radius:5px;
-    font-weight:600;
-  }
-
-  /* ---------- Price-criteria section ---------- */
-  .criteria-tabs{
-    display:flex;
-    gap:8px;
-    margin-bottom:16px;
-    flex-wrap:wrap;
-  }
-  .criteria-tab{
-    font-family:var(--sans);
-    font-size:var(--fs-sm);
-    font-weight:600;
-    color:var(--text-secondary);
-    background:var(--bg-elevated);
-    border:1px solid var(--border);
-    padding:6px 14px;
-    border-radius:999px;
-    cursor:pointer;
-    transition:border-color .15s ease, color .15s ease;
-  }
-  .criteria-tab:hover{ border-color:#2a3342; color:var(--text-primary); }
-  .criteria-tab.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
-  .criteria-basis-row{
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-    padding-top:12px;
-    border-top:1px solid var(--border-soft);
-    font-size:var(--fs-xs);
-    color:var(--text-muted);
-  }
-
-  /* ---------- SW2 section ---------- */
-  .sw2-layout{
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:16px;
-  }
-  .panel{
-    background:var(--bg-card);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:18px 18px 14px;
-  }
-  .chart-panel{
-    padding:20px 16px 12px;
-  }
-  .chart-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:10px;
-    padding:0 6px 14px;
-  }
-  .legend-row{
-    display:flex;
-    gap:14px;
-    flex-wrap:wrap;
-  }
-  .legend-item{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-size:var(--fs-sm);
-    color:var(--text-secondary);
-    font-family:var(--mono);
-  }
-  .legend-dot{ width:9px;height:9px;border-radius:2px; }
-  .chart-wrap{ position:relative; height:300px; padding:0 6px; }
-  @media (min-width:640px){ .chart-wrap{ height:340px; } }
-
-  .model-summary-row{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
-    gap:10px;
-    margin-top:16px;
-  }
-  .model-summary{
-    background:var(--bg-elevated);
-    border:1px solid var(--border-soft);
-    border-radius:var(--radius-sm);
-    padding:12px 14px;
-  }
-  .model-summary .name{
-    font-size:var(--fs-sm);
-    color:var(--text-secondary);
-    font-weight:600;
-    margin-bottom:6px;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .model-summary .eq{
-    font-family:var(--mono);
-    font-size:var(--fs-lg);
-    font-weight:700;
-  }
-  .model-summary .ret{
-    font-family:var(--mono);
-    font-size:var(--fs-sm);
-    margin-top:3px;
-  }
-
-  .summary-card{
-    background:var(--bg-elevated);
-    border:1px solid var(--border-soft);
-    border-radius:var(--radius-sm);
-    padding:12px 14px;
-  }
-  .summary-label{
-    font-size:var(--fs-sm);
-    color:var(--text-secondary);
-    font-weight:600;
-    margin-bottom:6px;
-  }
-  .summary-value{
-    font-family:var(--mono);
-    font-size:var(--fs-lg);
-    font-weight:700;
-  }
-
-  table.stats-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:var(--fs-base);
-  }
-  .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  table.stats-table thead th{
-    text-align:left;
-    font-size:var(--fs-xs);
-    text-transform:uppercase;
-    letter-spacing:0.04em;
-    color:var(--text-muted);
-    font-weight:600;
-    padding:0 12px 10px;
-    border-bottom:1px solid var(--border);
-    white-space:nowrap;
-  }
-  table.stats-table tbody td{
-    padding:12px;
-    border-bottom:1px solid var(--border-soft);
-    font-family:var(--mono);
-    white-space:nowrap;
-  }
-  table.stats-table tbody tr:last-child td{ border-bottom:none; }
-  table.stats-table tbody tr:hover{ background:rgba(255,255,255,0.015); }
-  .sig-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    padding:3px 9px;
-    border-radius:6px;
-    font-size:var(--fs-sm);
-    font-weight:700;
-    font-family:var(--sans);
-  }
-  .sig-badge.yes{ background:var(--green-dim); color:var(--green); }
-  .sig-badge.no{ background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-soft); }
-  /* p-value is the hero number of the comparisons table: bold + colored, not plain mono text */
-  .stat-pvalue{ font-weight:800; font-size:var(--fs-lg); letter-spacing:-0.01em; }
-  .stat-pvalue.yes{ color:var(--green); }
-  .stat-pvalue.no{ color:var(--text-secondary); }
-
-  /* ---------- Footer ---------- */
-  footer{
-    margin-top:60px;
-    padding-top:24px;
-    border-top:1px solid var(--border-soft);
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    font-size:var(--fs-sm);
-    color:var(--text-muted);
-  }
-  footer .repo-link{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    color:var(--text-secondary);
-    text-decoration:none;
-    border:1px solid var(--border);
-    padding:7px 12px;
-    border-radius:8px;
-    width:fit-content;
-    transition:border-color .15s ease, color .15s ease;
-  }
-  footer .repo-link:hover{ border-color:var(--accent); color:var(--accent); }
-  footer .foot-note{ line-height:1.7; max-width:640px; }
-
-  @media (max-width:380px){
-    .brand-name{ font-size:14px; }
-    .quant-value{ font-size:22px; }
-  }
+  .state-box{border:1px dashed var(--border);border-radius:var(--radius);padding:26px 18px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg-elevated);}
+  .state-box.error{border-color:rgba(248,113,113,0.3);color:#e0a3a3;}
+  .legend{font-size:11px;color:var(--text-muted);line-height:1.7;margin-top:12px;}
+  .legend b{color:var(--text-secondary);}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="page-head">
+    <h1 class="page-title">시장 한눈에</h1>
+    <span class="status-pill"><span class="status-dot" id="status-dot"></span><span id="as-of">불러오는 중…</span></span>
+  </div>
+  <p class="page-sub">미국 장 마감 후 매일 자동 갱신 · 공개 데이터(Yahoo Finance, FRED)로 계산한 참고 지표</p>
 
-  <header class="top">
-    <div class="brand-row">
-      <div class="brand">
-        <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M3 16 L9 10 L13 14 L21 5" stroke="#0a0d14" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div>
-          <div class="brand-name">퀀트 시그널<span class="mono-tag">SW1 · QUANT SIGNALS</span></div>
-        </div>
-      </div>
-      <div class="status-pill"><span class="status-dot" id="status-dot"></span><span id="last-updated">데이터 불러오는 중…</span></div>
-    </div>
-    <div class="desc">기술적 지표(RSI · MACD · Bollinger Bands · 이동평균 교차)와 뉴스 감성 점수를 결합한 퀀트 신호로 NASDAQ 대형 기술주 7종목을 평가하고, 종목별 사용자 정의 매수/목표가 기준을 매일 재계산합니다.</div>
-    <div class="meta-row">
-      <span>⚙ <b>GitHub Actions</b>로 매 평일 자동 갱신</span>
-      <span>📡 정적 페이지 · 백엔드 없음</span>
-      <a class="news-input-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab/issues/new?template=news-input.yml" target="_blank" rel="noopener">📰 뉴스/시황 입력하기</a>
-    </div>
-  </header>
+  <div class="strip" id="strip" aria-label="주요 시장 지표"></div>
+  <div class="cards" id="cards"></div>
 
-  <!-- ===================== M7 SIGNALS ===================== -->
-  <section id="signals-section">
-    <div class="section-head">
-      <div class="section-title"><span class="idx">01</span> M7 퀀트 시그널</div>
-    </div>
-    <div class="section-sub">종가 기준 최신 스냅샷 · Quant Score는 기술 지표를 [-1, 1] 범위로 정규화한 종합 점수입니다 (양수 = 매수 우위, 음수 = 매도 우위)</div>
-    <div id="signals-content">
-      <div class="state-box"><span class="spinner"></span>시그널 데이터를 불러오는 중입니다…</div>
-    </div>
-  </section>
+  <h2 class="section-title">워치리스트</h2>
+  <p class="section-sub">종목명을 누르면 현물 화면으로 이동해요. 열 제목을 누르면 정렬돼요.</p>
+  <div class="filters" id="group-filters" role="group" aria-label="섹터"></div>
+  <div class="filters secondary" id="quick-filters" role="group" aria-label="빠른 필터">
+    <button type="button" data-quick="signal" aria-pressed="false">최근 신호 있음</button>
+    <button type="button" data-quick="buy" aria-pressed="false">매수 계열 신호</button>
+    <button type="button" data-quick="strong" aria-pressed="false">강세 추세 (+6 이상)</button>
+    <button type="button" data-quick="weak" aria-pressed="false">약세 추세 (−6 이하)</button>
+    <button type="button" data-quick="neg_gamma" aria-pressed="false">음감마</button>
+  </div>
+  <div class="count" id="count"></div>
+  <div id="table"><div class="state-box">워치리스트를 불러오는 중…</div></div>
 
-  <!-- ===================== PRICE CRITERIA (user-defined) ===================== -->
-  <section id="price-criteria-section">
-    <div class="section-head">
-      <div class="section-title"><span class="idx">02</span> 사용자 정의 가격기준 모델</div>
-    </div>
-    <div class="section-sub">사용자가 정한 손절%·리스크배수를 기술적 지지선(볼린저 하단·이동평균·최근 저점)에 적용해 종목별 1차/2차 매수가와 목표가를 매일 재계산합니다. 가격이 실제로 그 레벨에 닿을 때만 매매합니다.</div>
-    <div id="price-criteria-content">
-      <div class="state-box"><span class="spinner"></span>가격기준 데이터를 불러오는 중입니다…</div>
-    </div>
-  </section>
-
-  <!-- ===================== Walk-forward validation ===================== -->
-  <section id="walkforward-section">
-    <div class="section-head">
-      <div class="section-title"><span class="idx">03</span> Walk-forward 검증 (SW1 퀀트 스코어)</div>
-    </div>
-    <div class="section-sub">기술 지표 기반 Quant Score(sw1/scoring/integrate.py, 고정 가중치 수식)가 특정 구간에만 우연히 맞았던 게 아니라 여러 독립된 구간에서 꾸준히 순방향 수익률과 상관관계를 보이는지 확인하는 과최적화 방지 검증입니다. 약 2년치 과거 시세를 6개월 롤링 윈도우로 나눠 구간별 Spearman IC(정보계수)를 계산합니다. 뉴스 감성 점수는 과거 시황 아카이브가 없어 이 백테스트에 포함되지 않습니다 — GitHub Actions에서 수동 실행(workflow_dispatch)해야 갱신됩니다.</div>
-    <div id="walkforward-content">
-      <div class="state-box"><span class="spinner"></span>Walk-forward 검증 데이터를 불러오는 중입니다…</div>
-    </div>
-  </section>
-
-  <footer>
-    <a class="repo-link" href="https://github.com/Hyunwoo-Ml/trading-strategy-lab" target="_blank" rel="noopener">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub 저장소 보기
-    </a>
-    <div class="foot-note">이 프로젝트는 개인 학습 목적의 퀀트/AI 트레이딩 전략 검증 프로젝트입니다. 매 평일 GitHub Actions 스케줄러가 SW1(지표 계산)과 SW2(페이퍼 트레이딩)를 자동으로 실행하고 결과를 저장소에 커밋하며, 이 페이지는 그 결과를 보여주는 읽기 전용 정적 대시보드입니다. 실제 자금 운용과는 무관한 시뮬레이션(paper trading)입니다.</div>
-  </footer>
-
+  <div class="legend">
+    <b>신호</b>: 최근 10거래일(주봉은 2주) 안에 뜬 신호 중 가장 중요한 것. 신호에 마우스를 올리면 이 종목에서 그 신호가 과거에 몇 번 떴고 이후 수익률이 평소보다 어땠는지 보여요.
+    <b>추세강도</b> −15~+15: 20·50·200일선 대비 위치, 이동평균 배열, 20일 수익률을 합친 자체 점수.
+    <b>뉴스</b>: 최근 종목 뉴스의 논조. <b>목표가</b>: 최근 애널리스트 목표가·투자의견 변경 방향. <b>매크로</b>: 지금 금리·달러·유가 흐름이 이 종목에 유리한지. 세 칸은 데이터를 붙이는 중이라 비어 있으면 "–"로 보여요.
+    <b>옵션</b>: 공개 미결제약정으로 추정한 딜러 감마. 양감마는 변동을 누그러뜨리는 쪽, 음감마는 키우는 쪽, 플립은 경계(±1%)에 있다는 뜻이에요. 그날 옵션 데이터가 비어 있으면 최근 정상 스냅샷(최대 7일 전)을 날짜와 함께 보여줘요.
+  </div>
 </div>
 
 <script>
 (function(){
   "use strict";
+  var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/data/market/";
 
-  var BASE = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/main/";
-  var SIGNALS_URL = BASE + "data/signals/latest.csv";
-  var WALKFORWARD_URL = BASE + "data/walkforward/results.json";
-  // 2026-09-25: mirrors sw1/news/log.py's NEWS_WINDOW_DAYS -- used only to
-  // decide when scripts/collect_daily_data.py's news_days_ago column
-  // (added same date) is worth flagging as "stale" on the dashboard.
-  var NEWS_WINDOW_DAYS = 14;
+  var TREND_LABEL = {very_strong:"매우 강세", strong:"강세", neutral:"중립", weak:"약세", very_weak:"매우 약세"};
+  var SIG_KIND = {strong_buy:"◆ 강력매수", buy:"매수", sell:"매도", caution:"주의"};
+  var GAMMA = {positive:["양감마","good"], negative:["음감마","bad"], flip:["감마 플립","warn"]};
 
-  // 2026-09-25: collect-daily-data.yml runs Mon-Fri at 22:00 UTC, so the
-  // normal maximum gap between two successful runs is the Fri->Mon weekend
-  // (3 calendar days). STALE_THRESHOLD_DAYS adds 1 day of slack for holiday
-  // timing / CI scheduling jitter before the status pill flags the pipeline
-  // as stuck -- this is purely a "has the automation silently stopped
-  // running" indicator (현우 previously had no way to notice a broken
-  // scheduled workflow short of manually checking dates), never a trading
-  // signal.
-  var STALE_THRESHOLD_DAYS = 4;
+  var state = {rows:[], groups:[], group:"전체", quick:{}, sortKey:null, sortDir:-1};
 
-  function pipelineDaysStale(lastRunDate){
-    // whole calendar days between lastRunDate and "now", using UTC
-    // date-only components so time-of-day differences don't cause
-    // off-by-one flapping right around midnight.
-    var a = Date.UTC(lastRunDate.getUTCFullYear(), lastRunDate.getUTCMonth(), lastRunDate.getUTCDate());
-    var now = new Date();
-    var b = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-    return Math.round((b - a) / 86400000);
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function num(v, d){ return (v == null || isNaN(v)) ? "—" : Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+  function signed(v, d, unit){ if (v == null || isNaN(v)) return "—"; return (v > 0 ? "+" : "") + num(v, d) + (unit || ""); }
+  function cls(v){ return v == null ? "flat" : v > 0 ? "up" : v < 0 ? "down" : "flat"; }
+  function fetchJSON(name){
+    return fetch(BASE + name, {cache:"no-store"}).then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
   }
 
-  var TICKER_NAMES = {
-    AAPL: "Apple Inc.",
-    MSFT: "Microsoft Corp.",
-    GOOGL: "Alphabet Inc.",
-    AMZN: "Amazon.com Inc.",
-    NVDA: "NVIDIA Corp.",
-    META: "Meta Platforms",
-    TSLA: "Tesla Inc."
-  };
-  var TICKER_ORDER = ["AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA"];
+  /* ---------- strip + cards ---------- */
+  function renderStrip(strip){
+    document.getElementById("strip").innerHTML = (strip || []).map(function(s){
+      var value = s.last == null ? "—" : s.ticker === "^TNX" ? num(s.last, 3) + "%" : num(s.last, s.last >= 1000 ? 0 : 2);
+      var ch = s.unit === "bp" ? signed(s.change, 1, "bp") : signed(s.change, 2, "%");
+      return '<div class="chip"><div class="chip-label">' + esc(s.label) + '</div>' +
+        '<div class="chip-value">' + value + '</div>' +
+        '<div class="chip-change ' + cls(s.change) + '">' + ch + '</div></div>';
+    }).join("");
+  }
 
-  var PRICE_CRITERIA_MODELS = [
-    { key:"price_model_1", label:"Price Model 1", color:"#fb923c" },
-    { key:"price_model_2", label:"Price Model 2", color:"#f472b6" }
+  function pctile(p){ return p == null ? "—" : "1년 중 " + Math.round(p * 100) + "% 위치"; }
+
+  function renderCards(m){
+    var v = m.volatility || {}, r = m.rates, b = m.breadth || {}, ix = m.indices || {};
+    var term = {contango:["안정 (정상 구조)","good"], flat:["평탄","mid"], backwardation:["경계 (단기 공포 우위)","bad"]}[v.term_label] || ["—","mid"];
+    var cards = [];
+
+    cards.push('<div class="card"><div class="card-title">변동성 <span class="pill ' + term[1] + '">' + term[0] + '</span></div>' +
+      '<div class="card-big">VIX ' + num(v.vix, 2) + '</div><div class="card-rows">' +
+      '<div class="card-row">VIX ÷ VIX3M<b>' + num(v.term_ratio, 2) + '</b></div>' +
+      '<div class="card-row">VXN (나스닥)<b>' + num(v.vxn, 2) + '</b></div>' +
+      '<div class="card-row">VXN 위치<b>' + pctile(v.vxn_pctile_1y) + '</b></div>' +
+      '<div class="card-row">QQQ 실현변동성 20일<b>' + num(v.qqq_realized_vol_20d, 1) + '%</b></div>' +
+      '<div class="card-row">변동성 프리미엄 (VXN − 실현)<b>' + signed(v.vol_premium, 1, "p") + '</b></div>' +
+      '</div></div>');
+
+    if (r){
+      var rateTone = r.tips10_change_20d_bp > 10 ? ["성장주에 부담","bad"] : r.tips10_change_20d_bp < -10 ? ["성장주에 우호","good"] : ["중립","mid"];
+      cards.push('<div class="card"><div class="card-title">실질금리 (10년 TIPS) <span class="pill ' + rateTone[1] + '">' + rateTone[0] + '</span></div>' +
+        '<div class="card-big">' + num(r.tips10, 2) + '%</div><div class="card-rows">' +
+        '<div class="card-row">20일 변화<b>' + signed(r.tips10_change_20d_bp, 0, "bp") + '</b></div>' +
+        '<div class="card-row">위치<b>' + pctile(r.tips10_pctile_1y) + '</b></div>' +
+        '<div class="card-row">기대 인플레이션 (10년)<b>' + num(r.breakeven10, 2) + '%</b></div>' +
+        '<div class="card-row">QQQ와 60일 상관<b>' + signed(r.corr_qqq_vs_real_rate_60d, 2) + '</b></div>' +
+        '</div><div class="card-note">FRED 기준 ' + esc(r.tips10_as_of || "") + '</div></div>');
+    }
+
+    var bTone = b.pct_above_ma50 == null ? ["—","mid"] : b.pct_above_ma50 >= 0.6 ? ["넓게 강함","good"] : b.pct_above_ma50 <= 0.4 ? ["약화","bad"] : ["보통","mid"];
+    cards.push('<div class="card"><div class="card-title">시장 폭 (워치리스트 ' + (b.n || 0) + '종목) <span class="pill ' + bTone[1] + '">' + bTone[0] + '</span></div>' +
+      '<div class="card-big">' + (b.pct_above_ma50 == null ? "—" : Math.round(b.pct_above_ma50 * 100) + "%") + '</div><div class="card-rows">' +
+      '<div class="card-row">50일선 위 종목 비율<b>' + (b.pct_above_ma50 == null ? "—" : Math.round(b.pct_above_ma50 * 100) + "%") + '</b></div>' +
+      '<div class="card-row">52주 고점 5% 이내<b>' + (b.within_5pct_of_high == null ? "—" : b.within_5pct_of_high + "개") + '</b></div>' +
+      '<div class="card-row">20일 수익률 중앙값<b>' + signed(b.median_return_20d, 1, "%") + '</b></div>' +
+      '</div></div>');
+
+    var qs = ix.qqq_vs_spy, qd = ix.qqq_vs_dia, c = ix.concentration;
+    cards.push('<div class="card"><div class="card-title">지수 간 격차 (20일)</div><div class="card-rows">' +
+      '<div class="card-row">QQQ − SPY<b class="' + cls(qs && qs.gap_20d_pct) + '">' + (qs ? signed(qs.gap_20d_pct, 2, "%p") : "—") + '</b></div>' +
+      '<div class="card-row">격차 강도<b>' + (qs && qs.z != null ? signed(qs.z, 1, "σ") : "—") + '</b></div>' +
+      '<div class="card-row">QQQ − DIA<b class="' + cls(qd && qd.gap_20d_pct) + '">' + (qd ? signed(qd.gap_20d_pct, 2, "%p") : "—") + '</b></div>' +
+      '<div class="card-row">격차 강도<b>' + (qd && qd.z != null ? signed(qd.z, 1, "σ") : "—") + '</b></div>' +
+      '<div class="card-row">시총가중 − 동일가중 (QQQ − QQQE)<b class="' + cls(c && c.diff_20d) + '">' + (c ? signed(c.diff_20d, 2, "%p") : "—") + '</b></div>' +
+      '</div><div class="card-note">격차 강도는 지난 1년 동안의 격차 분포에서 지금이 평균에서 몇 표준편차 떨어져 있는지예요. ±2σ 근처면 이례적으로 벌어진 상태예요.</div></div>');
+
+    document.getElementById("cards").innerHTML = cards.join("");
+  }
+
+  /* ---------- watchlist ---------- */
+  var TONE_SORT = {positive:1, neutral:0, negative:-1, favorable:1, unfavorable:-1};
+  var COLUMNS = [
+    {key:"ticker", label:"티커", sticky:true, sort:function(r){ return r.ticker; }},
+    {key:"close", label:"종가", sort:function(r){ return r.change_pct; }},
+    {key:"signal", label:"신호", sort:function(r){ var k = r.signal && r.signal.kind; return k == null ? -9 : {strong_buy:3, buy:2, caution:-1, sell:-2}[k]; }},
+    {key:"trend", label:"추세강도", sort:function(r){ return r.trend_score; }},
+    {key:"news", label:"뉴스", sort:function(r){ return TONE_SORT[r.news_tone]; }},
+    {key:"target", label:"목표가", sort:function(r){ return TONE_SORT[r.target_tone]; }},
+    {key:"gamma", label:"옵션", sort:function(r){ return {positive:1, flip:0, negative:-1}[r.gamma_regime]; }},
+    {key:"macro", label:"매크로", sort:function(r){ return TONE_SORT[r.macro_fit]; }}
   ];
-  var PRICE_CRITERIA_URL = function(m){ return BASE + "data/sw1/price_criteria/" + m + "/latest.csv"; };
 
-  /* ---------------- helpers ---------------- */
-
-  function fmtNum(v, digits){
-    if(v === null || v === undefined || isNaN(v)) return "—";
-    return Number(v).toLocaleString("en-US", { minimumFractionDigits:digits, maximumFractionDigits:digits });
-  }
-  function fmtUSD(v){
-    if(v === null || v === undefined || isNaN(v)) return "—";
-    return "$" + Number(v).toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
-  }
-  function fmtPct(v, digits){
-    if(v === null || v === undefined || isNaN(v)) return "—";
-    var d = digits === undefined ? 2 : digits;
-    var sign = v > 0 ? "+" : "";
-    return sign + (v*100).toLocaleString("en-US", { minimumFractionDigits:d, maximumFractionDigits:d }) + "%";
-  }
-  function parseNumOrNull(s){
-    if(s === undefined || s === null) return null;
-    var t = String(s).trim();
-    if(t === "") return null;
-    var n = parseFloat(t);
-    return isNaN(n) ? null : n;
-  }
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, function(c){
-      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
-    });
+  var TONE = {
+    positive:["긍정","good"], neutral:["중립","mid"], negative:["부정","bad"],
+    favorable:["유리","good"], unfavorable:["불리","bad"]
+  };
+  function toneCell(v, neutralLabel){
+    if (v === "neutral") return '<span class="pill mid">' + (neutralLabel || "중립") + '</span>';
+    var t = TONE[v];
+    return t ? '<span class="pill ' + t[1] + '">' + t[0] + '</span>' : '<span class="muted" title="데이터 준비 중">–</span>';
   }
 
-  /* Minimal defensive CSV parser: no quoted-comma fields in this dataset. */
-  function parseCSV(text){
-    if(!text) return [];
-    var lines = text.replace(/\r\n/g,"\n").split("\n").filter(function(l){ return l.trim().length > 0; });
-    if(lines.length < 1) return [];
-    var headers = lines[0].split(",").map(function(h){ return h.trim(); });
-    var rows = [];
-    for(var i=1;i<lines.length;i++){
-      var cells = lines[i].split(",");
-      var row = {};
-      for(var j=0;j<headers.length;j++){
-        row[headers[j]] = cells[j] !== undefined ? cells[j].trim() : "";
-      }
-      rows.push(row);
-    }
-    return rows;
+  function trendCell(r){
+    var s = r.trend_score, w = s == null ? 0 : Math.min(Math.abs(s) / 15, 1) * 50;
+    var c = s == null ? "flat" : s > 0 ? "up" : s < 0 ? "down" : "flat";
+    return '<div class="trend"><div class="trend-track"><div class="trend-mid"></div>' +
+      (s ? '<div class="trend-fill ' + (s > 0 ? "pos" : "neg") + '" style="width:' + w.toFixed(1) + '%"></div>' : '') +
+      '</div><span class="trend-txt ' + c + '">' + esc(TREND_LABEL[r.trend_label] || "—") + ' ' + signed(s, 0) + '</span></div>';
   }
 
-  function fetchText(url){
-    return fetch(url, { cache:"no-store" }).then(function(res){
-      if(!res.ok) throw new Error("HTTP " + res.status);
-      return res.text();
-    });
-  }
-  function fetchJSON(url){
-    return fetch(url, { cache:"no-store" }).then(function(res){
-      if(!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
-    });
+  function signalCell(r){
+    var s = r.signal;
+    if (!s || !s.kind) return '<span class="muted">–</span>';
+    var when = s.bars_ago === 0 ? "오늘" : s.timeframe === "1w" ? s.bars_ago + "주 전" : s.bars_ago + "일 전";
+    var record = !s.n ? "과거 기록 없음" :
+      "과거 " + s.n + "회 · 평소보다 " + signed(s.excess_pct, 1, "%") + " · 오른 비율 " + Math.round((s.win_rate || 0) * 100) + "%" + (s.low_sample ? " · 표본 적음" : "");
+    var tip = s.label + " (" + (s.timeframe === "1w" ? "주봉" : "일봉") + ", " + when + ") — " + record;
+    return '<span class="sig ' + esc(s.kind) + '" title="' + esc(tip) + '">' + esc(SIG_KIND[s.kind]) + '</span>' +
+      '<span class="nm">' + (s.timeframe === "1w" ? "주봉 · " : "") + when + '</span>';
   }
 
-  function stateBox(title, sub, isError){
-    return '<div class="state-box' + (isError ? ' error' : '') + '">' +
-      '<div class="state-title">' + escapeHtml(title) + '</div>' +
-      (sub ? '<div>' + escapeHtml(sub) + '</div>' : '') +
-    '</div>';
+  function rowHtml(r){
+    var g = GAMMA[r.gamma_regime];
+    return '<tr>' +
+      '<td class="sticky"><a class="tk" href="ticker.html#' + encodeURIComponent(r.ticker) + '">' + esc(r.ticker) + '</a><span class="nm">' + esc(r.name) + '</span></td>' +
+      '<td><span class="num">' + num(r.close, 2) + '</span><span class="nm num ' + cls(r.change_pct) + '">' + signed(r.change_pct, 2, "%") + '</span></td>' +
+      '<td>' + signalCell(r) + '</td>' +
+      '<td>' + trendCell(r) + '</td>' +
+      '<td>' + toneCell(r.news_tone) + '</td>' +
+      '<td>' + toneCell(r.target_tone) + '</td>' +
+      '<td>' + (g ? '<span class="pill ' + g[1] + '">' + g[0] + '</span>' + (r.options_stale ? '<span class="nm" title="오늘 옵션 데이터가 비어 있어 이전 스냅샷을 표시">' + esc((r.options_as_of || "").slice(5)) + ' 기준</span>' : '') : '<span class="muted" title="오늘 옵션 데이터가 비어 있거나 품질 검사에서 빠졌어요">–</span>') + '</td>' +
+      '<td>' + toneCell(r.macro_fit) + '</td>' +
+      '</tr>';
   }
 
-  /* ---------------- section 1: signals ---------------- */
-
-  function quantClass(v){
-    if(v === null) return "neu";
-    return v >= 0 ? "pos" : "neg";
+  function passes(r){
+    if (state.group !== "전체" && r.group !== state.group) return false;
+    var q = state.quick, k = r.signal && r.signal.kind;
+    if (q.signal && !k) return false;
+    if (q.buy && !(k === "buy" || k === "strong_buy")) return false;
+    if (q.strong && !(r.trend_score >= 6)) return false;
+    if (q.weak && !(r.trend_score <= -6)) return false;
+    if (q.neg_gamma && r.gamma_regime !== "negative") return false;
+    return true;
   }
 
-  function renderQuantBar(v){
-    if(v === null){
-      return '<div class="quant-bar-track"><div class="quant-bar-mid"></div></div>';
-    }
-    var clamped = Math.max(-1, Math.min(1, v));
-    var pct = Math.abs(clamped) * 50; // half-track width in %
-    var cls = clamped >= 0 ? "pos" : "neg";
-    return '<div class="quant-bar-track"><div class="quant-bar-mid"></div>' +
-      '<div class="quant-bar-fill ' + cls + '" style="width:' + pct.toFixed(1) + '%;"></div></div>';
-  }
-
-  function rsiTag(rsi){
-    if(rsi === null) return { text:"—", cls:"neu" };
-    if(rsi >= 70) return { text: rsi.toFixed(1) + " · 과매수", cls:"neg" };
-    if(rsi <= 30) return { text: rsi.toFixed(1) + " · 과매도", cls:"pos" };
-    return { text: rsi.toFixed(1) + " · 중립", cls:"" };
-  }
-
-  function bbLabel(v){
-    if(v === null) return "—";
-    if(v >= 0.8) return v.toFixed(2) + " · 상단권";
-    if(v <= 0.2) return v.toFixed(2) + " · 하단권";
-    return v.toFixed(2) + " · 중립";
-  }
-
-  function maCrossTag(v){
-    var t = (v || "").toLowerCase().trim();
-    if(t === "golden") return '<span class="tag golden">▲ 골든크로스</span>';
-    if(t === "dead") return '<span class="tag dead">▼ 데드크로스</span>';
-    return '<span class="tag none">교차 없음</span>';
-  }
-
-  function buildM7Card(row){
-    var ticker = row.ticker || "?";
-    var close = parseNumOrNull(row.close);
-    var per = parseNumOrNull(row.per);
-    var pbr = parseNumOrNull(row.pbr);
-    var rsi = parseNumOrNull(row.rsi);
-    var macd = parseNumOrNull(row.macd_hist);
-    var bb = parseNumOrNull(row.bb_pct_b);
-    var quant = parseNumOrNull(row.quant_score);
-    var news = parseNumOrNull(row.news_score);
-    var date = row.date || "";
-
-    var rsiInfo = rsiTag(rsi);
-    var macdCls = macd === null ? "" : (macd >= 0 ? "pos" : "neg");
-    var macdArrow = macd === null ? "" : (macd >= 0 ? "▲" : "▼");
-
-    return '' +
-    '<div class="m7-card">' +
-      '<div class="m7-card-top">' +
-        '<div>' +
-          '<div class="ticker-id">' + escapeHtml(ticker) + '</div>' +
-          '<div class="ticker-name">' + escapeHtml(TICKER_NAMES[ticker] || "") + '</div>' +
-        '</div>' +
-        '<div class="price-block">' +
-          '<div class="price">' + (close === null ? "—" : "$" + fmtNum(close,2)) + '</div>' +
-          '<div class="price-sub">' + escapeHtml(date) + '</div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="quant-block">' +
-        '<div class="quant-label-row">' +
-          '<span class="quant-label">Quant Score</span>' +
-          '<span class="quant-value ' + quantClass(quant) + '">' + (quant === null ? "—" : (quant>=0?"+":"") + quant.toFixed(3)) + '</span>' +
-        '</div>' +
-        renderQuantBar(quant) +
-      '</div>' +
-
-      '<div class="metric-grid">' +
-        '<div class="metric"><span class="metric-k">RSI(14)</span><span class="metric-v ' + rsiInfo.cls + '">' + escapeHtml(rsiInfo.text) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">MACD Hist</span><span class="metric-v ' + macdCls + '">' + macdArrow + ' ' + (macd===null?"—":macd.toFixed(3)) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">BB %B</span><span class="metric-v">' + escapeHtml(bbLabel(bb)) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">MA Cross</span><span class="metric-v">' + maCrossTag(row.ma_cross) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">PER</span><span class="metric-v">' + (per===null?"—":fmtNum(per,1)) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">PBR</span><span class="metric-v">' + (pbr===null?"—":fmtNum(pbr,2)) + '</span></div>' +
-      '</div>' +
-
-      '<div class="card-footer-row">' +
-        '<span>뉴스 감성 점수</span>' +
-        (news === null ?
-          '<span class="news-soon">준비 중</span>' :
-          '<span class="metric-v ' + quantClass(news) + '">' + (news>=0?"+":"") + news.toFixed(2) + '</span>') +
-      '</div>' +
-      newsStalenessNote(row.news_days_ago) +
-    '</div>';
-  }
-
-  function newsStalenessNote(newsDaysAgoRaw){
-    // 2026-09-25: surfaces scripts/collect_daily_data.py's news_days_ago
-    // field (how long since the last manual news/시황 입력 for this
-    // ticker, counting past the 14-day scoring window on purpose -- see
-    // that script's docstring). Deliberately silent unless input has
-    // actually gone stale, matching the SW2 dashboard's NaN-Close notice
-    // pattern (rare/actionable signal, not a permanent status line) --
-    // otherwise every card would show a day count on every normal run.
-    var days = parseNumOrNull(newsDaysAgoRaw);
-    if(days === null || days <= NEWS_WINDOW_DAYS) return "";
-    return '<div class="news-soon" style="margin-top:8px;width:100%;box-sizing:border-box;">' +
-        '⚠ 최근 뉴스/시황 입력 ' + days + '일 전 — 새 코멘터리를 입력해 주세요' +
-      '</div>';
-  }
-
-  /* ---------------- section 2: user-defined price-criteria models ---------------- */
-
-  function newsGateTag(newsScore, minNewsScore, newsBlocked){
-    if(minNewsScore === null){
-      return '<span class="tag none">게이트 미설정</span>';
-    }
-    if(newsScore === null){
-      return '<span class="tag none">뉴스 대기 중</span>';
-    }
-    if(newsBlocked){
-      return '<span class="tag dead">🔒 신규진입 보류 (뉴스)</span>';
-    }
-    return '<span class="tag golden">✓ 게이트 통과</span>';
-  }
-
-  function renderCriteriaCard(row){
-    var ticker = row.ticker || "?";
-    var close = parseNumOrNull(row.close);
-    var buy1 = parseNumOrNull(row.buy_1_price);
-    var buy2 = parseNumOrNull(row.buy_2_price);
-    var stopPct = parseNumOrNull(row.stop_loss_pct);
-    var target = parseNumOrNull(row.target_price);
-    var newsScore = parseNumOrNull(row.news_score);
-    var minNewsScore = parseNumOrNull(row.min_news_score);
-    var newsBlocked = String(row.news_blocked).trim().toLowerCase() === "true";
-
-    return '' +
-    '<div class="m7-card">' +
-      '<div class="m7-card-top">' +
-        '<div>' +
-          '<div class="ticker-id">' + escapeHtml(ticker) + '</div>' +
-          '<div class="ticker-name">' + escapeHtml(TICKER_NAMES[ticker] || "") + '</div>' +
-        '</div>' +
-        '<div class="price-block">' +
-          '<div class="price">' + (close === null ? "—" : "$" + fmtNum(close, 2)) + '</div>' +
-          '<div class="price-sub">현재가 · ' + escapeHtml(row.date || "") + '</div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="metric-grid">' +
-        '<div class="metric"><span class="metric-k">1차 매수가</span><span class="metric-v">' + (buy1 === null ? "—" : "$" + fmtNum(buy1, 2)) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">2차 매수가</span><span class="metric-v">' + (buy2 === null ? "—" : "$" + fmtNum(buy2, 2)) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">목표가</span><span class="metric-v pos">' + (target === null ? "—" : "$" + fmtNum(target, 2)) + '</span></div>' +
-        '<div class="metric"><span class="metric-k">손절선</span><span class="metric-v neg">' + (stopPct === null ? "—" : fmtPct(stopPct)) + '</span></div>' +
-      '</div>' +
-
-      '<div class="criteria-basis-row">' +
-        '<span>1차 근거: ' + escapeHtml(row.basis_buy_1 || "—") + '</span>' +
-        '<span>2차 근거: ' + escapeHtml(row.basis_buy_2 || "—") + '</span>' +
-      '</div>' +
-
-      '<div class="card-footer-row">' +
-        '<span>뉴스 감성 점수' + (minNewsScore === null ? '' : ' (기준 ' + fmtNum(minNewsScore, 2) + ')') + '</span>' +
-        '<span>' +
-          (newsScore === null ? '' : '<span class="metric-v ' + quantClass(newsScore) + '" style="margin-right:8px;">' + (newsScore>=0?"+":"") + newsScore.toFixed(2) + '</span>') +
-          newsGateTag(newsScore, minNewsScore, newsBlocked) +
-        '</span>' +
-      '</div>' +
-    '</div>';
-  }
-
-  function loadPriceCriteriaSection(){
-    var contentEl = document.getElementById("price-criteria-content");
-
-    return Promise.all(PRICE_CRITERIA_MODELS.map(function(m){
-      return fetchText(PRICE_CRITERIA_URL(m.key)).then(function(text){
-        return { model: m, rows: parseCSV(text), error: null };
-      }).catch(function(err){
-        return { model: m, rows: [], error: err.message };
+  function renderTable(){
+    var rows = state.rows.filter(passes);
+    var sorted = state.sortKey != null;
+    if (sorted){
+      var col = COLUMNS.filter(function(c){ return c.key === state.sortKey; })[0];
+      rows = rows.slice().sort(function(a, b){
+        var x = col.sort(a), y = col.sort(b);
+        if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+        return (x < y ? -1 : x > y ? 1 : 0) * state.sortDir;
       });
-    })).then(function(results){
-      var allFailed = results.every(function(r){ return r.error; });
-      if(allFailed){
-        contentEl.innerHTML = stateBox(
-          "가격기준 데이터를 아직 불러올 수 없습니다",
-          "GitHub Actions가 아직 한 번도 실행되지 않았거나 파일 경로가 준비되지 않았을 수 있습니다. 오류: " + results[0].error,
-          true
-        );
-        return;
-      }
+    }
+    document.getElementById("count").textContent = rows.length + "개 종목";
+    if (!rows.length){ document.getElementById("table").innerHTML = '<div class="state-box">조건에 맞는 종목이 없어요.</div>'; return; }
 
-      var tabsHtml = results.map(function(r, i){
-        return '<button type="button" class="criteria-tab' + (i === 0 ? ' active' : '') + '" data-model="' + r.model.key + '">' + escapeHtml(r.model.label) + '</button>';
-      }).join("");
+    var head = '<thead><tr>' + COLUMNS.map(function(c){
+      var arrow = state.sortKey === c.key ? '<span class="arrow">' + (state.sortDir > 0 ? "▲" : "▼") + '</span>' : "";
+      return '<th class="sortable' + (c.sticky ? " sticky" : "") + '" data-key="' + c.key + '" scope="col" tabindex="0">' + c.label + arrow + '</th>';
+    }).join("") + '</tr></thead>';
 
-      var panelsHtml = results.map(function(r, i){
-        var body;
-        if(r.error){
-          body = stateBox("이 모델의 데이터가 아직 없습니다", r.error, true);
-        } else if(r.rows.length === 0){
-          body = stateBox("가격기준 데이터가 비어 있습니다", "", false);
-        } else {
-          var byTicker = {};
-          r.rows.forEach(function(row){ byTicker[row.ticker] = row; });
-          var ordered = TICKER_ORDER.map(function(t){ return byTicker[t]; }).filter(Boolean);
-          r.rows.forEach(function(row){ if(TICKER_ORDER.indexOf(row.ticker) === -1) ordered.push(row); });
-          body = '<div class="m7-grid">' + ordered.map(renderCriteriaCard).join("") + '</div>';
-        }
-        return '<div class="criteria-panel" data-model="' + r.model.key + '"' + (i === 0 ? '' : ' hidden') + '>' + body + '</div>';
-      }).join("");
-
-      contentEl.innerHTML = '<div class="criteria-tabs">' + tabsHtml + '</div>' + panelsHtml;
-
-      var tabs = Array.prototype.slice.call(contentEl.querySelectorAll(".criteria-tab"));
-      var panels = Array.prototype.slice.call(contentEl.querySelectorAll(".criteria-panel"));
-      tabs.forEach(function(tab){
-        tab.addEventListener("click", function(){
-          tabs.forEach(function(t){ t.classList.remove("active"); });
-          tab.classList.add("active");
-          var key = tab.getAttribute("data-model");
-          panels.forEach(function(p){ p.hidden = p.getAttribute("data-model") !== key; });
-        });
+    var body = "";
+    if (!sorted && state.group === "전체"){
+      state.groups.forEach(function(g){
+        var inGroup = rows.filter(function(r){ return r.group === g; });
+        if (!inGroup.length) return;
+        body += '<tr class="group-row"><td class="sticky">' + esc(g) + ' · ' + inGroup.length + '</td><td colspan="' + (COLUMNS.length - 1) + '"></td></tr>';
+        body += inGroup.map(rowHtml).join("");
       });
-    });
-  }
-
-  function loadSignals(){
-    return fetchText(SIGNALS_URL).then(function(text){
-      var rows = parseCSV(text);
-      if(rows.length === 0) throw new Error("empty");
-
-      // last-updated timestamp from run_ts
-      var runTs = rows[0].run_ts;
-      var lu = document.getElementById("last-updated");
-      var statusDot = document.getElementById("status-dot");
-      if(runTs){
-        var d = new Date(runTs);
-        if(!isNaN(d.getTime())){
-          var staleDays = pipelineDaysStale(d);
-          var isStale = staleDays > STALE_THRESHOLD_DAYS;
-          if(statusDot) statusDot.classList.toggle("stale", isStale);
-          var stalePrefix = isStale ? "⚠ 데이터 갱신 " + staleDays + "일째 지연 — " : "";
-          try{
-            var formatted = new Intl.DateTimeFormat("ko-KR", {
-              year:"numeric", month:"long", day:"numeric", weekday:"short",
-              hour:"2-digit", minute:"2-digit", timeZone:"Asia/Seoul"
-            }).format(d);
-            lu.textContent = stalePrefix + formatted + " (KST) 기준 " + (isStale ? "데이터" : "최신 데이터");
-          }catch(e){
-            lu.textContent = stalePrefix + runTs + " 기준 " + (isStale ? "데이터" : "최신 데이터");
-          }
-        } else {
-          lu.textContent = runTs + " 기준 최신 데이터";
-        }
-      } else {
-        lu.textContent = "최신 데이터";
-      }
-
-      // order rows by preferred ticker order, fall back to whatever exists
-      var byTicker = {};
-      rows.forEach(function(r){ byTicker[r.ticker] = r; });
-      var ordered = TICKER_ORDER.map(function(t){ return byTicker[t]; }).filter(Boolean);
-      rows.forEach(function(r){ if(TICKER_ORDER.indexOf(r.ticker) === -1) ordered.push(r); });
-
-      var html = '<div class="m7-grid">' + ordered.map(buildM7Card).join("") + '</div>';
-      document.getElementById("signals-content").innerHTML = html;
-    }).catch(function(err){
-      document.getElementById("last-updated").textContent = "업데이트 시각 확인 불가";
-      var errDot = document.getElementById("status-dot");
-      if(errDot){ errDot.classList.remove("stale"); errDot.classList.add("error"); }
-      document.getElementById("signals-content").innerHTML = stateBox(
-        "시그널 데이터를 불러올 수 없습니다",
-        "data/signals/latest.csv 를 확인해 주세요 (" + err.message + ")",
-        true
-      );
-    });
-  }
-
-  function icBadge(pctPositive){
-    if(pctPositive === null || pctPositive === undefined || isNaN(pctPositive)){
-      return '<span class="sig-badge no">—</span>';
+    } else {
+      body = rows.map(rowHtml).join("");
     }
-    if(pctPositive >= 0.6){
-      return '<span class="sig-badge yes">양(+) 우세 ' + Math.round(pctPositive*100) + '%</span>';
-    }
-    return '<span class="sig-badge no">혼재/약함 ' + Math.round(pctPositive*100) + '%</span>';
-  }
+    document.getElementById("table").innerHTML = '<div class="table-scroll"><table>' + head + '<tbody>' + body + '</tbody></table></div>';
 
-  function loadWalkforwardSection(){
-    return fetchJSON(WALKFORWARD_URL).then(function(data){
-      var el = document.getElementById("walkforward-content");
-      var overall = data.overall || {};
-      var tickers = data.tickers || {};
-      var tickerKeys = Object.keys(tickers);
-
-      if(tickerKeys.length === 0){
-        el.innerHTML = stateBox(
-          "아직 검증 결과가 없습니다",
-          "GitHub Actions의 walkforward-validation 워크플로를 수동 실행(workflow_dispatch)하면 이 영역이 채워집니다.",
-          false
-        );
-        return;
+    Array.prototype.forEach.call(document.querySelectorAll("th.sortable"), function(th){
+      function go(){
+        var key = th.getAttribute("data-key");
+        if (state.sortKey === key){ if (state.sortDir === -1) state.sortDir = 1; else { state.sortKey = null; state.sortDir = -1; } }
+        else { state.sortKey = key; state.sortDir = key === "ticker" ? 1 : -1; }
+        renderTable();
       }
-
-      var cfg = data.config || {};
-      var runTs = data.run_ts ? new Date(data.run_ts).toLocaleString("ko-KR") : "—";
-
-      var summaryHtml =
-        '<div class="model-summary-row" style="margin-bottom:16px;">' +
-          '<div class="summary-card"><div class="summary-label">전체 풀링 평균 IC</div><div class="summary-value">' + fmtNum(overall.mean_ic, 3) + '</div></div>' +
-          '<div class="summary-card"><div class="summary-label">양(+) 구간 비율</div><div class="summary-value">' + (overall.pct_positive !== null && overall.pct_positive !== undefined ? Math.round(overall.pct_positive*100) + '%' : '—') + '</div></div>' +
-          '<div class="summary-card"><div class="summary-label">검증된 구간 수</div><div class="summary-value">' + overall.n_windows_scored + ' / ' + overall.n_windows_total + '</div></div>' +
-        '</div>';
-
-      var rowsHtml = tickerKeys.map(function(ticker){
-        var s = tickers[ticker].summary || {};
-        return '<tr>' +
-          '<td>' + escapeHtml(ticker) + ' <span style="color:var(--text-muted);">' + escapeHtml(TICKER_NAMES[ticker] || "") + '</span></td>' +
-          '<td>' + fmtNum(s.mean_ic, 3) + '</td>' +
-          '<td>' + fmtNum(s.median_ic, 3) + '</td>' +
-          '<td>' + fmtNum(s.best_ic, 3) + '</td>' +
-          '<td>' + fmtNum(s.worst_ic, 3) + '</td>' +
-          '<td>' + (s.n_windows_scored !== undefined ? s.n_windows_scored : "—") + ' / ' + (s.n_windows_total !== undefined ? s.n_windows_total : "—") + '</td>' +
-          '<td>' + icBadge(s.pct_positive) + '</td>' +
-        '</tr>';
-      }).join("");
-
-      el.innerHTML = summaryHtml +
-        '<div class="table-scroll"><table class="stats-table">' +
-          '<thead><tr>' +
-            '<th>종목</th><th>평균 IC</th><th>중앙값 IC</th><th>최고 IC</th><th>최저 IC</th><th>검증 구간</th><th>안정성</th>' +
-          '</tr></thead>' +
-          '<tbody>' + rowsHtml + '</tbody>' +
-        '</table></div>' +
-        '<div class="foot-note" style="margin-top:12px;">마지막 실행: ' + escapeHtml(runTs) + ' · 순방향 수익률 horizon ' + escapeHtml(String(cfg.horizon_days || "—")) + '거래일 · 윈도우 ' + escapeHtml(String(cfg.window_days || "—")) + '일 / 스텝 ' + escapeHtml(String(cfg.step_days || "—")) + '일 · IC(정보계수) = 스코어와 순방향 수익률의 Spearman 순위상관, 값이 클수록(0에서 멀수록) 예측력이 강함을 뜻합니다.</div>';
-    }).catch(function(err){
-      document.getElementById("walkforward-content").innerHTML = stateBox(
-        "Walk-forward 검증 데이터를 불러올 수 없습니다",
-        "data/walkforward/results.json 을 확인해 주세요 (" + err.message + ")",
-        true
-      );
+      th.addEventListener("click", go);
+      th.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
     });
   }
 
-  /* ---------------- init ---------------- */
+  function renderGroupFilters(){
+    var names = ["전체"].concat(state.groups);
+    var el = document.getElementById("group-filters");
+    el.innerHTML = names.map(function(g){
+      return '<button type="button" data-group="' + esc(g) + '" aria-pressed="' + (g === state.group) + '">' + esc(g) + '</button>';
+    }).join("");
+    Array.prototype.forEach.call(el.querySelectorAll("button"), function(b){
+      b.addEventListener("click", function(){ state.group = b.getAttribute("data-group"); renderGroupFilters(); renderTable(); });
+    });
+  }
 
-  loadSignals();
+  Array.prototype.forEach.call(document.querySelectorAll("#quick-filters button"), function(b){
+    b.addEventListener("click", function(){
+      var k = b.getAttribute("data-quick");
+      state.quick[k] = !state.quick[k];
+      if (k === "strong" && state.quick.strong) state.quick.weak = false;
+      if (k === "weak" && state.quick.weak) state.quick.strong = false;
+      Array.prototype.forEach.call(document.querySelectorAll("#quick-filters button"), function(x){ x.setAttribute("aria-pressed", !!state.quick[x.getAttribute("data-quick")]); });
+      renderTable();
+    });
+  });
 
-  loadPriceCriteriaSection();
+  function setStatus(asOf, generated){
+    var dot = document.getElementById("status-dot"), label = document.getElementById("as-of");
+    if (!asOf){ dot.className = "status-dot error"; label.textContent = "데이터 없음"; return; }
+    var days = Math.round((Date.now() - new Date(asOf + "T21:00:00Z").getTime()) / 86400000);
+    dot.className = "status-dot" + (days > 4 ? " stale" : "");
+    label.textContent = asOf + " 장 마감 기준" + (days > 4 ? " (" + days + "일 전, 갱신 지연)" : "");
+  }
 
-  loadWalkforwardSection();
-
+  Promise.all([fetchJSON("watchlist.json"), fetchJSON("macro.json").catch(function(){ return null; })]).then(function(res){
+    var w = res[0], m = res[1];
+    state.rows = w.rows || []; state.groups = w.groups || [];
+    setStatus(w.as_of, w.generated_at);
+    if (m){ renderStrip(m.strip); renderCards(m); }
+    renderGroupFilters(); renderTable();
+    if (w.failures && w.failures.length){
+      document.getElementById("count").textContent += " · 불러오지 못한 종목: " + w.failures.map(function(f){ return f.ticker; }).join(", ");
+    }
+  }).catch(function(err){
+    setStatus(null);
+    document.getElementById("table").innerHTML = '<div class="state-box error">시장 데이터를 아직 불러올 수 없어요. 첫 자동 수집이 끝나면 표시돼요. (' + esc(err.message) + ')</div>';
+  });
 })();
 </script>
 </body>
