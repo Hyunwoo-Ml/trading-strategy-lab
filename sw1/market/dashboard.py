@@ -28,6 +28,11 @@ import numpy as np
 import pandas as pd
 
 from sw1.indicators.io import to_market_dates
+from sw1.market.analyst import target_summary
+from sw1.market.macro_fit import FACTORS as MACRO_FACTORS
+from sw1.market.macro_fit import macro_fit
+from sw1.market.news import merge as merge_news
+from sw1.market.news import news_tone, parse_yahoo_news
 from sw1.market.options import ExpiryChain, analyze_chains, chain_quality
 from sw1.market.signal_stats import evaluate_all, headline_signal
 from sw1.market.trend import compute_trend_position, compute_trend_strength
@@ -203,6 +208,9 @@ def summary_row(detail: dict) -> dict:
         "pc_ratio_oi": opt.get("pc_ratio_oi"),
         "options_stale": bool(detail.get("options_stale")),
         "options_as_of": opt.get("as_of"),
+        "news_tone": detail.get("news_tone"),
+        "target_tone": (detail.get("analyst") or {}).get("tone"),
+        "macro_fit": (detail.get("macro") or {}).get("label"),
     }
 
 
@@ -370,6 +378,31 @@ def build_breadth(rows: list[dict]) -> dict:
 
 # ---------------------------------------------------------------- everything
 
+def _optional(source, method: str, ticker: str):
+    """Call an optional MarketSource method (news, upgrades, price_targets);
+    a source without it, or a failing call, just yields None."""
+    fn = getattr(source, method, None)
+    if fn is None:
+        return None
+    try:
+        return fn(ticker)
+    except Exception:  # noqa: BLE001 -- these columns are optional per ticker
+        return None
+
+
+def enrich(detail: dict, source: MarketSource, factor_closes: dict, now: datetime) -> dict:
+    """Add the news, analyst-target and macro-fit pieces to one ticker's detail."""
+    t = detail["ticker"]
+    items = parse_yahoo_news(_optional(source, "news", t), t, "company")
+    detail["news"] = merge_news(items, limit=12, now=now, max_age_days=10)
+    detail["news_tone"] = news_tone(items, now)
+    detail["analyst"] = target_summary(_optional(source, "upgrades", t), _optional(source, "price_targets", t), now, detail["close"])
+    chart = detail.get("chart") or []
+    close = pd.Series([p["c"] for p in chart], index=pd.to_datetime([p["d"] for p in chart]))
+    detail["macro"] = macro_fit(close, factor_closes) if len(close) else None
+    return detail
+
+
 def build_all(source: MarketSource, universe: list[Member] | None = None, with_options: bool = True, log=print,
               previous: dict | None = None):
     """`previous`: ticker -> detail dict from the last run (for carrying
@@ -386,6 +419,11 @@ def build_all(source: MarketSource, universe: list[Member] | None = None, with_o
         except Exception as exc:  # noqa: BLE001 -- one bad ticker must not stop the run
             failures.append({"ticker": m.ticker, "error": str(exc)[:200]})
             log(f"[WARN] {m.ticker}: {exc}")
+
+    now = datetime.now(timezone.utc)
+    factor_closes = {key: _close_series(source, yt) for key, _, yt, _ in MACRO_FACTORS}
+    for t, d in details.items():
+        enrich(d, source, factor_closes, now)
 
     rows = [summary_row(details[m.ticker]) for m in universe if m.ticker in details]
     qqq = _close_series(source, "QQQ")
