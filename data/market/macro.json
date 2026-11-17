@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T17:43:14+00:00",
+ "generated_at": "2026-11-17T22:35:09+00:00",
  "as_of": "2026-11-17",
  "strip": [
   {
@@ -13,78 +13,78 @@
   {
    "ticker": "QQQ",
    "label": "나스닥 100",
-   "last": 654.94,
-   "change": -1.03,
+   "last": 656.95,
+   "change": -0.73,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "^TNX",
    "label": "미 10년물 금리",
-   "last": 5.097,
-   "change": -2.4,
+   "last": 5.103,
+   "change": -1.8,
    "unit": "bp",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "DX-Y.NYB",
    "label": "달러인덱스",
-   "last": 103.403,
-   "change": -0.14,
+   "last": 103.552,
+   "change": 0.0,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "CL=F",
    "label": "WTI 원유",
-   "last": 86.22,
-   "change": 0.58,
+   "last": 85.61,
+   "change": -0.13,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "GC=F",
    "label": "금",
-   "last": 3868.7,
-   "change": 0.41,
+   "last": 3851.8999,
+   "change": -0.03,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "BTC-USD",
    "label": "비트코인",
-   "last": 63680.8203,
-   "change": -1.81,
+   "last": 64606.3984,
+   "change": -0.38,
    "unit": "pct",
    "as_of": "2026-11-16"
   },
   {
    "ticker": "^VIX",
    "label": "VIX",
-   "last": 24.99,
-   "change": 9.08,
+   "last": 25.46,
+   "change": 11.13,
    "unit": "pct",
    "as_of": "2026-11-17"
   }
  ],
  "volatility": {
-  "vix": 24.989999771118164,
-  "vix3m": 24.510000228881836,
-  "vix9d": 26.06999969482422,
-  "vvix": 121.4800033569336,
-  "vxn": 34.65999984741211,
+  "vix": 25.459999084472656,
+  "vix3m": 24.979999542236328,
+  "vix9d": 26.700000762939453,
+  "vvix": 121.27999877929688,
+  "vxn": 34.439998626708984,
   "vxn_pctile_1y": 0.996,
-  "term_ratio": 1.02,
+  "term_ratio": 1.019,
   "term_label": "flat",
-  "qqq_realized_vol_20d": 36.59,
-  "vol_premium": -1.93
+  "qqq_realized_vol_20d": 36.54,
+  "vol_premium": -2.1
  },
  "rates": {
-  "tips10": 2.91,
-  "tips10_as_of": "2026-11-13",
-  "tips10_change_20d_bp": 13.0,
-  "tips10_pctile_1y": 0.984,
-  "breakeven10": 2.2,
+  "tips10": 2.92,
+  "tips10_as_of": "2026-11-16",
+  "tips10_change_20d_bp": 18.0,
+  "tips10_pctile_1y": 0.992,
+  "breakeven10": 2.21,
   "corr_qqq_vs_real_rate_60d": 0.13
  },
  "indices": {
@@ -592,7 +592,7 @@
     },
     {
      "d": "2026-11-17",
-     "r": -7.97
+     "r": -7.68
     }
    ],
    "SPY": [
@@ -1604,33 +1604,33 @@
     },
     {
      "d": "2026-11-17",
-     "r": 2.35
+     "r": 2.06
     }
    ]
   },
   "qqq_vs_spy": {
-   "gap_20d_pct": -3.98,
-   "z": -1.33
+   "gap_20d_pct": -3.7,
+   "z": -1.23
   },
   "qqq_vs_dia": {
-   "gap_20d_pct": -5.76,
-   "z": -1.18
+   "gap_20d_pct": -5.2,
+   "z": -1.07
   },
   "concentration": {
-   "qqq_20d": -8.74,
-   "qqqe_20d": -5.3,
-   "diff_20d": -3.44
+   "qqq_20d": -8.46,
+   "qqqe_20d": -5.57,
+   "diff_20d": -2.89
   }
  },
  "breadth": {
   "n": 57,
-  "pct_above_ma50": 0.123,
+  "pct_above_ma50": 0.088,
   "within_5pct_of_high": 2,
-  "median_return_20d": -13.53
+  "median_return_20d": -13.12
  },
  "fear_greed": {
   "as_of": "2026-11-17",
-  "score": 11.2,
+  "score": 11.3,
   "label": "extreme_fear",
   "week_ago": 13.6,
   "month_ago": 22.8,
@@ -1643,12 +1643,12 @@
    {
     "key": "breadth",
     "label": "시장 폭 (50일선 위 종목 비율)",
-    "score": 12.3
+    "score": 8.8
    },
    {
     "key": "volatility",
     "label": "변동성 (VIX vs 50일 평균)",
-    "score": 3.6
+    "score": 2.8
    },
    {
     "key": "term",
@@ -1658,12 +1658,12 @@
    {
     "key": "safe_haven",
     "label": "안전자산 수요 (주식 − 장기채 20일)",
-    "score": 5.6
+    "score": 6.0
    },
    {
     "key": "junk",
     "label": "정크본드 수요 (하이일드 − 투자등급 20일)",
-    "score": 40.1
+    "score": 44.4
    }
   ],
   "history": [
@@ -2145,7 +2145,7 @@
    },
    {
     "d": "2026-11-17",
-    "v": 11.2
+    "v": 11.3
    }
   ]
  }
