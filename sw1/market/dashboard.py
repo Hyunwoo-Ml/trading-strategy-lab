@@ -396,13 +396,15 @@ def _optional(source, method: str, ticker: str):
         return None
 
 
-def enrich(detail: dict, source: MarketSource, factor_closes: dict, now: datetime) -> dict:
+def enrich(detail: dict, source: MarketSource, factor_closes: dict, now: datetime, translator=None) -> dict:
     """Add the news, analyst-target and macro-fit pieces to one ticker's detail."""
     t = detail["ticker"]
     items = parse_yahoo_news(_optional(source, "news", t), t, "company")
     # an ETF's list is market news (keep macro-topic items); a stock's must name the company
     items = keep_for_macro(items) if detail.get("group") == INDEX_GROUP else keep_for_ticker(items, t, detail.get("name"))
     detail["news"] = merge_news(items, limit=12, now=now, max_age_days=10)
+    if translator is not None:
+        translator.annotate(detail["news"])
     detail["news_tone"] = news_tone(items, now)
     ne = _optional(source, "next_earnings", t)
     detail["next_earnings"] = ne.isoformat() if hasattr(ne, "isoformat") else (str(ne)[:10] if ne else None)
@@ -429,7 +431,7 @@ def build_fear_greed(source: MarketSource, details: dict) -> dict | None:
 
 
 def build_all(source: MarketSource, universe: list[Member] | None = None, with_options: bool = True, log=print,
-              previous: dict | None = None):
+              previous: dict | None = None, translator=None):
     """`previous`: ticker -> detail dict from the last run (for carrying
     forward option snapshots when today's are unusable)."""
     universe = universe or members()
@@ -451,7 +453,7 @@ def build_all(source: MarketSource, universe: list[Member] | None = None, with_o
     now = datetime.now(timezone.utc)
     factor_closes = {key: _close_series(source, yt) for key, _, yt, _ in MACRO_FACTORS}
     for t, d in details.items():
-        enrich(d, source, factor_closes, now)
+        enrich(d, source, factor_closes, now, translator)
 
     rows = [summary_row(details[m.ticker]) for m in universe if m.ticker in details]
     qqq = _close_series(source, "QQQ")
