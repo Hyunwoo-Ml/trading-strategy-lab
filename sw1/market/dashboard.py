@@ -32,7 +32,7 @@ from sw1.market.analyst import target_summary
 from sw1.market.macro_fit import FACTORS as MACRO_FACTORS
 from sw1.market.macro_fit import macro_fit
 from sw1.market.news import merge as merge_news
-from sw1.market.news import news_tone, parse_yahoo_news
+from sw1.market.news import keep_for_ticker, news_tone, parse_yahoo_news
 from sw1.market.options import ExpiryChain, analyze_chains, chain_quality
 from sw1.market.signal_stats import evaluate_all, headline_signal
 from sw1.market.trend import compute_trend_position, compute_trend_strength
@@ -394,6 +394,8 @@ def enrich(detail: dict, source: MarketSource, factor_closes: dict, now: datetim
     """Add the news, analyst-target and macro-fit pieces to one ticker's detail."""
     t = detail["ticker"]
     items = parse_yahoo_news(_optional(source, "news", t), t, "company")
+    if detail.get("group") != INDEX_GROUP:  # an ETF's list is market news; a stock's must name the company
+        items = keep_for_ticker(items, t, detail.get("name"))
     detail["news"] = merge_news(items, limit=12, now=now, max_age_days=10)
     detail["news_tone"] = news_tone(items, now)
     detail["analyst"] = target_summary(_optional(source, "upgrades", t), _optional(source, "price_targets", t), now, detail["close"])
