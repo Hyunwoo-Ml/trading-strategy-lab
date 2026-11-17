@@ -79,6 +79,9 @@
   .news-row a{color:var(--text-primary);text-decoration:none;font-size:13px;font-weight:600;line-height:1.45;}
   .news-row a:hover{color:var(--accent);}
   .news-row .meta{font-size:11px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px;}
+  .score-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:12px;color:var(--text-secondary);margin-top:6px;}
+  .dots{display:flex;gap:3px;} .dots i{width:14px;height:6px;border-radius:3px;background:#1c2432;} .dots i.on{background:var(--accent);}
+  table.cons{min-width:560px;} table.cons td.num, table.cons th.num{text-align:right;font-family:var(--mono);}
   .state-box{border:1px dashed var(--border);border-radius:var(--radius);padding:26px 18px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg-elevated);}
   .state-box.error{border-color:rgba(248,113,113,0.3);color:#e0a3a3;}
 </style>
@@ -280,6 +283,7 @@
   }
 
   function analystCard(d){
+    if (d.group === "지수·ETF") return "";  // index ETFs have no analyst coverage
     var a = d.analyst || {}, c = a.consensus;
     var rows = '<div class="rows">' +
       (c ? '<div class="row">평균 목표가<b>' + num(c.mean, 2) + (c.upside_pct != null ? ' <span class="' + cls(c.upside_pct) + '">(' + signed(c.upside_pct, 1, "%") + ')</span>' : '') + '</b></div>' +
@@ -306,15 +310,93 @@
       '<div class="note">최근 20거래일의 금리·달러·유가 변화가 이 종목의 과거 민감도(최근 ' + m.window + '거래일 기준)로 볼 때 수익률에 얼마나 유리했는지예요. +1.5% 이상 유리, −1.5% 이하 불리. 예측이 아니에요.</div></div>';
   }
 
+  var WL = null, MACRO = null;  // watchlist and macro data, loaded once for the ETF / index cards
+  var CONSTITUENT_GROUPS = {QQQ:null, SPY:null, DIA:null, IWM:null, SMH:["반도체"]};  // null = every stock group
+
+  function dots(n){ var h = ""; for (var i = 0; i < 5; i++) h += '<i class="' + (n != null && i < n ? "on" : "") + '"></i>'; return '<span class="dots">' + h + '</span>'; }
+
+  function earningsInNearest(d){
+    var o = d.options, e = d.next_earnings;
+    if (!o || !e || !o.by_expiry || !o.by_expiry.length) return false;
+    var nearest = o.by_expiry[0].expiry;
+    return !!nearest && e >= d.as_of && e <= nearest;
+  }
+
+  function flowCard(d){
+    var f = d.flow || {}, s = f.scores || {}, se = f.seasonality, mc = f.move_check, o = d.options || {};
+    var em = o.expected_move_pct;
+    var rows = '<div class="rows">' +
+      '<div class="row">오늘 예상 변동폭 (옵션)<b>' + (em == null ? "—" : "±" + num(em, 2) + "%") + '</b></div>' +
+      (d.next_earnings ? '<div class="row">다음 실적 발표<b>' + esc(d.next_earnings) + '</b></div>' : '') +
+      (mc ? '<div class="row">' + esc(mc.as_of.slice(5)) + ' 실제 변동 / 전날 예상<b class="' + (mc.within ? "" : "down") + '">' + num(mc.actual_pct, 2) + '% / ±' + num(mc.expected_pct, 2) + '%' + (mc.within ? " (범위 안)" : " (범위 밖)") + '</b></div>' : '') +
+      '<div class="row">거래량 (20일 평균 대비)<b>' + (d.volume_ratio_20d == null ? "—" : num(d.volume_ratio_20d, 2) + "배") + '</b></div></div>';
+    var sc = [["모멘텀", s.momentum, "최근 20일 수익률이 지난 1년 중 어느 위치인지"], ["변동성", s.volatility, "최근 20일 변동성이 지난 1년 중 어느 위치인지"], ["옵션", s.options, "콜 미결제약정이 풋보다 많을수록 높음"]]
+      .map(function(x){ return '<div class="score-row" title="' + esc(x[2]) + '"><span>' + x[0] + '</span>' + dots(x[1]) + '<b>' + (x[1] == null ? "—" : x[1] + "/5") + '</b></div>'; }).join("");
+    var seas = se ? '<div class="score-row" title="지난 ' + se.years + '년 같은 달 평균 수익률. 1%당 1점, −5~+5"><span>계절성</span><span class="muted" style="font-size:11px">' + se.month + '월 평균 ' + signed(se.mean_pct, 1, "%") + ' · 오른 해 ' + se.up_years + '/' + se.years + '</span><b class="' + cls(se.score) + '">' + signed(se.score, 0) + '</b></div>' : '';
+    return '<div class="card"><h2>오늘의 흐름</h2>' + rows + '<div style="margin-top:10px">' + sc + seas + '</div>' +
+      (earningsInNearest(d) ? '<div class="note" style="color:#fbbf24">실적 발표(' + esc(d.next_earnings) + ')가 가장 가까운 옵션 만기 안에 있어서, 예상 변동폭에 실적 발표 변동이 포함돼 평소보다 크게 나와요.</div>' : '') +
+      '<div class="note">점수는 0~5, 높을수록 그 성질이 강하다는 뜻이에요(좋고 나쁨이 아니에요). 프리마켓 가격은 아직 넣지 않았어요.</div></div>';
+  }
+
+  function volCard(d){
+    var v = (d.flow || {}).volatility;
+    if (!v) return '<div class="card"><h2>변동성</h2><div class="note" style="margin-top:0">데이터가 부족해요.</div></div>';
+    return '<div class="card"><h2>변동성</h2><div class="rows">' +
+      '<div class="row">실현변동성 (20일, 연율)<b>' + num(v.realized_20d, 1) + '%</b></div>' +
+      '<div class="row">1년 중 위치<b>' + (v.realized_pctile == null ? "—" : Math.round(v.realized_pctile * 100) + "%") + '</b></div>' +
+      '<div class="row">내재변동성 (ATM, 최근접 만기)<b>' + (v.implied == null ? "—" : num(v.implied, 1) + "%") + '</b></div>' +
+      '<div class="row">변동성 프리미엄 (내재 − 실현)<b class="' + cls(v.premium) + '">' + (v.premium == null ? "—" : signed(v.premium, 1, "p")) + '</b></div>' +
+      '</div><div class="note">프리미엄이 플러스면 옵션 시장이 최근 실제 움직임보다 더 큰 변동을 대비하고 있다는 뜻이에요.</div></div>';
+  }
+
+  function constituentsCard(d){
+    if (!(d.ticker in CONSTITUENT_GROUPS) || !WL) return "";
+    var only = CONSTITUENT_GROUPS[d.ticker];
+    var rows = (WL.rows || []).filter(function(r){ return r.group !== "지수·ETF" && (!only || only.indexOf(r.group) >= 0); });
+    if (!rows.length) return "";
+    var above = rows.filter(function(r){ return r.above_ma50; }).length, near = rows.filter(function(r){ return r.pct_from_high != null && r.pct_from_high >= -5; }).length;
+    var groups = only || (WL.groups || []).filter(function(g){ return g !== "지수·ETF"; });
+    var body = groups.map(function(g){
+      var gr = rows.filter(function(r){ return r.group === g; });
+      if (!gr.length) return "";
+      return '<tr><td colspan="7" class="muted" style="font-size:11px;font-weight:700">' + esc(g) + '</td></tr>' + gr.map(function(r){
+        return '<tr><td><a href="ticker.html#' + encodeURIComponent(r.ticker) + '">' + esc(r.ticker) + '</a></td><td class="num">' + num(r.close, 2) + '</td>' +
+          '<td class="num ' + cls(r.change_pct) + '">' + signed(r.change_pct, 1, "%") + '</td><td class="num ' + cls(r.return_5d) + '">' + signed(r.return_5d, 1, "%") + '</td>' +
+          '<td class="num ' + cls(r.return_20d) + '">' + signed(r.return_20d, 1, "%") + '</td><td class="num">' + (r.above_ma50 == null ? "—" : r.above_ma50 ? "위" : "아래") + '</td>' +
+          '<td class="num">' + signed(r.pct_from_high, 1, "%") + '</td></tr>';
+      }).join("");
+    }).join("");
+    return '<div class="card"><h2>주요 구성 종목 <span class="muted" style="font-size:11px;font-weight:600">50일선 위 ' + above + '/' + rows.length + ' · 52주 고점 5% 이내 ' + near + '개</span></h2>' +
+      '<div class="scroll"><table class="cons"><thead><tr><th>종목</th><th class="num">종가</th><th class="num">1일</th><th class="num">5일</th><th class="num">20일</th><th class="num">50일선</th><th class="num">고점 대비</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<div class="note">Fin-tip_lab 워치리스트 안의 종목만 보여줘요(ETF의 실제 전체 구성과 비중은 아니에요).</div></div>';
+  }
+
+  function catchupCard(d){
+    if (["QQQ", "SPY", "DIA"].indexOf(d.ticker) < 0 || !MACRO || !MACRO.indices || !MACRO.indices.curves_6m) return "";
+    var curves = MACRO.indices.curves_6m;
+    function ret(t, bars){ var c = curves[t]; if (!c || c.length <= bars) return null; var a = c[c.length - 1 - bars].r, b = c[c.length - 1].r; return ((1 + b / 100) / (1 + a / 100) - 1) * 100; }
+    var rows = ["QQQ", "SPY", "DIA"].map(function(t){
+      return '<tr><td>' + t + '</td>' + [21, 63, 125].map(function(n){ var v = ret(t, n); return '<td class="num ' + cls(v) + '">' + signed(v, 1, "%") + '</td>'; }).join("") + '</tr>';
+    }).join("");
+    var g = MACRO.indices.qqq_vs_spy || {}, g2 = MACRO.indices.qqq_vs_dia || {};
+    return '<div class="card"><h2>지수 간 따라잡기</h2><div class="scroll"><table class="cons" style="min-width:0"><thead><tr><th>지수</th><th class="num">1개월</th><th class="num">3개월</th><th class="num">6개월</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="rows" style="margin-top:8px"><div class="row">QQQ − SPY 20일 격차<b class="' + cls(g.gap_20d_pct) + '">' + signed(g.gap_20d_pct, 2, "%p") + (g.z != null ? " (" + signed(g.z, 1, "σ") + ")" : "") + '</b></div>' +
+      '<div class="row">QQQ − DIA 20일 격차<b class="' + cls(g2.gap_20d_pct) + '">' + signed(g2.gap_20d_pct, 2, "%p") + (g2.z != null ? " (" + signed(g2.z, 1, "σ") + ")" : "") + '</b></div></div>' +
+      '<div class="note">격차가 ±2σ 근처로 벌어지면 뒤처진 지수가 따라잡거나 앞선 지수가 쉬어 가는 경우가 많았는지 함께 보세요. 예측은 아니에요.</div></div>';
+  }
+
   function render(d){
     document.title = "Fin-tip_lab — " + d.ticker + " 현물";
     var html = '<div class="hero"><div><h1>' + esc(d.ticker) + '</h1><div class="name">' + esc(d.name) + ' · ' + esc(d.group) + '</div></div>' +
       '<div><div class="price">' + num(d.close, 2) + '<small class="' + cls(d.change_pct) + '">' + signed(d.change_pct, 2, "%") + '</small></div><div class="asof">' + esc(d.as_of) + ' 장 마감</div></div></div>';
     html += '<div class="grid two"><div class="card"><h2>1년 종가와 옵션 레벨</h2><div class="chart-wrap">' + priceChart(d) + '</div>' +
       '<div class="legend"><span style="color:#34d399">콜월</span><span style="color:#f87171">풋월</span><span style="color:#fbbf24">감마 플립</span></div></div>' + levelsCard(d) + '</div>';
+    html += '<div class="grid half">' + flowCard(d) + volCard(d) + '</div>';
     html += '<div class="grid half">' + trendCard(d) + positionCard(d) + '</div>';
     html += '<div class="grid half">' + analystCard(d) + macroCard(d) + '</div>';
     html += '<div class="grid">' + newsCard(d) + '</div>';
+    var extra = constituentsCard(d) + catchupCard(d);
+    if (extra) html += '<div class="grid">' + extra + '</div>';
     html += gexCard(d);
     html += '<div class="grid">' + signalsCard(d) + '</div>';
     document.getElementById("content").innerHTML = html;
@@ -330,7 +412,9 @@
     });
   }
 
+  var macroReady = fetchJSON("macro.json").then(function(m){ MACRO = m; }).catch(function(){});
   fetchJSON("watchlist.json").then(function(w){
+    WL = w;
     var picker = document.getElementById("picker"), html = "";
     (w.groups || []).forEach(function(g){
       html += '<optgroup label="' + esc(g) + '">' + (w.rows || []).filter(function(r){ return r.group === g; }).map(function(r){
@@ -339,7 +423,7 @@
     });
     picker.innerHTML = html;
     picker.addEventListener("change", function(){ location.hash = picker.value; });
-  }).catch(function(){}).then(load);
+  }).catch(function(){}).then(function(){ return macroReady; }).then(load);
   window.addEventListener("hashchange", load);
 })();
 </script>

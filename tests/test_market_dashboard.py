@@ -208,6 +208,10 @@ class RichSource(FakeSource):
     def price_targets(self, ticker):
         return {"mean": 200.0, "high": 250.0, "low": 150.0, "median": 195.0}
 
+    def next_earnings(self, ticker):
+        from datetime import date
+        return date(2026, 11, 19) if ticker == "AAA" else None
+
 
 def test_news_targets_and_macro_reach_the_rows():
     watch, details, _ = build_all(RichSource(), UNIVERSE, log=lambda *_: None)
@@ -215,6 +219,7 @@ def test_news_targets_and_macro_reach_the_rows():
     assert row["AAA"]["news_tone"] == "positive" and row["AAA"]["target_tone"] == "negative"
     assert row["BBB"]["target_tone"] is None  # its analyst call failed; the row still builds
     assert row["AAA"]["macro_fit"] in ("favorable", "neutral", "unfavorable")
+    assert row["AAA"]["next_earnings"] == "2026-11-19" and row["BBB"]["next_earnings"] is None
     d = details["AAA"]
     assert d["news"][0]["link"] == "https://y/AAA" and d["analyst"]["consensus"]["mean"] == 200.0
     assert {f["key"] for f in d["macro"]["factors"]} == {"rates", "dollar", "oil"}
@@ -225,3 +230,15 @@ def test_plain_source_leaves_the_new_columns_empty():
     watch, _, _ = build_all(FakeSource(), UNIVERSE, log=lambda *_: None)
     r = watch["rows"][0]
     assert r["news_tone"] is None and r["target_tone"] is None
+
+
+def test_flow_block_and_yesterdays_move_check():
+    src = FakeSource()
+    as_of = src.history("AAA", "10y").index[-1].date()
+    prev = {"AAA": {"options": {"as_of": (as_of - timedelta(days=1)).isoformat(), "expected_move_pct": 50.0}}}
+    watch, details, _ = build_all(src, UNIVERSE, log=lambda *_: None, previous=prev)
+    f = details["AAA"]["flow"]
+    assert f["volatility"]["realized_20d"] > 0 and "seasonality" in f  # fake history is too short for 3 past Novembers
+    assert f["move_check"]["expected_pct"] == 50.0 and f["move_check"]["within"] is True
+    assert details["BBB"]["flow"]["move_check"] is None
+    assert watch["rows"][0]["return_5d"] is not None

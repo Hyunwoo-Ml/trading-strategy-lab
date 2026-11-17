@@ -74,6 +74,15 @@ class YahooFredSource:
     def price_targets(self, ticker: str) -> dict | None:
         return self._t(ticker).analyst_price_targets
 
+    def next_earnings(self, ticker: str):
+        """Next scheduled earnings date (or None). Yahoo's calendar gives a list
+        of candidate dates; the first one on or after today is used."""
+        cal = self._t(ticker).calendar or {}
+        dates = cal.get("Earnings Date") if isinstance(cal, dict) else None
+        today = pd.Timestamp.now(tz="America/New_York").date()
+        upcoming = sorted(d for d in (dates or []) if hasattr(d, "year") and d >= today)
+        return upcoming[0] if upcoming else None
+
     def fetch_text(self, url: str) -> str:
         resp = requests.get(url, timeout=20, headers={"User-Agent": USER_AGENT})
         resp.raise_for_status()
