@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T07:59:37+00:00",
+ "generated_at": "2026-11-17T13:07:54+00:00",
  "as_of": "2026-11-16",
  "strip": [
   {
@@ -29,52 +29,52 @@
   {
    "ticker": "DX-Y.NYB",
    "label": "달러인덱스",
-   "last": 103.545,
-   "change": -0.0,
+   "last": 103.578,
+   "change": 0.03,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "CL=F",
    "label": "WTI 원유",
-   "last": 85.24,
-   "change": -0.56,
+   "last": 86.28,
+   "change": 0.65,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "GC=F",
    "label": "금",
-   "last": 3874.6001,
-   "change": 0.56,
+   "last": 3861.3,
+   "change": 0.22,
    "unit": "pct",
    "as_of": "2026-11-17"
   },
   {
    "ticker": "BTC-USD",
    "label": "비트코인",
-   "last": 64682.0781,
-   "change": -0.27,
+   "last": 65091.1719,
+   "change": 0.36,
    "unit": "pct",
    "as_of": "2026-11-16"
   },
   {
    "ticker": "^VIX",
    "label": "VIX",
-   "last": 22.91,
-   "change": 18.7,
+   "last": 22.7,
+   "change": -0.92,
    "unit": "pct",
-   "as_of": "2026-11-16"
+   "as_of": "2026-11-17"
   }
  ],
  "volatility": {
-  "vix": 22.90999984741211,
+  "vix": 22.700000762939453,
   "vix3m": 23.020000457763672,
   "vix9d": 23.149999618530273,
   "vvix": 114.2300033569336,
   "vxn": 32.900001525878906,
   "vxn_pctile_1y": 0.984,
-  "term_ratio": 0.995,
+  "term_ratio": 0.986,
   "term_label": "flat",
   "qqq_realized_vol_20d": 36.54,
   "vol_premium": -3.64
@@ -1623,9 +1623,9 @@
   }
  },
  "breadth": {
-  "n": 49,
-  "pct_above_ma50": 0.163,
+  "n": 57,
+  "pct_above_ma50": 0.14,
   "within_5pct_of_high": 3,
-  "median_return_20d": -11.39
+  "median_return_20d": -12.32
  }
 }
