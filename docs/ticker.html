@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fin-tip_lab — 종목 상세</title>
+<title>Fin-tip_lab — 현물</title>
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/site.css">
 <script src="assets/site.js" defer></script>
@@ -81,7 +81,7 @@
 <body>
 <div class="wrap">
   <div class="topbar">
-    <a class="back" href="market.html">← 시장 한눈에</a>
+    <a class="back" href="index.html">← 메인</a>
     <label class="muted" for="picker" style="font-size:12px">종목</label>
     <select id="picker" aria-label="종목 선택"></select>
   </div>
@@ -255,7 +255,7 @@
   }
 
   function render(d){
-    document.title = "Fin-tip_lab — " + d.ticker + " 상세";
+    document.title = "Fin-tip_lab — " + d.ticker + " 현물";
     var html = '<div class="hero"><div><h1>' + esc(d.ticker) + '</h1><div class="name">' + esc(d.name) + ' · ' + esc(d.group) + '</div></div>' +
       '<div><div class="price">' + num(d.close, 2) + '<small class="' + cls(d.change_pct) + '">' + signed(d.change_pct, 2, "%") + '</small></div><div class="asof">' + esc(d.as_of) + ' 장 마감</div></div></div>';
     html += '<div class="grid two"><div class="card"><h2>1년 종가와 옵션 레벨</h2><div class="chart-wrap">' + priceChart(d) + '</div>' +
