@@ -104,7 +104,7 @@ def test_missing_news_score_is_treated_as_neutral_zero(wired_script):
     out = read_screener(wired_script)
     row = out.iloc[0]
     assert row["integrated_score"] == pytest.approx(0.9 * 0.6)
-    assert row["signal"] == "buy_1"  # 0.54 clears buy_1 (0.30) but not buy_2 (0.60)
+    assert row["signal"] == "buy_1"  # 0.54 clears buy_1 (0.20, lowered from 0.30 on 2026-11-17) but not buy_2 (0.60)
     assert pd.isna(row["news_score"])  # stays None in the output, not coerced to 0.0
 
 
