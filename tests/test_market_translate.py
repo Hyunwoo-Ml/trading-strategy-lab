@@ -1,6 +1,6 @@
 """Headline translation (sw1/market/translate.py) with a fake backend --
 the real NLLB model only runs in the market workflows."""
-from sw1.market.translate import VERSION, Translator, _replace, cache_from, postprocess, prepare, preprocess
+from sw1.market.translate import VERSION, korean_amount, Translator, _replace, cache_from, postprocess, prepare, preprocess
 
 
 class Fake:
@@ -66,8 +66,8 @@ def test_cache_from_previous_output():
 
 
 def test_preprocess_cleans_real_headlines():
-    assert preprocess("Tesla commits $3.30bn to expand German gigafactory") == "테슬라 commits $3.3 billion to expand German gigafactory"
-    assert preprocess("Kazakhstan unveils $85M push") == "Kazakhstan unveils $85 million push"
+    assert preprocess("Tesla commits $3.30bn to expand German gigafactory") == "테슬라 commits 33억 달러 to expand German gigafactory"
+    assert preprocess("Kazakhstan unveils $85M push") == "Kazakhstan unveils 8,500만 달러 push"
     assert preprocess("Update: Market Chatter: Amazon Lobbying Fails") == "아마존 Lobbying Fails"
     assert preprocess("Exclusive-Trump's China data center curb advances") == "Trump's China data center curb advances"
     assert preprocess("Stocks slip ahead of Nvidia earnings, Home Depot shares slide: AlphaCheck") == \
@@ -131,3 +131,28 @@ def test_mangled_names_are_retried_with_tickers():
     assert got["Salesforce Sells Off Before Anthropic's IPO"] == "세일즈포스는 앤트로픽의 IPO 전에 급격히 하락했습니다"
     assert len(calls) == 2 and calls[1] == ["Dear PANW Stock Fans"]  # only the mangled one is retried
     assert _replace("ANTHR의 IPO 전에 CRM가 하락", "CRM", "세일즈포스") == "ANTHR의 IPO 전에 세일즈포스가 하락"
+
+
+def test_dollar_amounts_in_korean_units():
+    assert korean_amount(4e11) == "4,000억 달러"
+    assert korean_amount(3.3e9) == "33억 달러"
+    assert korean_amount(5.5e8) == "5억 5,000만 달러"
+    assert korean_amount(1.2e12) == "1조 2,000억 달러"
+    assert korean_amount(8.5e7) == "8,500만 달러"
+    assert preprocess("Amazon and Google Could Own $400 Billion of Anthropic Stock") == \
+        "아마존 and 구글 Could Own 4,000억 달러 of 앤트로픽 Stock"
+    assert preprocess('Trump Demands a "350 Billion Dollar" Military Bill') == 'Trump Demands a "3,500억 달러" Military Bill'
+
+
+def test_more_market_slang():
+    assert preprocess("The Greenback Weakens Slightly Against Canada's Loonie") == \
+        "The US dollar Weakens Slightly Against Canada's Canadian dollar"
+    assert preprocess("Gold Futures Inch Higher As U.S. Yields Slip") == "Gold Futures rises slightly As U.S. Yields Slip"
+    assert preprocess("Will Gold Rise After the Fed's Expected Rate Hike?") == \
+        "Will Gold Rise After the Fed's Expected interest rate increase?"
+    assert postprocess("기획재정 수익률이 하락함에 따라") == "국채 금리가 하락함에 따라"
+    assert postprocess("중동 위험에 석유 미래가 증가") == "중동 위험에 원유 선물이 증가"
+    assert postprocess("미국 반도체 제한에 따라 반도체 점유율이 하락") == "미국 반도체 제한에 따라 반도체 주가가 하락"
+    assert postprocess("시장 점유율이 늘었다") == "시장 점유율이 늘었다"
+    assert postprocess("기금 관리자 는 테슬라 주식 을 사지 않음 의 이유") == "기금 관리자는 테슬라 주식을 사지 않음의 이유"
+    assert postprocess("팔란티어 스톡이 두배가 될까") == "팔란티어 주식이 두배가 될까"
