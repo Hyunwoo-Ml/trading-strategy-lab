@@ -249,3 +249,12 @@ def test_macro_has_the_fear_greed_index():
     fg = macro["fear_greed"]
     assert 0 <= fg["score"] <= 100 and fg["label"] and len(fg["components"]) >= 5
     json.dumps(macro, allow_nan=False)
+
+
+def test_ticker_news_gets_korean_titles():
+    from sw1.market.translate import Translator
+
+    tr = Translator(backend=lambda texts: [f"한글 {t}" for t in texts])
+    _, details, _ = build_all(RichSource(), UNIVERSE, log=lambda *_: None, translator=tr)
+    news = details["AAA"]["news"]
+    assert news and all(n["title_ko"] == f"한글 {n['title']}" for n in news)
