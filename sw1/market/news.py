@@ -30,6 +30,20 @@ FEEDS = (
 # Yahoo headline lists that cover the market as a whole.
 MACRO_NEWS_TICKERS = ("SPY", "QQQ", "^TNX", "CL=F", "GC=F", "DX-Y.NYB")
 
+# Yahoo mixes personal-finance and stock-pick pieces into ticker lists; they
+# are not news. Wire services get one extra importance star.
+SKIP_SOURCES = {"Motley Fool", "Moneywise", "Yahoo Personal Finance", "24/7 Wall St.", "GuruFocus.com",
+                "Simply Wall St.", "Zacks", "Insider Monkey", "Yahoo Finance Video"}
+WIRE_SOURCES = {"Reuters", "Bloomberg", "Associated Press", "AP Finance", "The Wall Street Journal",
+                "Financial Times", "CNBC", "Barrons.com", "MarketWatch"}
+
+# Words a headline must contain to count as being about a company, beyond its ticker.
+COMPANY_ALIASES = {
+    "AAPL": ("apple", "iphone"), "MSFT": ("microsoft", "azure"), "NVDA": ("nvidia",), "GOOGL": ("google", "alphabet", "waymo"),
+    "AMZN": ("amazon", "aws"), "META": ("meta", "facebook", "instagram", "zuckerberg"), "TSLA": ("tesla", "musk"),
+    "AVGO": ("broadcom",), "TSM": ("tsmc", "taiwan semiconductor"), "PLTR": ("palantir",),
+}
+
 TOPICS: dict[str, tuple[str, ...]] = {
     "연준": (r"\bfed\b", r"\bfomc\b", r"powell", r"federal reserve", r"rate cuts?\b", r"rate hikes?\b", r"interest rates?"),
     "물가": (r"inflation", r"\bcpi\b", r"\bpce\b", r"\bppi\b", r"consumer prices", r"producer prices"),
@@ -166,8 +180,32 @@ def parse_yahoo_news(raw: list, ticker: str | None, kind: str) -> list[dict]:
         if when is None and c.get("providerPublishTime"):
             when = datetime.fromtimestamp(int(c["providerPublishTime"]), tz=timezone.utc)
         if title and link and when:
-            out.append(_item(source, title, link, when, 1, kind, [ticker] if ticker else []))
+            out.append(_item(source, title, link, when, 2 if source in WIRE_SOURCES else 1, kind, [ticker] if ticker else []))
     return out
+
+
+def mentions(title: str, ticker: str, name: str | None = None) -> bool:
+    """Whether a headline is about this company: its ticker as a word, an
+    alias, or the first word of its name ("NVIDIA", "Meta Platforms" -> meta)."""
+    if re.search(rf"(?<![A-Za-z]){re.escape(ticker)}(?![A-Za-z])", title):
+        return True
+    words = list(COMPANY_ALIASES.get(ticker, ()))
+    if name:
+        first = re.split(r"[\s,.]+", name.strip())[0]
+        if len(first) >= 3:
+            words.append(first)
+    low = title.lower()
+    return any(re.search(rf"\b{re.escape(w.lower())}\b", low) for w in words)
+
+
+def keep_for_ticker(items: list[dict], ticker: str, name: str | None = None) -> list[dict]:
+    """A ticker's Yahoo list minus stock-pick pieces and stories that don't name it."""
+    return [i for i in items if i["source"] not in SKIP_SOURCES and mentions(i["title"], ticker, name)]
+
+
+def keep_for_macro(items: list[dict]) -> list[dict]:
+    """Market-wide lists keep only items with a recognisable macro topic."""
+    return [i for i in items if i["source"] not in SKIP_SOURCES and i["topics"]]
 
 
 def merge(items: list[dict], limit: int, now: datetime, max_age_days: int = 4) -> list[dict]:

@@ -85,3 +85,21 @@ import pytest  # noqa: E402
 ])
 def test_direction_words_flip_after_oil_yields_inflation_dollar(title, expected):
     assert impact_of(title) == expected
+
+
+from sw1.market.news import keep_for_ticker, mentions  # noqa: E402
+
+
+def test_mentions_matches_ticker_alias_or_first_name_word():
+    assert mentions("NVDA slips after earnings", "NVDA")
+    assert mentions("Nvidia earnings preview", "NVDA")
+    assert mentions("Meta to cut costs", "META", "Meta Platforms")
+    assert mentions("Lam Research raises outlook", "LRCX", "Lam Research")
+    assert not mentions("Sony wins UK case", "MSFT", "Microsoft")
+    assert not mentions("AMD gains", "AM", "Am")  # ticker must be a whole word; short names are not used
+
+
+def test_keep_for_ticker_drops_stock_picks_and_other_companies():
+    mk = lambda t, src="P": parse_yahoo_news([{"title": t, "publisher": src, "link": "https://y/" + t, "providerPublishTime": int(NOW.timestamp())}], "TSLA", "company")[0]
+    kept = keep_for_ticker([mk("Tesla deliveries beat"), mk("Musk says robotaxi is near"), mk("Ford recalls trucks"), mk("Tesla: buy now?", "Motley Fool")], "TSLA", "Tesla")
+    assert [i["title"] for i in kept] == ["Tesla deliveries beat", "Musk says robotaxi is near"]

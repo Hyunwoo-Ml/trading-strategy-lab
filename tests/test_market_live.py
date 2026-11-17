@@ -90,14 +90,25 @@ class NewsSource(LiveSource):
         return FEED
 
     def news(self, ticker):
-        return [{"title": f"{ticker} shares rally", "publisher": "P", "link": f"https://y/{ticker}",
-                 "providerPublishTime": int(NOW.timestamp()) - 600}]
+        t = int(NOW.timestamp()) - 600
+        return [
+            {"title": f"{ticker} shares rally", "publisher": "P", "link": f"https://y/{ticker}", "providerPublishTime": t},
+            {"title": "Treasury yields fall as Fed signals a cut", "publisher": "Reuters", "link": "https://y/fed", "providerPublishTime": t},
+            {"title": "Sony wins UK pricing case", "publisher": "P", "link": "https://y/sony", "providerPublishTime": t},
+            {"title": "3 stocks to buy now", "publisher": "Motley Fool", "link": "https://y/fool", "providerPublishTime": t},
+        ]
 
 
 def test_headlines_split_macro_and_company_and_list_failures():
     h = build_headlines(NewsSource(), NOW)
-    assert any(i["source"] == "연준" for i in h["macro"]) and any(i["title"] == "SPY shares rally" for i in h["macro"])
-    assert {i["tickers"][0] for i in h["company"]} >= {"NVDA", "AAPL"}
+    macro_titles = {i["title"] for i in h["macro"]}
+    assert any(i["source"] == "연준" for i in h["macro"]) and "Treasury yields fall as Fed signals a cut" in macro_titles
+    assert "SPY shares rally" not in macro_titles and "Sony wins UK pricing case" not in macro_titles  # no macro topic
+    company_titles = {i["title"] for i in h["company"]}
+    assert {"NVDA shares rally", "AAPL shares rally"} <= company_titles
+    assert not company_titles & {"Sony wins UK pricing case", "3 stocks to buy now", "Treasury yields fall as Fed signals a cut"}
+    wire = [i for i in h["macro"] if i["source"] == "Reuters"][0]
+    assert wire["importance"] == 3  # wire service +1, Fed topic +1
     assert any(e.startswith("SEC") for e in h["errors"])
     assert build_headlines(LiveSource(), NOW)["macro"] == []  # a source without news methods just gives nothing
 
