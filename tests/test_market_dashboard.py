@@ -146,3 +146,45 @@ def test_script_returns_1_when_nothing_loads(tmp_path):
 def test_universe_has_no_duplicate_tickers():
     tickers = [m.ticker for m in members()]
     assert len(tickers) == len(set(tickers))
+
+
+class ZeroOISource(FakeSource):
+    """Chains that look like Yahoo's off-hours data: OI all zero."""
+
+    def option_chain(self, ticker, expiry):
+        spot = float(self.history(ticker, "10y")["Close"].iloc[-1])
+        return chain_side(spot, 0), chain_side(spot, 0)
+
+
+def _previous(options_as_of, quality_ok=True):
+    return {"AAA": {"options": {"as_of": options_as_of, "regime": "positive", "expected_move_pct": 1.2, "pc_ratio_oi": 0.9,
+                                **({"quality_ok": True} if quality_ok else {})}}}
+
+
+def test_zeroed_open_interest_is_rejected_not_published():
+    _, details, _ = build_all(ZeroOISource(), UNIVERSE, log=lambda *_: None)
+    assert details["AAA"]["options"] is None
+    assert "open interest" in details["AAA"]["options_error"]
+
+
+def test_good_snapshot_carries_forward_and_is_marked_stale():
+    src = ZeroOISource()
+    as_of = src.history("AAA", "10y").index[-1].date()
+    watch, details, _ = build_all(src, UNIVERSE, log=lambda *_: None, previous=_previous((as_of - timedelta(days=1)).isoformat()))
+    assert details["AAA"]["options_stale"] is True
+    assert details["AAA"]["options"]["regime"] == "positive"
+    row = [r for r in watch["rows"] if r["ticker"] == "AAA"][0]
+    assert row["options_stale"] is True and row["gamma_regime"] == "positive"
+
+
+def test_unchecked_or_old_snapshots_are_not_carried_forward():
+    src = ZeroOISource()
+    as_of = src.history("AAA", "10y").index[-1].date()
+    _, d1, _ = build_all(src, UNIVERSE, log=lambda *_: None, previous=_previous((as_of - timedelta(days=1)).isoformat(), quality_ok=False))
+    _, d2, _ = build_all(src, UNIVERSE, log=lambda *_: None, previous=_previous((as_of - timedelta(days=30)).isoformat()))
+    assert d1["AAA"]["options"] is None and d2["AAA"]["options"] is None
+
+
+def test_fresh_snapshots_are_marked_quality_ok():
+    _, details, _ = build_all(FakeSource(), UNIVERSE, log=lambda *_: None)
+    assert details["AAA"]["options"]["quality_ok"] is True and details["AAA"]["options_stale"] is False

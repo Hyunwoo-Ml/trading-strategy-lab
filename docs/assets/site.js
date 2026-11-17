@@ -5,6 +5,7 @@
   "use strict";
 
   var PAGES = [
+    { href: "market.html",   label: "시장 한눈에" },
     { href: "index.html",    label: "퀀트 시그널" },
     { href: "screener.html", label: "신호 스크리닝" },
     { href: "sw2.html",      label: "모의매매 성과" }

@@ -17,8 +17,15 @@ Positive total GEX means dealer hedging tends to dampen moves; negative
 means it tends to amplify them. The gamma flip is the spot level at which
 the total crosses zero.
 
-These are estimates from end-of-day open interest and Yahoo's implied
+These are estimates from end-of-day open interest and implied
 volatilities. Nobody outside the dealers knows their actual positioning.
+
+Yahoo data quality: outside US trading hours Yahoo often reports a
+placeholder IV (about 0.0156) and zero open interest. IVs at or below
+MIN_IV are therefore recomputed from the option's own price (bid/ask mid,
+else last trade) with Black-Scholes, and `chain_quality()` lets the caller
+reject a snapshot whose open interest is essentially empty instead of
+publishing numbers built on zeros.
 """
 from __future__ import annotations
 
@@ -28,10 +35,14 @@ from datetime import date
 
 import numpy as np
 import pandas as pd
+from scipy.special import ndtr
 
 CONTRACT_MULTIPLIER = 100
 TRADING_DAYS_PER_YEAR = 252
-MIN_IV = 0.01  # Yahoo sometimes reports ~0 IV after the close; ignore those.
+MIN_IV = 0.03  # at or below this, Yahoo's IV is a placeholder; recompute it from price
+MIN_OPTION_PRICE = 0.01  # one cent: below this an IV can't be read from the price
+MIN_TOTAL_OI = 500  # fewer contracts than this across all chains = no real OI data
+MIN_OI_COVERAGE = 0.10  # and at least this share of listed contracts must have OI
 MAX_IV = 5.0
 MIN_T_YEARS = 0.5 / 365  # floor so same-day expiries don't divide by ~0
 FLIP_NEAR_PCT = 0.01  # within 1% of the flip counts as "at the flip"
@@ -91,15 +102,88 @@ def bs_gamma(spot: float | np.ndarray, strike: np.ndarray, t_years: float, iv: n
     return np.nan_to_num(gamma, nan=0.0, posinf=0.0, neginf=0.0)
 
 
+def bs_price(spot: float, strike: np.ndarray, t_years: float, iv: np.ndarray, is_call: bool, rate: float = 0.0) -> np.ndarray:
+    """Black-Scholes price per share. Vectorised over strikes/IVs."""
+    strike = np.asarray(strike, dtype=float)
+    iv = np.asarray(iv, dtype=float)
+    t = max(t_years, MIN_T_YEARS)
+    sqrt_t = math.sqrt(t)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        d1 = (np.log(spot / strike) + (rate + 0.5 * iv**2) * t) / (iv * sqrt_t)
+    d2 = d1 - iv * sqrt_t
+    disc = math.exp(-rate * t)
+    if is_call:
+        return spot * ndtr(d1) - strike * disc * ndtr(d2)
+    return strike * disc * ndtr(-d2) - spot * ndtr(-d1)
+
+
+def implied_vol(price: np.ndarray, spot: float, strike: np.ndarray, t_years: float, is_call: bool,
+                lo: float = MIN_IV, hi: float = MAX_IV, iterations: int = 60) -> np.ndarray:
+    """IV by bisection, vectorised. NaN where the price is missing, under a
+    cent, or not inside the range Black-Scholes can produce between `lo`
+    and `hi`."""
+    price = np.asarray(price, dtype=float)
+    strike = np.asarray(strike, dtype=float)
+    a = np.full(price.shape, lo)
+    b = np.full(price.shape, hi)
+    p_lo = bs_price(spot, strike, t_years, a, is_call)
+    p_hi = bs_price(spot, strike, t_years, b, is_call)
+    solvable = np.isfinite(price) & (price >= MIN_OPTION_PRICE) & (price >= p_lo) & (price <= p_hi)
+    for _ in range(iterations):
+        mid = (a + b) / 2
+        too_low = bs_price(spot, strike, t_years, mid, is_call) < price
+        a = np.where(too_low, mid, a)
+        b = np.where(too_low, b, mid)
+    return np.where(solvable, (a + b) / 2, np.nan)
+
+
 def _clean(df: pd.DataFrame) -> pd.DataFrame:
+    cols = ["strike", "openInterest", "volume", "impliedVolatility"]
     if df is None or len(df) == 0:
-        return pd.DataFrame(columns=["strike", "openInterest", "volume", "impliedVolatility"])
-    out = df[["strike", "openInterest", "volume", "impliedVolatility"]].copy()
+        return pd.DataFrame(columns=cols + ["price"])
+    out = df[cols].copy()
     out["openInterest"] = pd.to_numeric(out["openInterest"], errors="coerce").fillna(0).clip(lower=0)
     out["volume"] = pd.to_numeric(out["volume"], errors="coerce").fillna(0).clip(lower=0)
     out["impliedVolatility"] = pd.to_numeric(out["impliedVolatility"], errors="coerce")
     out["strike"] = pd.to_numeric(out["strike"], errors="coerce")
+    bid = pd.to_numeric(df["bid"], errors="coerce") if "bid" in df else pd.Series(np.nan, index=df.index)
+    ask = pd.to_numeric(df["ask"], errors="coerce") if "ask" in df else pd.Series(np.nan, index=df.index)
+    last = pd.to_numeric(df["lastPrice"], errors="coerce") if "lastPrice" in df else pd.Series(np.nan, index=df.index)
+    mid = (bid + ask) / 2
+    out["price"] = np.where((bid > 0) & (ask > 0), mid, last)
     return out.dropna(subset=["strike"])
+
+
+def fill_placeholder_iv(df: pd.DataFrame, spot: float, t_years: float, is_call: bool) -> pd.DataFrame:
+    """Replaces Yahoo IVs at or below MIN_IV (placeholders) with IV implied
+    by the contract's own price; rows with no usable price keep NaN."""
+    out = df.copy()
+    bad = ~(out["impliedVolatility"] > MIN_IV)
+    if bad.any():
+        out.loc[bad, "impliedVolatility"] = implied_vol(
+            out.loc[bad, "price"].to_numpy(), spot, out.loc[bad, "strike"].to_numpy(), t_years, is_call
+        )
+    return out
+
+
+def chain_quality(chains: list["ExpiryChain"]) -> tuple[bool, str]:
+    """Whether the snapshot has real open interest. Off-hours Yahoo data
+    often has OI zeroed out across the board."""
+    total, listed, with_oi = 0.0, 0, 0
+    for ch in chains:
+        for df in (ch.calls, ch.puts):
+            if df is None or len(df) == 0:
+                continue
+            oi = pd.to_numeric(df["openInterest"], errors="coerce").fillna(0)
+            total += float(oi.sum())
+            listed += len(oi)
+            with_oi += int((oi > 0).sum())
+    if listed == 0:
+        return False, "no contracts listed"
+    coverage = with_oi / listed
+    if total < MIN_TOTAL_OI or coverage < MIN_OI_COVERAGE:
+        return False, f"open interest looks empty (total {int(total)}, {coverage:.0%} of contracts have any)"
+    return True, "ok"
 
 
 def _usable_iv(df: pd.DataFrame) -> pd.DataFrame:
@@ -119,13 +203,29 @@ def _gex_rows(df: pd.DataFrame, spot: float, t_years: float, sign: int) -> np.nd
     return sign * g * df["openInterest"].to_numpy() * CONTRACT_MULTIPLIER * spot**2 * 0.01
 
 
+def _prepared(chain: ExpiryChain, side: str, as_of: date) -> pd.DataFrame:
+    """Cleaned side of a chain with placeholder IVs recomputed. IVs are
+    priced off `chain.spot_for_iv` (set by analyze_chains) and cached on the
+    chain itself, so the grid search in find_gamma_flip doesn't re-solve
+    them at every grid point."""
+    spot = getattr(chain, "spot_for_iv", None)
+    cache = chain.__dict__.setdefault("_prepared_cache", {})
+    key = (side, spot, as_of)
+    if key not in cache:
+        df = _clean(chain.calls if side == "call" else chain.puts)
+        if spot:
+            df = fill_placeholder_iv(df, spot, max(_years_to(chain.expiry, as_of), MIN_T_YEARS), side == "call")
+        cache[key] = df
+    return cache[key]
+
+
 def _contracts(chains: list[ExpiryChain], as_of: date) -> tuple[np.ndarray, ...]:
     """Flattens every usable contract into parallel arrays
     (strike, open interest, iv, years to expiry, +1 call / -1 put)."""
     parts = []
     for ch in chains:
         t = _years_to(ch.expiry, as_of)
-        for df, sign in ((_clean(ch.calls), +1), (_clean(ch.puts), -1)):
+        for df, sign in ((_prepared(ch, "call", as_of), +1), (_prepared(ch, "put", as_of), -1)):
             df = _usable_iv(df)
             if len(df):
                 n = len(df)
@@ -180,7 +280,7 @@ def _by_strike(chains: list[ExpiryChain], spot: float, as_of: date) -> pd.DataFr
     rows = []
     for ch in chains:
         t = _years_to(ch.expiry, as_of)
-        for side, df, sign in (("call", _clean(ch.calls), +1), ("put", _clean(ch.puts), -1)):
+        for side, df, sign in (("call", _prepared(ch, "call", as_of), +1), ("put", _prepared(ch, "put", as_of), -1)):
             usable = _usable_iv(df)
             gex = _gex_rows(df, spot, t, sign)
             for strike, g in zip(usable["strike"].to_numpy(), gex):
@@ -205,9 +305,9 @@ def _walls(strikes: pd.DataFrame) -> tuple[float | None, float | None]:
     return call_wall, put_wall
 
 
-def _atm_iv(chain: ExpiryChain, spot: float) -> float | None:
+def _atm_iv(chain: ExpiryChain, spot: float, as_of: date) -> float | None:
     ivs = []
-    for df in (_usable_iv(_clean(chain.calls)), _usable_iv(_clean(chain.puts))):
+    for df in (_usable_iv(_prepared(chain, "call", as_of)), _usable_iv(_prepared(chain, "put", as_of))):
         if len(df):
             nearest = df.iloc[(df["strike"] - spot).abs().argsort()[:1]]
             ivs.append(float(nearest["impliedVolatility"].iloc[0]))
@@ -224,6 +324,8 @@ def analyze_chains(chains: list[ExpiryChain], spot: float, as_of: date) -> Optio
     chains = sorted([c for c in chains if c.expiry >= as_of], key=lambda c: c.expiry)
     if spot <= 0 or not chains:
         raise ValueError("need a positive spot and at least one unexpired chain")
+    for ch in chains:
+        ch.spot_for_iv = spot
 
     strikes = _by_strike(chains, spot, as_of)
     total = float(strikes["call_gex"].sum() + strikes["put_gex"].sum())
@@ -240,7 +342,7 @@ def analyze_chains(chains: list[ExpiryChain], spot: float, as_of: date) -> Optio
     else:
         regime = "positive" if total > 0 else "negative"
 
-    atm_iv = _atm_iv(nearest, spot)
+    atm_iv = _atm_iv(nearest, spot, as_of)
     expected_move_pct = round(atm_iv * math.sqrt(1 / TRADING_DAYS_PER_YEAR) * 100, 2) if atm_iv else None
 
     call_oi = int(strikes["call_oi"].sum())
