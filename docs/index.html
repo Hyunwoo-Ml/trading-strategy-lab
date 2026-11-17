@@ -141,14 +141,14 @@
 
   <section class="news-wrap" aria-labelledby="news-h">
     <h2 class="section-title" id="news-h">헤드라인</h2>
-    <p class="section-sub" id="news-sub">공식 발표(연준·노동통계국·SEC)와 Yahoo Finance 헤드라인. 제목을 누르면 원문으로 이동해요.</p>
+    <p class="section-sub" id="news-sub">공식 발표(연준·노동통계국·SEC)와 Yahoo Finance 헤드라인. 제목은 한글로 자동 번역했고, 누르면 원문 기사로 이동해요.</p>
     <div class="filters" id="news-tabs" role="group" aria-label="헤드라인 종류">
       <button type="button" data-tab="macro" aria-pressed="true">지정학·매크로</button>
       <button type="button" data-tab="company" aria-pressed="false">기업 뉴스</button>
     </div>
     <ul class="news-list" id="news-list"><li class="news-item muted">헤드라인을 불러오는 중…</li></ul>
     <button type="button" class="news-more" id="news-more" hidden>더 보기</button>
-    <p class="legend">★ 중요도(공식 발표·연준·물가·고용 관련일수록 높음) · 주식에 우호/부담/중립과 주제 태그는 제목의 단어로 자동 분류한 거라 틀릴 수 있어요. 헤드라인 원문은 영어예요.</p>
+    <p class="legend">★ 중요도(공식 발표·연준·물가·고용 관련일수록 높음) · 주식에 우호/부담/중립과 주제 태그는 제목의 단어로 자동 분류한 거라 틀릴 수 있어요. 헤드라인은 무료 번역 모델(Meta NLLB)로 자동 번역한 거라 어색할 수 있어요. 제목에 마우스를 올리면 영어 원문이 보여요.</p>
   </section>
 
   <h2 class="section-title">워치리스트</h2>
@@ -474,7 +474,7 @@
         '<span class="pill ' + imp[1] + '">' + imp[0] + '</span>' +
         (it.topics || []).slice(0, 3).map(function(t){ return '<span class="news-tag">' + esc(t) + '</span>'; }).join("") +
         (it.tickers || []).slice(0, 3).map(function(t){ return '<a class="news-tag" href="ticker.html#' + encodeURIComponent(t) + '">' + esc(t) + '</a>'; }).join("") +
-        '</div><a class="news-title" href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer">' + esc(it.title) + '</a>' +
+        '</div><a class="news-title" href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer"' + (it.title_ko ? ' title="원문: ' + esc(it.title) + '"' : '') + '>' + esc(it.title_ko || it.title) + '</a>' +
         '<div class="news-src">' + esc(it.source) + '</div></li>';
     }).join("");
     more.hidden = items.length <= news.shown;
