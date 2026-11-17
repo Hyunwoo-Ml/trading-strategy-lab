@@ -23,7 +23,7 @@ BATCH = 32
 
 # Bump when the rules below change: cached translations made under an older
 # version are ignored, so every headline is redone once with the new rules.
-VERSION = 3
+VERSION = 4
 
 LABEL = r"(Morning Bid|Market Chatter|Stock Market Today|Breakingviews|Exclusive|BREAKING|Update(?: \d+)?)"
 
@@ -35,8 +35,10 @@ PRE = (
     (r"\bPre-Bell\b", "before the opening bell"),
     (r"\bAfter-Hours\b", "after-hours trading"),
     (r"\bbps\b", "basis points"),
-    (r"\b(edges|ticks|inches) (higher|up)\b", "rises slightly"),
-    (r"\b(edges|ticks|inches) (lower|down)\b", "falls slightly"),
+    (r"(?i)\b(edges?|ticks?|inch(?:es)?) (higher|up)\b", "rises slightly"),
+    (r"(?i)\b(edges?|ticks?|inch(?:es)?) (lower|down)\b", "falls slightly"),
+    (r"(?i)\bloonie\b", "Canadian dollar"), (r"(?i)\bgreenback\b", "US dollar"),
+    (r"\b[Rr]ate [Hh]ikes?\b", "interest rate increase"), (r"\b[Rr]ate [Cc]uts?\b", "interest rate cut"),
     (r"\b(Equity|Stock|Index) Futures\b", "stock index futures"),
     (r"\bExchange-Traded Funds\b", "ETFs"),
     (r"\s*\((?:NYSE|NASDAQ|Nasdaq|NYSEARCA)?:?\s*[A-Z]{1,5}\)", ""),  # "(NOW)" read as the word "now"
@@ -61,6 +63,9 @@ POST = (
     ("주식 미래에셋", "주가지수 선물"), ("주가 지수 선물", "주가지수 선물"), ("주식 선물", "주가지수 선물"),
     ("거래소에서 거래되는 자금", "ETF"), ("이론 머스크", "일론 머스크"), ("주식 지수 선물", "주가지수 선물"),
     ("엔트로픽", "앤트로픽"), ("인트로피크", "앤트로픽"), ("주식 가격", "주가"),
+    ("기획재정 수익률", "국채 금리"), ("재무부 금리", "국채 금리"), ("석유 미래", "원유 선물"), ("원유 미래", "원유 선물"),
+    ("골드 퓨처스", "금 선물"), ("금 미래", "금 선물"), ("작은 캡", "소형주"), ("영업 통화", "실적 발표 콜"),
+    ("스톡", "주식"), ("미치광이", "캐나다 달러"),
     ("주식 시장", "증시"), ("수익 보고서", "실적 발표"), ("수익을 앞두고", "실적 발표를 앞두고"),
 )
 # Company names: the model translates them word by word ("Applied Materials"
@@ -98,15 +103,28 @@ NAMES = (
 )
 _NAME_RE = [(re.compile(r"\b" + re.escape(en) + r"\b"), ko, tick) for en, ko, tick in NAMES]
 
-MONEY = re.compile(r"\$(\d+(?:\.\d+)?)\s?(bn|billion|mn|million|m|tn|trillion)\b", re.I)
-MONEY_WORD = {"bn": "billion", "billion": "billion", "mn": "million", "million": "million", "m": "million",
-              "tn": "trillion", "trillion": "trillion"}
+# Dollar amounts are written out in Korean units before translation: the model
+# got "$3.30bn" as 3조30억 and "$400 billion" as 400억 (should be 4,000억).
+MONEY = re.compile(r"\$(\d+(?:\.\d+)?)\s?(bn|billion|mn|million|m|tn|trillion)\b"
+                   r"|\b(\d+(?:\.\d+)?) (billion|million|trillion) dollars?\b", re.I)
+SCALE = {"bn": 1e9, "billion": 1e9, "mn": 1e6, "million": 1e6, "m": 1e6, "tn": 1e12, "trillion": 1e12}
+
+
+def korean_amount(dollars: float) -> str:
+    """4e11 -> "4,000억 달러", 3.3e9 -> "33억 달러", 5.5e8 -> "5억 5,000만 달러"."""
+    jo, rest = divmod(round(dollars), 10 ** 12)
+    eok, rest = divmod(rest, 10 ** 8)
+    man = round(rest / 10 ** 4)
+    if jo:
+        parts = [f"{jo:,}조", f"{eok:,}억" if eok else ""]
+    else:
+        parts = [f"{eok:,}억" if eok else "", f"{man:,}만" if man else ""]
+    return " ".join(p for p in parts if p) + " 달러"
 
 
 def _money(m: re.Match) -> str:
-    """$3.30bn -> $3.3 billion (the model read "3.30bn" as 3 trillion 30 billion)."""
-    num = m.group(1).rstrip("0").rstrip(".") if "." in m.group(1) else m.group(1)
-    return f"${num} {MONEY_WORD[m.group(2).lower()]}"
+    num, unit = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+    return korean_amount(float(num) * SCALE[unit.lower()])
 
 
 Backend = Callable[[list[str]], list[str]]
@@ -167,6 +185,10 @@ def postprocess(text: str) -> str:
     for a, b in POST:
         out = _replace(out, a, b)
     out = re.sub(r"수익(?!률)", "실적", out)  # in headlines "earnings", not "yield"
+    # "chip stocks fall": share price, not market share
+    out = re.sub(r"(?<!시장 )점유율(?:(이|가|은|는|을|를)(?=[\s,.!?:)]|$))?",
+                 lambda m: "주가" + (PARTICLES[m.group(1)][1] if m.group(1) else ""), out)
+    out = re.sub(r"(?<=[가-힣]) (은|는|을|를|의)(?=[\s,.?!]|$)", r"\1", out)  # "관리자 는" -> "관리자는"
     return re.sub(r"\s+", " ", out).strip().rstrip(".")
 
 
