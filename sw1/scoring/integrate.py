@@ -68,9 +68,37 @@ class ScoringWeights:
 @dataclass
 class TradeThresholds:
     """Default trade-rule thresholds -- tune these once SW2 has enough
-    Daily 수익률 history to compare configurations against each other."""
+    Daily 수익률 history to compare configurations against each other.
 
-    buy_1_score: float = 0.30      # integrated score >= this -> 1차 매수
+    2026-11-17 (sizing/threshold tuning backlog, one careful change at a
+    time): buy_1_score lowered 0.30 -> 0.20 for baseline/technical_only
+    (DEFAULT_THRESHOLDS; conservative keeps its own higher 0.45 and is
+    untouched). Rationale: the 2026-09-22 RISK_FRACTION retune (see
+    sw2/sizing.py) fixed how MUCH capital each tranche commits once a
+    buy_1/buy_2 signal fires, but did nothing about HOW OFTEN a signal
+    fires in the first place -- baseline/technical_only were still only
+    entering on the same, fairly high quant/integrated-score bar as
+    before. Lowering buy_1_score lets a moderately (not just strongly)
+    bullish day open a position instead of sitting in "hold" doing
+    nothing, which should increase time-in-market and deployed capital
+    on top of the sizing fix, independent of it. buy_2_score (0.60) is
+    deliberately left UNCHANGED this round: run_daily_paper_trading.
+    process_model_for_day()/_apply_price_criteria_day() only ever treat
+    buy_2 as an ADD to an existing position (`ticker in
+    portfolio.positions`); a fresh "buy_2"-classified signal with no
+    prior buy_1 on file buys nothing at all (neither branch's condition
+    matches). Moving buy_1 and buy_2 closer together without checking
+    this would make that "stuck -- score jumped straight past buy_1 into
+    buy_2 territory on day one, so nothing is ever bought" failure mode
+    much more frequent; it needs its own careful look (and arguably its
+    own fix -- e.g. treating a first-touch buy_2 as a buy_1-sized entry)
+    before buy_2_score itself gets touched. Verify this change by
+    re-running the historical-backtest workflow and comparing
+    data/backtest/results.json's total_return/max_drawdown for baseline
+    and technical_only against the pre-change numbers recorded in
+    TASKS.md."""
+
+    buy_1_score: float = 0.20      # integrated score >= this -> 1차 매수 (2026-11-17: 0.30 -> 0.20, see above)
     buy_2_score: float = 0.60      # integrated score >= this -> 2차 매수 (add to position)
     caution_score: float = -0.30   # integrated score <= this -> 관망/비중 축소 신호
     stop_loss_pct: float = -0.07   # price return from entry <= this -> 손절
