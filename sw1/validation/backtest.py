@@ -210,3 +210,81 @@ def max_drawdown(equity_df: pd.DataFrame) -> DrawdownResult:
         peak_equity=peak_equity,
         trough_equity=trough_equity,
     )
+
+
+@dataclass
+class SharpeResult:
+    """Annualized Sharpe ratio of an equity curve -- 2026-11-17 follow-up to
+    a gap flagged after the RISK_FRACTION/buy_2 sizing changes: this
+    backtest reports total_return and max_drawdown (the single worst dip),
+    but nothing that answers "was the RIDE to that return smooth or
+    bumpy" across the whole series the way a professional risk metric
+    would. A model that doubles its return by taking on much choppier daily
+    swings is a different trade-off than one that doubles it while trading
+    just as smoothly -- max_drawdown alone can't tell those apart (it only
+    sees the single worst episode, not the day-to-day texture), and
+    total_return can't either.
+
+    Computed from DAILY simple returns of the equity curve (pct_change,
+    same way every other metric in this module treats the curve), using
+    the standard sqrt(252) trading-day annualization and a 0% risk-free
+    rate -- a deliberate simplification: this is a paper-trading research
+    comparison across this repo's own models, not a professional risk
+    system benchmarked against T-bills, so a 0% baseline is the simplest
+    convention that still makes the ratio comparable model-to-model.
+
+    `equity_df` must have a DatetimeIndex and an "equity" column (the same
+    shape every other function in this module takes). Needs at least 2
+    daily returns (3 equity observations) to compute a standard deviation
+    at all; returns all-None below that, or if the returns have exactly
+    zero variance (a perfectly flat or perfectly linear curve -- division
+    by a zero standard deviation is undefined, not infinite).
+    """
+
+    sharpe_ratio: float | None
+    annualized_return: float | None
+    annualized_volatility: float | None
+
+    def to_dict(self) -> dict:
+        return {
+            "sharpe_ratio": self.sharpe_ratio,
+            "annualized_return": self.annualized_return,
+            "annualized_volatility": self.annualized_volatility,
+        }
+
+
+def sharpe_ratio(equity_df: pd.DataFrame, periods_per_year: int = 252) -> SharpeResult:
+    """Computes the annualized Sharpe ratio of an equity curve from its
+    daily simple returns. See SharpeResult's docstring for the exact
+    convention (0% risk-free rate, sqrt(252) annualization).
+
+    A daily return of +/-inf (equity crossing exactly through 0, which
+    would make pct_change() divide by zero) is dropped rather than letting
+    it poison the mean/std -- the same "degrade gracefully, never raise"
+    stance max_drawdown already takes on a zero running peak.
+    """
+    if equity_df.empty:
+        return SharpeResult(sharpe_ratio=None, annualized_return=None, annualized_volatility=None)
+
+    df = equity_df.sort_index()
+    equity = df["equity"].astype(float)
+    daily_returns = equity.pct_change().replace([float("inf"), float("-inf")], pd.NA).dropna()
+
+    if len(daily_returns) < 2:
+        return SharpeResult(sharpe_ratio=None, annualized_return=None, annualized_volatility=None)
+
+    mean_daily = float(daily_returns.mean())
+    std_daily = float(daily_returns.std(ddof=1))
+
+    if std_daily == 0.0:
+        return SharpeResult(sharpe_ratio=None, annualized_return=None, annualized_volatility=None)
+
+    annualized_volatility = std_daily * (periods_per_year ** 0.5)
+    annualized_return = (1.0 + mean_daily) ** periods_per_year - 1.0
+    ratio = (mean_daily / std_daily) * (periods_per_year ** 0.5)
+
+    return SharpeResult(
+        sharpe_ratio=ratio,
+        annualized_return=annualized_return,
+        annualized_volatility=annualized_volatility,
+    )
