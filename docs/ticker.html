@@ -74,6 +74,11 @@
   .sig{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;white-space:nowrap;}
   .sig.strong_buy{background:var(--amber-dim);color:var(--amber);} .sig.buy{background:var(--green-dim);color:var(--green);}
   .sig.sell{background:var(--red-dim);color:var(--red);} .sig.caution{background:var(--bg-elevated);color:var(--amber);border:1px solid var(--amber-dim);}
+  .news-row{padding:8px 0;border-top:1px solid var(--border-soft);}
+  .news-row:first-child{border-top:0;padding-top:0;}
+  .news-row a{color:var(--text-primary);text-decoration:none;font-size:13px;font-weight:600;line-height:1.45;}
+  .news-row a:hover{color:var(--accent);}
+  .news-row .meta{font-size:11px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px;}
   .state-box{border:1px dashed var(--border);border-radius:var(--radius);padding:26px 18px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg-elevated);}
   .state-box.error{border-color:rgba(248,113,113,0.3);color:#e0a3a3;}
 </style>
@@ -254,6 +259,53 @@
       '<div class="note">강조된 줄은 최근(일봉 10거래일, 주봉 2주 안)에 뜬 신호예요. "평소"는 아무 날에나 샀을 때의 같은 기간 평균 수익률이고, "평소 대비"가 플러스면 그 신호가 이 종목에서 역사적으로 평균보다 나았다는 뜻이에요. 과거 성과가 미래 수익을 보장하지 않아요.</div></div>';
   }
 
+  var TONE = {positive:["긍정","good"], neutral:["중립","mid"], negative:["부정","bad"],
+              favorable:["유리","good"], unfavorable:["불리","bad"]};
+  var IMPACT = {positive:["우호","good"], negative:["부담","bad"], neutral:["중립","mid"]};
+  function tonePill(v){ var t = TONE[v]; return t ? '<span class="pill ' + t[1] + '">' + t[0] + '</span>' : '<span class="pill mid">데이터 없음</span>'; }
+  function ago(iso){
+    var m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    return m < 60 ? m + "분 전" : m < 1440 ? Math.round(m / 60) + "시간 전" : Math.round(m / 1440) + "일 전";
+  }
+
+  function newsCard(d){
+    var items = d.news || [];
+    var body = items.length ? items.slice(0, 8).map(function(it){
+      var imp = IMPACT[it.impact] || IMPACT.neutral;
+      return '<div class="news-row"><a href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer">' + esc(it.title) + '</a>' +
+        '<div class="meta"><span class="pill ' + imp[1] + '">' + imp[0] + '</span><span>' + esc(it.source) + '</span><span>' + ago(it.time) + '</span></div></div>';
+    }).join("") : '<div class="note" style="margin-top:0">최근 종목 뉴스가 없어요.</div>';
+    return '<div class="card"><h2>종목 뉴스 ' + tonePill(d.news_tone) + '</h2>' + body +
+      '<div class="note">최근 3일 헤드라인의 논조를 단어 규칙으로 합친 값이에요. 헤드라인 원문은 영어예요.</div></div>';
+  }
+
+  function analystCard(d){
+    var a = d.analyst || {}, c = a.consensus;
+    var rows = '<div class="rows">' +
+      (c ? '<div class="row">평균 목표가<b>' + num(c.mean, 2) + (c.upside_pct != null ? ' <span class="' + cls(c.upside_pct) + '">(' + signed(c.upside_pct, 1, "%") + ')</span>' : '') + '</b></div>' +
+           '<div class="row">목표가 범위<b>' + num(c.low, 2) + ' ~ ' + num(c.high, 2) + '</b></div>' : '') +
+      '<div class="row">최근 30일 목표가 상향 / 하향<b>' + (a.raises || 0) + ' / ' + (a.lowers || 0) + '</b></div>' +
+      '<div class="row">최근 30일 투자의견 상향 / 하향<b>' + (a.upgrades || 0) + ' / ' + (a.downgrades || 0) + '</b></div></div>';
+    var recent = (a.recent || []).slice(0, 5).map(function(r){
+      var tgt = r.target ? (r.prior_target ? num(r.prior_target, 0) + " → " : "") + num(r.target, 0) : "";
+      return '<div class="row"><span>' + esc(r.date.slice(5)) + ' ' + esc(r.firm || "") + ' · ' + esc(r.target_action || r.grade || "") + '</span><b>' + tgt + '</b></div>';
+    }).join("");
+    return '<div class="card"><h2>목표가 ' + tonePill(a.tone) + '</h2>' + rows +
+      (recent ? '<div class="rows" style="margin-top:10px">' + recent + '</div>' : '') +
+      '<div class="note">Yahoo Finance의 애널리스트 의견 변경 기록이에요. 최근 30일 상향이 많으면 긍정, 하향이 많으면 부정.</div></div>';
+  }
+
+  function macroCard(d){
+    var m = d.macro;
+    if (!m) return '<div class="card"><h2>매크로 ' + tonePill(null) + '</h2><div class="note" style="margin-top:0">계산할 만큼 데이터가 쌓이지 않았어요.</div></div>';
+    var rows = (m.factors || []).map(function(f){
+      return '<div class="row"><span>' + esc(f.label) + ' 20일 ' + signed(f.move, 2, f.move_unit) + '</span><b class="' + cls(f.contribution_pct) + '">' + signed(f.contribution_pct, 2, "%") + '</b></div>';
+    }).join("");
+    return '<div class="card"><h2>매크로 ' + tonePill(m.label) + '</h2><div class="rows">' + rows +
+      '<div class="row"><span>합계</span><b class="' + cls(m.total_pct) + '">' + signed(m.total_pct, 2, "%") + '</b></div></div>' +
+      '<div class="note">최근 20거래일의 금리·달러·유가 변화가 이 종목의 과거 민감도(최근 ' + m.window + '거래일 기준)로 볼 때 수익률에 얼마나 유리했는지예요. +1.5% 이상 유리, −1.5% 이하 불리. 예측이 아니에요.</div></div>';
+  }
+
   function render(d){
     document.title = "Fin-tip_lab — " + d.ticker + " 현물";
     var html = '<div class="hero"><div><h1>' + esc(d.ticker) + '</h1><div class="name">' + esc(d.name) + ' · ' + esc(d.group) + '</div></div>' +
@@ -261,6 +313,8 @@
     html += '<div class="grid two"><div class="card"><h2>1년 종가와 옵션 레벨</h2><div class="chart-wrap">' + priceChart(d) + '</div>' +
       '<div class="legend"><span style="color:#34d399">콜월</span><span style="color:#f87171">풋월</span><span style="color:#fbbf24">감마 플립</span></div></div>' + levelsCard(d) + '</div>';
     html += '<div class="grid half">' + trendCard(d) + positionCard(d) + '</div>';
+    html += '<div class="grid half">' + analystCard(d) + macroCard(d) + '</div>';
+    html += '<div class="grid">' + newsCard(d) + '</div>';
     html += gexCard(d);
     html += '<div class="grid">' + signalsCard(d) + '</div>';
     document.getElementById("content").innerHTML = html;

@@ -89,6 +89,20 @@
   .num{font-family:var(--mono);}
   .muted{color:var(--text-muted);}
 
+  /* headlines */
+  .news-wrap{margin-bottom:30px;}
+  .news-list{list-style:none;margin:6px 0 0;padding:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);}
+  .news-item{padding:11px 14px;border-top:1px solid var(--border-soft);}
+  .news-item:first-child{border-top:0;}
+  .news-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-bottom:4px;}
+  .news-stars{color:var(--amber);letter-spacing:-1px;}
+  .news-new{font-weight:800;color:#0a0d14;background:var(--accent);border-radius:4px;padding:0 5px;}
+  .news-tag{border:1px solid var(--border);border-radius:999px;padding:0 7px;color:var(--text-secondary);}
+  .news-title{display:block;color:var(--text-primary);text-decoration:none;font-size:14px;font-weight:600;line-height:1.45;}
+  .news-title:hover{color:var(--accent);}
+  .news-src{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .news-more{display:block;width:100%;margin-top:8px;font:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:8px;cursor:pointer;}
+
   .trend{display:flex;align-items:center;gap:8px;}
   .trend-track{position:relative;width:58px;height:6px;border-radius:4px;background:#1c2432;flex-shrink:0;}
   .trend-mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--border);}
@@ -120,6 +134,18 @@
   <div class="strip" id="strip" aria-label="주요 시장 지표"></div>
   <p class="strip-note" id="strip-note"></p>
   <div class="cards" id="cards"></div>
+
+  <section class="news-wrap" aria-labelledby="news-h">
+    <h2 class="section-title" id="news-h">헤드라인</h2>
+    <p class="section-sub" id="news-sub">공식 발표(연준·노동통계국·SEC)와 Yahoo Finance 헤드라인. 제목을 누르면 원문으로 이동해요.</p>
+    <div class="filters" id="news-tabs" role="group" aria-label="헤드라인 종류">
+      <button type="button" data-tab="macro" aria-pressed="true">지정학·매크로</button>
+      <button type="button" data-tab="company" aria-pressed="false">기업 뉴스</button>
+    </div>
+    <ul class="news-list" id="news-list"><li class="news-item muted">헤드라인을 불러오는 중…</li></ul>
+    <button type="button" class="news-more" id="news-more" hidden>더 보기</button>
+    <p class="legend">★ 중요도(공식 발표·연준·물가·고용 관련일수록 높음) · 주식에 우호/부담/중립과 주제 태그는 제목의 단어로 자동 분류한 거라 틀릴 수 있어요. 헤드라인 원문은 영어예요.</p>
+  </section>
 
   <h2 class="section-title">워치리스트</h2>
   <p class="section-sub">종목명을 누르면 현물 화면으로 이동해요. 열 제목을 누르면 정렬돼요.</p>
@@ -388,6 +414,50 @@
     dot.className = "status-dot" + (days > 4 ? " stale" : "");
     label.textContent = asOf + " 장 마감 기준" + (days > 4 ? " (" + days + "일 전, 갱신 지연)" : "");
   }
+
+  /* ---------- headlines ---------- */
+  var HEADLINES_URL = "https://raw.githubusercontent.com/Hyunwoo-Ml/trading-strategy-lab/data-live/headlines.json";
+  var IMPACT = {positive:["주식에 우호","good"], negative:["주식에 부담","bad"], neutral:["영향 중립","mid"]};
+  var news = {data:null, tab:"macro", shown:10};
+
+  function ago(iso){
+    var m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (m < 60) return m + "분 전";
+    if (m < 60 * 24) return Math.round(m / 60) + "시간 전";
+    return Math.round(m / 1440) + "일 전";
+  }
+
+  function renderNews(){
+    var list = document.getElementById("news-list"), more = document.getElementById("news-more");
+    if (!news.data){ list.innerHTML = '<li class="news-item muted">헤드라인을 아직 불러올 수 없어요.</li>'; more.hidden = true; return; }
+    var items = news.data[news.tab] || [];
+    if (!items.length){ list.innerHTML = '<li class="news-item muted">최근 헤드라인이 없어요.</li>'; more.hidden = true; return; }
+    list.innerHTML = items.slice(0, news.shown).map(function(it){
+      var fresh = (Date.now() - new Date(it.time).getTime()) < 3 * 3600000;
+      var imp = IMPACT[it.impact] || IMPACT.neutral;
+      var stars = "★★★".slice(0, it.importance) + "☆☆☆".slice(0, 3 - it.importance);
+      return '<li class="news-item"><div class="news-meta">' +
+        '<span class="news-stars" title="중요도 ' + it.importance + '/3">' + stars + '</span>' +
+        '<span>' + ago(it.time) + '</span>' + (fresh ? '<span class="news-new">NEW</span>' : '') +
+        '<span class="pill ' + imp[1] + '">' + imp[0] + '</span>' +
+        (it.topics || []).slice(0, 3).map(function(t){ return '<span class="news-tag">' + esc(t) + '</span>'; }).join("") +
+        (it.tickers || []).slice(0, 3).map(function(t){ return '<a class="news-tag" href="ticker.html#' + encodeURIComponent(t) + '">' + esc(t) + '</a>'; }).join("") +
+        '</div><a class="news-title" href="' + esc(it.link) + '" target="_blank" rel="noopener noreferrer">' + esc(it.title) + '</a>' +
+        '<div class="news-src">' + esc(it.source) + '</div></li>';
+    }).join("");
+    more.hidden = items.length <= news.shown;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("#news-tabs button"), function(b){
+    b.addEventListener("click", function(){
+      news.tab = b.getAttribute("data-tab"); news.shown = 10;
+      Array.prototype.forEach.call(document.querySelectorAll("#news-tabs button"), function(x){ x.setAttribute("aria-pressed", x === b); });
+      renderNews();
+    });
+  });
+  document.getElementById("news-more").addEventListener("click", function(){ news.shown += 15; renderNews(); });
+  fetch(HEADLINES_URL, {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+    .then(function(h){ news.data = h; renderNews(); });
 
   var live = fetch(LIVE_URL, {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
   Promise.all([fetchJSON("watchlist.json"), fetchJSON("macro.json").catch(function(){ return null; }), live]).then(function(res){

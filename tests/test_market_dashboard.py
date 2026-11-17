@@ -188,3 +188,40 @@ def test_unchecked_or_old_snapshots_are_not_carried_forward():
 def test_fresh_snapshots_are_marked_quality_ok():
     _, details, _ = build_all(FakeSource(), UNIVERSE, log=lambda *_: None)
     assert details["AAA"]["options"]["quality_ok"] is True and details["AAA"]["options_stale"] is False
+
+
+class RichSource(FakeSource):
+    """Also has the optional news / analyst methods."""
+
+    def news(self, ticker):
+        when = int(pd.Timestamp.now(tz="UTC").timestamp()) - 3600
+        return [{"title": f"{ticker} beats estimates", "publisher": "P", "link": f"https://y/{ticker}", "providerPublishTime": when}]
+
+    def upgrades(self, ticker):
+        if ticker == "BBB":
+            raise RuntimeError("no analyst data")
+        day = pd.Timestamp.now(tz="UTC").normalize() - pd.Timedelta(days=3)
+        return pd.DataFrame({"Firm": ["F"], "ToGrade": ["Sell"], "FromGrade": ["Hold"], "Action": ["down"],
+                             "priceTargetAction": ["Lowers"], "currentPriceTarget": [90.0], "priorPriceTarget": [120.0]},
+                            index=pd.DatetimeIndex([day], name="GradeDate"))
+
+    def price_targets(self, ticker):
+        return {"mean": 200.0, "high": 250.0, "low": 150.0, "median": 195.0}
+
+
+def test_news_targets_and_macro_reach_the_rows():
+    watch, details, _ = build_all(RichSource(), UNIVERSE, log=lambda *_: None)
+    row = {r["ticker"]: r for r in watch["rows"]}
+    assert row["AAA"]["news_tone"] == "positive" and row["AAA"]["target_tone"] == "negative"
+    assert row["BBB"]["target_tone"] is None  # its analyst call failed; the row still builds
+    assert row["AAA"]["macro_fit"] in ("favorable", "neutral", "unfavorable")
+    d = details["AAA"]
+    assert d["news"][0]["link"] == "https://y/AAA" and d["analyst"]["consensus"]["mean"] == 200.0
+    assert {f["key"] for f in d["macro"]["factors"]} == {"rates", "dollar", "oil"}
+    json.dumps(d, allow_nan=False)
+
+
+def test_plain_source_leaves_the_new_columns_empty():
+    watch, _, _ = build_all(FakeSource(), UNIVERSE, log=lambda *_: None)
+    r = watch["rows"][0]
+    assert r["news_tone"] is None and r["target_tone"] is None
