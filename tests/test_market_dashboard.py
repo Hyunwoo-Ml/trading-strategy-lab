@@ -242,3 +242,10 @@ def test_flow_block_and_yesterdays_move_check():
     assert f["move_check"]["expected_pct"] == 50.0 and f["move_check"]["within"] is True
     assert details["BBB"]["flow"]["move_check"] is None
     assert watch["rows"][0]["return_5d"] is not None
+
+
+def test_macro_has_the_fear_greed_index():
+    _, _, macro = build_all(FakeSource(), UNIVERSE, log=lambda *_: None)
+    fg = macro["fear_greed"]
+    assert 0 <= fg["score"] <= 100 and fg["label"] and len(fg["components"]) >= 5
+    json.dumps(macro, allow_nan=False)

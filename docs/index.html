@@ -50,6 +50,10 @@
   .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px;}
   .card-title{font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center;}
   .card-big{font-family:var(--mono);font-size:22px;font-weight:800;line-height:1.2;}
+  .fg-bar{position:relative;height:8px;border-radius:5px;margin:10px 0 4px;background:linear-gradient(90deg,#f87171,#fbbf24 45%,#94a3b8 50%,#34d399 70%,#22c55e);}
+  .fg-bar i{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:#e8ebf1;box-shadow:0 0 0 2px #0a0d14;transform:translateX(-50%);}
+  .fg-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);}
+  .fg-spark{width:100%;height:36px;display:block;margin-top:6px;}
   .card-rows{margin-top:8px;display:grid;gap:3px;}
   .card-row{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text-secondary);}
   .card-row b{font-family:var(--mono);color:var(--text-primary);font-weight:600;}
@@ -234,6 +238,24 @@
     var v = m.volatility || {}, r = m.rates, b = m.breadth || {}, ix = m.indices || {};
     var term = {contango:["안정 (정상 구조)","good"], flat:["평탄","mid"], backwardation:["경계 (단기 공포 우위)","bad"]}[v.term_label] || ["—","mid"];
     var cards = [];
+    var fg = m.fear_greed;
+    if (fg){
+      var FG = {extreme_fear:["극단적 공포","bad"], fear:["공포","bad"], neutral:["중립","mid"], greed:["탐욕","good"], extreme_greed:["극단적 탐욕","good"]}[fg.label] || ["—","mid"];
+      var hist = fg.history || [], spark = "";
+      if (hist.length > 1){
+        var pts = hist.map(function(h, i){ return (i / (hist.length - 1) * 200).toFixed(1) + "," + (36 - h.v / 100 * 36).toFixed(1); }).join(" ");
+        spark = '<svg class="fg-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-label="최근 ' + hist.length + '거래일 추이"><line x1="0" y1="18" x2="200" y2="18" stroke="#1f2632" stroke-dasharray="3 3"/><polyline fill="none" stroke="#22d3ee" stroke-width="1.6" points="' + pts + '"/></svg>';
+      }
+      var comps = (fg.components || []).map(function(c){
+        return '<div class="card-row" title="' + esc(c.label) + '"><span>' + esc(c.label.split(" (")[0]) + '</span><b>' + (c.score == null ? "—" : Math.round(c.score)) + '</b></div>';
+      }).join("");
+      cards.push('<div class="card"><div class="card-title">공포·탐욕 지수 (자체) <span class="pill ' + FG[1] + '">' + FG[0] + '</span></div>' +
+        '<div class="card-big">' + Math.round(fg.score) + '<span style="font-size:13px;color:var(--text-muted)"> / 100</span></div>' +
+        '<div class="fg-bar"><i style="left:' + Math.max(0, Math.min(100, fg.score)) + '%"></i></div><div class="fg-scale"><span>공포</span><span>중립</span><span>탐욕</span></div>' +
+        spark + '<div class="card-rows">' +
+        '<div class="card-row">1주 전 / 1개월 전<b>' + (fg.week_ago == null ? "—" : Math.round(fg.week_ago)) + ' / ' + (fg.month_ago == null ? "—" : Math.round(fg.month_ago)) + '</b></div>' + comps +
+        '</div><div class="card-note">각 항목을 지난 1년 안에서의 위치(0~100)로 바꿔 평균한 Fin-tip_lab 자체 지수예요. CNN 지수와는 다른 값이에요.</div></div>');
+    }
 
     cards.push('<div class="card"><div class="card-title">변동성 <span class="pill ' + term[1] + '">' + term[0] + '</span></div>' +
       '<div class="card-big">VIX ' + num(v.vix, 2) + '</div><div class="card-rows">' +

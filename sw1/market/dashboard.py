@@ -29,6 +29,7 @@ import pandas as pd
 
 from sw1.indicators.io import to_market_dates
 from sw1.market.analyst import target_summary
+from sw1.market.feargreed import breadth_series, fear_greed
 from sw1.market.flow import flow as build_flow
 from sw1.market.flow import move_check
 from sw1.market.macro_fit import FACTORS as MACRO_FACTORS
@@ -412,6 +413,21 @@ def enrich(detail: dict, source: MarketSource, factor_closes: dict, now: datetim
     return detail
 
 
+FEAR_GREED_TICKERS = ("SPY", "^VIX", "^VIX3M", "TLT", "HYG", "LQD")
+
+
+def build_fear_greed(source: MarketSource, details: dict) -> dict | None:
+    closes = {t: _close_series(source, t) for t in FEAR_GREED_TICKERS}
+    stocks = {
+        t: pd.Series([p["c"] for p in d.get("chart") or []], index=pd.to_datetime([p["d"] for p in d.get("chart") or []]))
+        for t, d in details.items() if d.get("group") != INDEX_GROUP
+    }
+    try:
+        return fear_greed(closes, breadth_series(stocks))
+    except Exception:  # noqa: BLE001 -- a missing input must not stop the dashboard
+        return None
+
+
 def build_all(source: MarketSource, universe: list[Member] | None = None, with_options: bool = True, log=print,
               previous: dict | None = None):
     """`previous`: ticker -> detail dict from the last run (for carrying
@@ -450,6 +466,7 @@ def build_all(source: MarketSource, universe: list[Member] | None = None, with_o
         "rates": build_rates(source, qqq),
         "indices": build_indices(source),
         "breadth": build_breadth(rows),
+        "fear_greed": build_fear_greed(source, details),
     }
     watchlist = {
         "generated_at": generated_at,
