@@ -74,3 +74,35 @@ def test_script_writes_json_and_refuses_when_no_quotes(tmp_path):
     out2 = tmp_path / "none.json"
     assert script.main(source=LiveSource(quotes_fail=True), out_path=out2) == 1
     assert not out2.exists()
+
+
+from sw1.market.live import build_headlines  # noqa: E402
+
+FEED = """<?xml version="1.0"?><rss version="2.0"><channel>
+<item><title>Federal Reserve issues FOMC statement</title><link>https://fed.example/a</link>
+<pubDate>Mon, 16 Nov 2026 19:00:00 GMT</pubDate></item></channel></rss>"""
+
+
+class NewsSource(LiveSource):
+    def fetch_text(self, url):
+        if "sec.gov" in url:
+            raise RuntimeError("403")
+        return FEED
+
+    def news(self, ticker):
+        return [{"title": f"{ticker} shares rally", "publisher": "P", "link": f"https://y/{ticker}",
+                 "providerPublishTime": int(NOW.timestamp()) - 600}]
+
+
+def test_headlines_split_macro_and_company_and_list_failures():
+    h = build_headlines(NewsSource(), NOW)
+    assert any(i["source"] == "연준" for i in h["macro"]) and any(i["title"] == "SPY shares rally" for i in h["macro"])
+    assert {i["tickers"][0] for i in h["company"]} >= {"NVDA", "AAPL"}
+    assert any(e.startswith("SEC") for e in h["errors"])
+    assert build_headlines(LiveSource(), NOW)["macro"] == []  # a source without news methods just gives nothing
+
+
+def test_script_writes_headlines_next_to_live(tmp_path):
+    assert script.main(source=NewsSource(), out_path=tmp_path / "live.json") == 0
+    heads = json.loads((tmp_path / "headlines.json").read_text(encoding="utf-8"))
+    assert heads["company"] and heads["macro"]
