@@ -1555,6 +1555,19 @@
             : "";
           mddHtml = '<div class="mdd-line" title="' + mddTitle + '">최대 낙폭(MDD) <span style="color:var(--red);">' + fmtPct(mdd.max_drawdown_pct) + '</span></div>';
         }
+        // 2026-11-17 follow-up: total_return/MDD alone can't say whether the
+        // ride to that return was smooth or choppy across the whole curve --
+        // see sw1/validation/backtest.py's SharpeResult docstring for the
+        // exact convention (daily returns, 0% risk-free rate, sqrt(252)
+        // annualization). Shown right next to MDD so a bigger return bought
+        // with a worse risk-adjusted ratio is visible at a glance, not just
+        // the single worst-episode number MDD already gives.
+        var sharpeHtml = "";
+        var sharpe = m.sharpe_ratio;
+        if(sharpe && sharpe.sharpe_ratio !== null && sharpe.sharpe_ratio !== undefined){
+          var sharpeCls = sharpe.sharpe_ratio >= 0 ? "var(--green)" : "var(--red)";
+          sharpeHtml = '<div class="mdd-line" title="연율화 수익률 ' + fmtPct(sharpe.annualized_return) + ' / 연율화 변동성 ' + fmtPct(sharpe.annualized_volatility) + ' (무위험수익률 0% 가정)">샤프 비율 <span style="color:' + sharpeCls + ';">' + fmtNum(sharpe.sharpe_ratio, 2) + '</span></div>';
+        }
         // 2026-10-03 follow-up to the RISK_FRACTION 2x session's "알려진
         // 한계" item (b): baseline/conservative blend quant_score with
         // news_score, but this backtest has no historical news archive so
@@ -1584,6 +1597,7 @@
           '<div class="ret ' + '" style="color:' + (retCls === "pos" ? "var(--green)" : retCls === "neg" ? "var(--red)" : "var(--text-muted)") + ';">' + fmtPct(m.total_return) + ' <span style="color:var(--text-muted); font-size:var(--fs-xs);">(3년 누적)</span></div>' +
           '<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;">거래 ' + (m.n_trades !== undefined ? m.n_trades : "—") + '건</div>' +
           mddHtml +
+          sharpeHtml +
           newsCaveatHtml +
           deltaHtml +
         '</div>';
@@ -1636,6 +1650,23 @@
           '</div>'
         : '';
 
+      // 2026-11-17: total_return/MDD로는 "최종적으로 얼마 벌었나"와 "최악의
+      // 한 번의 하락폭"만 보이고, 3년 내내 수익이 얼마나 들쭉날쭉했는지는
+      // 보이지 않음 -- 샤프 비율은 그 "굴곡"을 하나의 숫자로 요약해 모델간
+      // 상대 비교를 가능하게 해줌 (절대값 자체는 무위험수익률 0% 가정의
+      // 단순화된 수치이므로 참고용).
+      var hasSharpe = entryKeys.some(function(key){
+        var sr = allEntries[key].sharpe_ratio;
+        return sr && sr.sharpe_ratio !== null && sr.sharpe_ratio !== undefined;
+      });
+      var sharpeNoteHtml = hasSharpe
+        ? '<div class="section-sub" style="margin-top:16px;"><b style="color:var(--text-secondary);">샤프 비율이란?</b><br>' +
+            '· 수익률을 "그 수익을 얻는 과정에서 일별로 얼마나 출렁였는지"로 나눈 값입니다 -- 같은 수익률이라도 변동성이 작을수록 (분모가 작을수록) 더 높게 나옵니다.<br>' +
+            '· 무위험수익률 0%를 가정하고 일별 수익률을 연율화(√252)해 계산합니다 -- 전문 금융기관의 국채금리 차감 방식보다 단순화된 값이므로, 절대 수치보다는 이 페이지 안의 모델/벤치마크끼리 상대 비교하는 용도로 보는 것이 정확합니다.<br>' +
+            '· 일별 수익률이 2개 미만이거나(관측치 부족) 분산이 0(완전히 평평하거나 일직선인 곡선)이면 계산 자체가 정의되지 않아 표시되지 않습니다.' +
+          '</div>'
+        : '';
+
       // 2026-09-25: surface scripts/run_historical_backtest.py's
       // data_quality field (added 2026-09-23/25 -- NaN Close counting, then
       // per-ticker dates) directly on the dashboard instead of leaving it
@@ -1674,7 +1705,7 @@
           '<thead><tr>' + headerHtml + '</tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
         '</table></div>' +
-        mddNoteHtml + dataQualityHtml + notesHtml + footNote;
+        mddNoteHtml + sharpeNoteHtml + dataQualityHtml + notesHtml + footNote;
     }).catch(function(err){
       el.innerHTML = stateBox(
         "백테스트 데이터를 불러올 수 없습니다",
