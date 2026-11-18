@@ -23,7 +23,7 @@ BATCH = 32
 
 # Bump when the rules below change: cached translations made under an older
 # version are ignored, so every headline is redone once with the new rules.
-VERSION = 5
+VERSION = 6
 
 LABEL = r"(Morning Bid|Market Chatter|Stock Market Today|Breakingviews|Exclusive|BREAKING|Update(?: \d+)?)"
 
@@ -37,6 +37,7 @@ PRE = (
     (r"\bbps\b", "basis points"),
     (r"(?i)\b(edges?|ticks?|inch(?:es)?) (higher|up)\b", "rises slightly"),
     (r"(?i)\b(edges?|ticks?|inch(?:es)?) (lower|down)\b", "falls slightly"),
+    (r"(?i)\brebound(s|ed)?\b", "recover\\1"),  # was read as 재고 (inventory)
     (r"(?i)\bloonie\b", "Canadian dollar"), (r"(?i)\bgreenback\b", "US dollar"),
     (r"\b[Rr]ate [Hh]ikes?\b", "interest rate increase"), (r"\b[Rr]ate [Cc]uts?\b", "interest rate cut"),
     (r"\b(Equity|Stock|Index) Futures\b", "stock index futures"),
@@ -76,7 +77,7 @@ POST = (
 # English words (NOW, BE, MS...), which the model would translate.
 # (English names, longest first) -> (Korean name, ticker or None)
 NAMES = (
-    ("Applied Optoelectronics", "어플라이드 옵토일렉트로닉스", "AAOI"), ("Applied Materials", "어플라이드 머티리얼즈", "AMAT"),
+    ("Applied Optoelectronics", "어플라이드 옵토일렉트로닉스", "AAOI"), ("Taiwan Semiconductor", "TSMC", "TSM"), ("Applied Materials", "어플라이드 머티리얼즈", "AMAT"),
     ("Palo Alto Networks", "팔로알토 네트웍스", "PANW"), ("Constellation Energy", "컨스텔레이션 에너지", "CEG"),
     ("Bank of America", "뱅크오브아메리카", "BAC"), ("JPMorgan Chase", "JP모건", "JPM"), ("Berkshire Hathaway", "버크셔 해서웨이", "BRKB"),
     ("ON Semiconductor", "온세미", None), ("Arista Networks", "아리스타", "ANET"), ("Morgan Stanley", "모건스탠리", None),
@@ -243,7 +244,15 @@ def postprocess(text: str) -> str:
     out = re.sub(r"(?<!시장 )점유율(?:(이|가|은|는|을|를)(?=[\s,.!?:)]|$))?",
                  lambda m: "주가" + (PARTICLES[m.group(1)][1] if m.group(1) else ""), out)
     out = re.sub(r"(?<=[가-힣]) (은|는|을|를|의)(?=[\s,.?!]|$)", r"\1", out)  # "관리자 는" -> "관리자는"
+    out = re.sub(r"(\S+)(?: \1){2,}", r"\1", out)  # "오리엔탈 오리엔탈 오리엔탈 ..." -> once
     return re.sub(r"\s+", " ", out).strip().rstrip(".")
+
+
+def source_fixes(title: str, text: str) -> str:
+    """Fixes that depend on the English title."""
+    if re.search(r"(?i)\blast quarter\b", title):
+        text = re.sub(r"지난 \d분기", "지난 분기", text)  # "Last Quarter" came out as 지난 3분기 / 4분기
+    return text
 
 
 def nllb_backend() -> Backend | None:
@@ -273,7 +282,8 @@ def nllb_backend() -> Backend | None:
         for i in range(0, len(texts), BATCH):
             chunk = texts[i:i + BATCH]
             src = [["eng_Latn"] + sp.encode(t, out_type=str) + ["</s>"] for t in chunk]
-            res = model.translate_batch(src, target_prefix=[["kor_Hang"]] * len(src), beam_size=4, max_decoding_length=128)
+            res = model.translate_batch(src, target_prefix=[["kor_Hang"]] * len(src), beam_size=4, max_decoding_length=128,
+                                        no_repeat_ngram_size=3, repetition_penalty=1.2)
             out += [sp.decode(r.hypotheses[0][1:]) for r in res]
         return out
 
@@ -304,7 +314,8 @@ class Translator:
             if backend is not None:
                 try:
                     first = [prepare(t, "ko") for t in todo]
-                    out = {t: fix_amounts(postprocess(k), amounts_in(t)) for t, k in zip(todo, backend([p for p, _ in first]))}
+                    out = {t: source_fixes(t, fix_amounts(postprocess(k), amounts_in(t)))
+                           for t, k in zip(todo, backend([p for p, _ in first]))}
                     # names the model mangled: retry with tickers, then put the Korean names back
                     retry = [t for t, (_, found) in zip(todo, first)
                              if found and not _keeps_names(out[t], found) and all(tick for _, tick in found)]
@@ -313,7 +324,7 @@ class Translator:
                         for t, (_, found), k in zip(retry, second, backend([p for p, _ in second])):
                             for ko_name, tick in sorted(found, key=lambda f: -len(f[1])):
                                 k = _replace(k, tick, ko_name)
-                            k = fix_amounts(postprocess(k), amounts_in(t))
+                            k = source_fixes(t, fix_amounts(postprocess(k), amounts_in(t)))
                             if _keeps_names(k, found):
                                 out[t] = k
                     for t in todo:

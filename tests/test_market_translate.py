@@ -1,6 +1,6 @@
 """Headline translation (sw1/market/translate.py) with a fake backend --
 the real NLLB model only runs in the market workflows."""
-from sw1.market.translate import VERSION, amounts_in, fix_amounts, korean_amount, Translator, _replace, cache_from, postprocess, prepare, preprocess
+from sw1.market.translate import VERSION, source_fixes, amounts_in, fix_amounts, korean_amount, Translator, _replace, cache_from, postprocess, prepare, preprocess
 
 
 class Fake:
@@ -176,3 +176,14 @@ def test_model_amounts_are_corrected():
 
 def test_futures_never_become_mirae_asset():
     assert postprocess("금 미래에셋은 약간 상승") == "금 선물은 약간 상승"
+
+
+def test_repetition_loops_rebound_and_last_quarter():
+    assert postprocess("판매팀을 오리엔탈 오리엔탈 오리엔탈 오리엔탈 호텔에") == "판매팀을 오리엔탈 호텔에"
+    assert postprocess("매우 매우 좋다") == "매우 매우 좋다"  # a doubled word is left alone
+    assert preprocess("Crypto Stocks Rebound As Risk Appetite Returns") == "Crypto Stocks recover As Risk Appetite Returns"
+    assert preprocess("Oil rebounded after the drop") == "Oil recovered after the drop"
+    assert preprocess("Taiwan Semiconductor Stock (TSM) Looks Too Cheap") == "TSMC Stock Looks Too Cheap"
+    t = "25 Big Funds Bought Taiwan Semiconductor Last Quarter"
+    assert source_fixes(t, "25개의 큰 자금이 지난 3분기 TSMC를 샀습니다") == "25개의 큰 자금이 지난 분기 TSMC를 샀습니다"
+    assert source_fixes("TSMC Q3 results", "TSMC 지난 3분기 실적") == "TSMC 지난 3분기 실적"  # only when the title says "last quarter"
