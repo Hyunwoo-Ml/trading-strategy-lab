@@ -2,7 +2,7 @@
   "model_name": "technical_only",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 48667.097735956195,
+  "cash": 0.0,
   "positions": {
     "AMZN": {
       "ticker": "AMZN",
@@ -13,10 +13,10 @@
     },
     "TSLA": {
       "ticker": "TSLA",
-      "shares": 31.940530052437566,
-      "entry_price": 357.45001220703125,
+      "shares": 48.93410318457329,
+      "entry_price": 353.41120643270824,
       "entry_date": "2026-09-28",
-      "tranche_count": 1
+      "tranche_count": 2
     },
     "AAPL": {
       "ticker": "AAPL",
@@ -27,9 +27,30 @@
     },
     "GOOGL": {
       "ticker": "GOOGL",
-      "shares": 38.25954205216304,
-      "entry_price": 283.7200012207031,
+      "shares": 78.53783342811106,
+      "entry_price": 274.268141108835,
       "entry_date": "2026-11-16",
+      "tranche_count": 2
+    },
+    "MSFT": {
+      "ticker": "MSFT",
+      "shares": 22.053637632272356,
+      "entry_price": 484.5199890136719,
+      "entry_date": "2026-11-20",
+      "tranche_count": 1
+    },
+    "NVDA": {
+      "ticker": "NVDA",
+      "shares": 85.12250750585049,
+      "entry_price": 125.52999877929688,
+      "entry_date": "2026-11-20",
+      "tranche_count": 1
+    },
+    "META": {
+      "ticker": "META",
+      "shares": 19.05254217180506,
+      "entry_price": 560.8400268554688,
+      "entry_date": "2026-11-20",
       "tranche_count": 1
     }
   },
@@ -132,6 +153,51 @@
       "price": 283.7200012207031,
       "cash_delta": -10865.863180924165,
       "fee": 10.865863180924165
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "MSFT",
+      "action": "buy_1_from_buy_2",
+      "shares": 22.053637632272356,
+      "price": 484.5199890136719,
+      "cash_delta": -10696.12438768779,
+      "fee": 10.69612438768779
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "GOOGL",
+      "action": "buy_2",
+      "shares": 40.278291375948015,
+      "price": 265.2900085449219,
+      "cash_delta": -10696.12438768779,
+      "fee": 10.69612438768779
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "NVDA",
+      "action": "buy_1_from_buy_2",
+      "shares": 85.12250750585049,
+      "price": 125.52999877929688,
+      "cash_delta": -10696.12438768779,
+      "fee": 10.69612438768779
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "META",
+      "action": "buy_1_from_buy_2",
+      "shares": 19.05254217180506,
+      "price": 560.8400268554688,
+      "cash_delta": -10696.12438768779,
+      "fee": 10.69612438768779
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "TSLA",
+      "action": "buy_2",
+      "shares": 16.99357313213572,
+      "price": 345.82000732421875,
+      "cash_delta": -5882.600185205027,
+      "fee": 5.8826001852050265
     }
   ],
   "equity_curve": [
@@ -358,12 +424,19 @@
     {
       "date": "2026-11-19",
       "equity": 93591.08839226817
+    },
+    {
+      "date": "2026-11-20",
+      "equity": 91659.43567490156
     }
   ],
   "last_known_prices": {
-    "AMZN": 257.3699951171875,
-    "TSLA": 374.4100036621094,
-    "AAPL": 349.2099914550781,
-    "GOOGL": 272.6600036621094
+    "AMZN": 246.82000732421875,
+    "TSLA": 345.82000732421875,
+    "AAPL": 342.55999755859375,
+    "GOOGL": 265.2900085449219,
+    "MSFT": 484.5199890136719,
+    "NVDA": 125.52999877929688,
+    "META": 560.8400268554688
   }
 }

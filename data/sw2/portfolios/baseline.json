@@ -2,7 +2,7 @@
   "model_name": "baseline",
   "starting_cash": 100000.0,
   "transaction_cost_pct": 0.001,
-  "cash": 62782.93852136471,
+  "cash": NaN,
   "positions": {
     "TSLA": {
       "ticker": "TSLA",
@@ -23,6 +23,20 @@
       "shares": 40.92312719732883,
       "entry_price": 278.989990234375,
       "entry_date": "2026-11-03",
+      "tranche_count": 1
+    },
+    "NVDA": {
+      "ticker": "NVDA",
+      "shares": NaN,
+      "entry_price": 125.52999877929688,
+      "entry_date": "2026-11-20",
+      "tranche_count": 1
+    },
+    "META": {
+      "ticker": "META",
+      "shares": NaN,
+      "entry_price": 560.8400268554688,
+      "entry_date": "2026-11-20",
       "tranche_count": 1
     }
   },
@@ -89,6 +103,24 @@
       "price": 156.13999938964844,
       "cash_delta": 10544.674122227647,
       "fee": 10.555229351579227
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "NVDA",
+      "action": "buy_1",
+      "shares": NaN,
+      "price": 125.52999877929688,
+      "cash_delta": NaN,
+      "fee": NaN
+    },
+    {
+      "date": "2026-11-20",
+      "ticker": "META",
+      "action": "buy_1",
+      "shares": NaN,
+      "price": 560.8400268554688,
+      "cash_delta": NaN,
+      "fee": NaN
     }
   ],
   "equity_curve": [
@@ -315,12 +347,17 @@
     {
       "date": "2026-11-19",
       "equity": NaN
+    },
+    {
+      "date": "2026-11-20",
+      "equity": NaN
     }
   ],
   "last_known_prices": {
-    "TSLA": 374.4100036621094,
-    "MSFT": 498.29998779296875,
-    "GOOGL": 272.6600036621094,
-    "NVDA": 162.85000610351562
+    "TSLA": 345.82000732421875,
+    "MSFT": 484.5199890136719,
+    "GOOGL": 265.2900085449219,
+    "NVDA": 125.52999877929688,
+    "META": 560.8400268554688
   }
 }
