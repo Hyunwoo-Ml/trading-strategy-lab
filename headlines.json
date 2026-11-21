@@ -1,0 +1,565 @@
+{
+ "generated_at": "2026-11-21T17:24:59Z",
+ "macro": [
+  {
+   "id": "59d60666c722",
+   "time": "2026-11-21T12:50:18Z",
+   "source": "Investing.com",
+   "title": "Goldman is out with its 2027 forecast for Brent oil prices",
+   "link": "https://finance.yahoo.com/energy/articles/goldman-2027-forecast-brent-oil-125018615.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "골드만은 2027년 브렌트 석유 가격 예측을 발표했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "f50459b2bc19",
+   "time": "2026-11-21T12:00:00Z",
+   "source": "Financial Post",
+   "title": "Real-time payments, provincial policies and AI industry ups and downs: FP Video Examines",
+   "link": "https://financialpost.com/news/real-time-payments-provincial-policies-and-anthropics-ipo-fp-video-examines/",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "실시간 지불, 지방 정책 및 인공지능 산업의 상승과 하락: FP 비디오 시험",
+   "ko_v": 6
+  },
+  {
+   "id": "efc3e3dba52c",
+   "time": "2026-11-21T07:28:35Z",
+   "source": "Investing.com",
+   "title": "How are AI chip flows reshaping dollar dominance? Deutsche Bank explains",
+   "link": "https://finance.yahoo.com/technology/ai/articles/ai-chip-flows-reshaping-dollar-072835365.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI",
+    "반도체",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "인공지능 반도체 흐름은 어떻게 달러 지배력을 재구조하고 있는가?",
+   "ko_v": 6
+  },
+  {
+   "id": "5c7e4e590d7c",
+   "time": "2026-11-21T02:30:00Z",
+   "source": "TheStreet",
+   "title": "Veteran trader who nailed 2018 Bitcoin crash issues this brutal warning",
+   "link": "https://www.thestreet.com/crypto/markets/veteran-trader-who-nailed-2018-bitcoin-crash-issues-this-brutal-warning",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "크립토"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "2018년 비트코인 충돌을 저지른 베테랑 트레이더는 이 잔인한 경고를 발표했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "9d95346b267c",
+   "time": "2026-11-21T01:58:01Z",
+   "source": "Investing.com",
+   "title": "UBS flags resilient commodity investment case despite easing oil supply premium",
+   "link": "https://finance.yahoo.com/markets/commodities/articles/ubs-flags-resilient-commodity-investment-015801247.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "UBS는 석유 공급 프리미엄을 완화했음에도 불구하고 유연한 원자재 투자 사례를 표기합니다",
+   "ko_v": 6
+  },
+  {
+   "id": "aec553360f97",
+   "time": "2026-11-21T01:36:00Z",
+   "source": "Grand Forks Herald",
+   "title": "North Dakota oil numbers up again, but prices expected to level off into 2027",
+   "link": "https://www.grandforksherald.com/news/north-dakota/north-dakota-oil-numbers-up-again-but-prices-expected-to-level-off-into-2027",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "노스 다코타에서 석유가 다시 증가하고 있지만 2027년까지 가격이 평준화될 것으로 예상됩니다",
+   "ko_v": 6
+  },
+  {
+   "id": "1df84d852eaf",
+   "time": "2026-11-21T01:30:25Z",
+   "source": "Stocktwits",
+   "title": "Nasdaq 100 Ends Worst Week Since 2020, S&P 500 In Correction Territory As AI Rout Sours Sentiment — ANT, NVDA, TTWO, ZS, CRWD In Focus",
+   "link": "https://stocktwits.com/news-articles/markets/equity/nasdaq-100-ends-worst-week-since-2020-s-and-p-500-in-correction-territory-as-ai-rout-sours-sentiment-ant-nvda-ttwo-zs-crwd-in-focus/cNbm3xQR91W",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "나스닥 100는 2020 년 이후 최악의 주를 끝내고 있습니다. S&P 500은 AI 로트 소어 센티멘션, ANT, NVDA, TTWO, ZS",
+   "ko_v": 6
+  },
+  {
+   "id": "640ce7de600e",
+   "time": "2026-11-21T00:16:15Z",
+   "source": "Stocktwits",
+   "title": "The Weekly Spread: What Shaped US Treasury Yields And The Dollar This Week",
+   "link": "https://stocktwits.com/news-articles/markets/equity/the-weekly-spread-what-shaped-us-treasury-yields-and-the-dollar-this-week-1/cNbmPyOR91X",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "채권",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "주간 스프레드: 이번 주에 미국 국채 금리와 달러가 어떻게 형성되었는지",
+   "ko_v": 6
+  },
+  {
+   "id": "d0d013943ca1",
+   "time": "2026-11-21T00:00:00Z",
+   "source": "Oilprice.com",
+   "title": "Oil Prices Caught Between a Looming Glut and Middle East Turmoil",
+   "link": "https://finance.yahoo.com/energy/articles/oil-prices-caught-between-looming-000000112.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가",
+    "지정학"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "석유 가격 과 중동 위기 사이 에 잡혔습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "12ac632ecd99",
+   "time": "2026-11-20T22:56:19Z",
+   "source": "Gold Price Group",
+   "title": "Gold Takes a Beating as Hawkish Fed Sparks Worst Week in Eight Months",
+   "link": "https://finance.yahoo.com/markets/commodities/articles/gold-takes-beating-hawkish-fed-225619554.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "연준"
+   ],
+   "impact": "neutral",
+   "importance": 2,
+   "title_ko": "금은 8개월 만에 최악의 주기를 맞이했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "35bd3be5c7c7",
+   "time": "2026-11-20T22:48:00Z",
+   "source": "The Wall Street Journal",
+   "title": "WSJ Dollar Index Rises 0.42% This Week to 98.75",
+   "link": "https://www.wsj.com/finance/currencies/asian-currencies-consolidate-but-may-be-weighed-by-risk-off-sentiment-38aa30b7?siteid=yhoof2&yptr=yahoo",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "달러"
+   ],
+   "impact": "negative",
+   "importance": 2,
+   "title_ko": "WSJ 달러 지수는 이번 주 0.42% 상승하여 98.75",
+   "ko_v": 6
+  },
+  {
+   "id": "b2183854e1b0",
+   "time": "2026-11-20T20:33:18Z",
+   "source": "Barchart",
+   "title": "Dollar Weakens as T-Note Yields Plunge",
+   "link": "https://www.barchart.com/story/news/8942001/dollar-weakens-as-t-note-yields-plunge",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "채권",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "T-노트 수익률이 떨어지면서 달러가 약해진다",
+   "ko_v": 6
+  },
+  {
+   "id": "6294de9253b0",
+   "time": "2026-11-20T20:07:36Z",
+   "source": "Reuters",
+   "title": "Dollar weaker as Fed-fueled rally stalls; lower US yields help yen",
+   "link": "https://finance.yahoo.com/news/dollar-near-19-month-peak-015038270.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "연준",
+    "채권",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 3,
+   "title_ko": "미국 달러가 FED에 의해 추진되는 릴리 상점으로 약해지고, 미국의 수익률이 낮아진 것은 예인에 도움이 된다",
+   "ko_v": 6
+  },
+  {
+   "id": "e3038da8c49a",
+   "time": "2026-11-20T18:03:24Z",
+   "source": "SEC",
+   "title": "SEC Issues Proposal to Restructure the Consolidated Audit Trail",
+   "link": "https://www.sec.gov/newsroom/press-releases/2026-117-sec-issues-proposal-restructure-consolidated-audit-trail",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "SEC는 통합감사 경로를 재구성하는 제안에 관한 문제점을 제기했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "4741c2387a1a",
+   "time": "2026-11-20T17:31:58Z",
+   "source": "Trefis",
+   "title": "The Inflation Math In Five Lines",
+   "link": "https://www.trefis.com/stock/spy/articles/627085/the-inflation-math-in-five-lines/2026-11-20",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "물가"
+   ],
+   "impact": "neutral",
+   "importance": 2,
+   "title_ko": "5 줄 에서 인플레이션 수학",
+   "ko_v": 6
+  },
+  {
+   "id": "1a19eadafa17",
+   "time": "2026-11-20T14:28:28Z",
+   "source": "SEC",
+   "title": "SEC Charges Indianapolis-Based Backward Hat Capital and Its Co-Founders With $560 Million Dollar Offering Fraud and Obtains Emergency Relief",
+   "link": "https://www.sec.gov/newsroom/press-releases/2026-116-sec-charges-indianapolis-based-backward-hat-capital-its-co-founders-560-million-dollar-offering",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "미국 증권위원회는 인디애나폴리스 기반의 후진 모자 자본과 공동 창업자에게 5억6천만 달러의 사기 제공을 청구하고 긴급 구제를 얻습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "28017155e77f",
+   "time": "2026-11-20T14:00:12Z",
+   "source": "MT Newswires",
+   "title": "Exchange-Traded Funds, Equity Futures Fall Pre-Bell Friday Amid Continued AI Stock Selloff",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/exchange-traded-funds-equity-futures-140012643.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "ETF, 주식 지표 선물은 개통 벨을 앞두고 추락",
+   "ko_v": 6
+  },
+  {
+   "id": "91ecadb23e8b",
+   "time": "2026-11-19T14:39:02Z",
+   "source": "SEC",
+   "title": "SEC: Eight Entities Used Fake Crypto Asset Trading Platforms to Steal More Than $37 Million From U.S. Investors",
+   "link": "https://www.sec.gov/newsroom/press-releases/2026-115-sec-eight-entities-used-fake-crypto-asset-trading-platforms-steal-more-37-million-us-investors",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "크립토"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "SEC: 8개 법인은 가짜 암호화폐 자산 거래 플랫폼을 사용하여 미국 투자자로부터 3천7백만 달러 이상을 훔쳤다",
+   "ko_v": 6
+  }
+ ],
+ "company": [
+  {
+   "id": "4894313d0dbb",
+   "time": "2026-11-21T16:20:38Z",
+   "source": "TIKR",
+   "title": "Buy Microsoft and Amazon at More Than 70x 2028 Free Cash Flow? Here’s What Their Capex Must Return",
+   "link": "https://www.tikr.com/blog/buy-microsoft-and-amazon-at-more-than-70x-2028-free-cash-flow-heres-what-their-capex-must-return?ref=yahoofinance&tlnk=yf-261121-crqwjg7c",
+   "kind": "company",
+   "tickers": [
+    "AMZN",
+    "MSFT"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "마이크로소프트와 아마존을 70x2028 이상의 무료 현금 흐름으로 구매하세요?",
+   "ko_v": 6
+  },
+  {
+   "id": "28ed9b5f0fa2",
+   "time": "2026-11-21T16:07:00Z",
+   "source": "TheStreet",
+   "title": "Bank of America doubles down on Amazon stock ahead of 2027",
+   "link": "https://www.thestreet.com/investing/stocks/bank-of-america-doubles-down-on-amazon-stock-ahead-of-2027",
+   "kind": "company",
+   "tickers": [
+    "AMZN"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "뱅크오브아메리카는 2027년 이전에 아마존 주식을 두 배로 줄일 것입니다",
+   "ko_v": 6
+  },
+  {
+   "id": "e5709747b7c9",
+   "time": "2026-11-21T16:05:34Z",
+   "source": "TIKR",
+   "title": "Musk Calls Google’s Gemini 4 Neon “a Banger” After Its Third Zapier Record. Bad Timing for Anthropic",
+   "link": "https://www.tikr.com/blog/musk-calls-googles-gemini-4-neon-a-banger-after-its-third-zapier-record-bad-timing-for-anthropic?ref=yahoofinance&tlnk=yf-261121-j963j487",
+   "kind": "company",
+   "tickers": [
+    "GOOGL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "마스크는 구글의 쌍둥이 4 네온을 세 번째 자피어 음반 이후 \"뱅저\"라고 부릅니다",
+   "ko_v": 6
+  },
+  {
+   "id": "19f9d2fc2382",
+   "time": "2026-11-21T15:35:34Z",
+   "source": "TIKR",
+   "title": "If the AI Trade Blows Up, Meta’s Saving Grace Is That Its Social Media Business Still “Generates a Ton of Cash”",
+   "link": "https://www.tikr.com/blog/if-the-ai-trade-blows-up-metas-saving-grace-is-that-its-social-media-business-still-generates-a-ton-of-cash?ref=yahoofinance&tlnk=yf-261121-c9qw4982",
+   "kind": "company",
+   "tickers": [
+    "META"
+   ],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "인공지능 거래가 폭발할 경우 메타의 구원은 소셜 미디어 사업이 여전히 \"돈을 창출한다\"는 것입니다",
+   "ko_v": 6
+  },
+  {
+   "id": "87dbba592103",
+   "time": "2026-11-21T15:06:01Z",
+   "source": "TIKR",
+   "title": "Musk Won’t Take Stock Awards “Simply for Merging With SpaceX.” Tesla Shareholders Still Have to Vote",
+   "link": "https://www.tikr.com/blog/musk-wont-take-stock-awards-simply-for-merging-with-spacex-tesla-shareholders-still-have-to-vote?ref=yahoofinance&tlnk=yf-261121-76hc4w3h",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "마스크는 주식 상을 \"스페이스X와 합병하기 위해\" 받지 않을 것입니다. 테슬라 주주들은 여전히 투표해야 합니다",
+   "ko_v": 6
+  },
+  {
+   "id": "1ada6ae9c974",
+   "time": "2026-11-21T15:05:56Z",
+   "source": "TIKR",
+   "title": "Jim Cramer: Amazon Could Sell Its Anthropic Stake and Say “Our CapEx Is Paid For.” Does the Math Work?",
+   "link": "https://www.tikr.com/blog/jim-cramer-amazon-could-sell-its-anthropic-stake-and-say-our-capex-is-paid-for-does-the-math-work?ref=yahoofinance&tlnk=yf-261121-jx78vhmx",
+   "kind": "company",
+   "tickers": [
+    "AMZN"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "짐 크레이머: 아마존은 앤트로픽 주식을 팔고 \"우리의 CapEx는 지불된다\"라고 말할 수 있습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "0faf4e4746b5",
+   "time": "2026-11-21T14:22:35Z",
+   "source": "TIKR",
+   "title": "Palantir Just Dropped 25% in a Month. Is It Time to Sell, or Load Up?",
+   "link": "https://www.tikr.com/blog/palantir-just-dropped-25-in-a-month-is-it-time-to-sell-or-load-up?ref=yahoofinance&tlnk=yf-261121-gwq24w5f",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "팔란티어 한 달 만에 25% 떨어졌어요",
+   "ko_v": 6
+  },
+  {
+   "id": "d6a9c7eb7ae6",
+   "time": "2026-11-21T13:46:13Z",
+   "source": "TIKR",
+   "title": "Hank Paulson Has “Never Seen So Much Money Chasing One Opportunity.” That’s a Problem for Microsoft, Amazon and Alphabet",
+   "link": "https://www.tikr.com/blog/hank-paulson-has-never-seen-so-much-money-chasing-one-opportunity-thats-a-problem-for-microsoft-amazon-and-alphabet?ref=yahoofinance&tlnk=yf-261121-2ch8r4jc",
+   "kind": "company",
+   "tickers": [
+    "MSFT"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "한크 폴슨 (Hank Paulson) 은 \"이렇게 많은 돈을 기회를 쫓는 것을 본 적이 없다\". 마이크로소프트, 아마존 및 알파벳의 문제입니다",
+   "ko_v": 6
+  },
+  {
+   "id": "17729a157c81",
+   "time": "2026-11-21T11:30:00Z",
+   "source": "Stocktwits",
+   "title": "Elon Musk Calls Anthropic’s Models ‘Great Products,’ Jassy Says ‘We’re Big Believers’: Mag 7 Voices This Week",
+   "link": "https://stocktwits.com/news-articles/markets/equity/elon-musk-calls-anthropic-s-models-great-products-jassy-says-we-re-big-believers-mag-7-voices-this-week/cNbmmxHR91n",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "엘론 머스크는 앤트로픽의 모델들을 '훌륭한 제품'이라고 부르며, 자시 (Jassy) 는 \"우리는 큰 믿는 사람들\"라고 말한다",
+   "ko_v": 6
+  },
+  {
+   "id": "7d95b091c6c1",
+   "time": "2026-11-21T10:35:24Z",
+   "source": "TIKR",
+   "title": "Broadcom Backstops Up to $29 Billion of Anthropic’s Leases. Anthropic Just Gave Back Its IPO Pop",
+   "link": "https://www.tikr.com/blog/broadcom-backstops-up-to-29-billion-of-anthropics-leases-anthropic-just-gave-back-its-ipo-pop?ref=yahoofinance&tlnk=yf-261121-8x38gpvg",
+   "kind": "company",
+   "tickers": [
+    "AVGO"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "브로드컴은 앤트로픽의 290억 달러에 달하는 임대금을 지원합니다",
+   "ko_v": 6
+  },
+  {
+   "id": "b8a242757456",
+   "time": "2026-11-21T10:07:29Z",
+   "source": "TIKR",
+   "title": "TSMC Sinks 20% in a Week on Nvidia Jitters and New US Chip Curbs on China. Time to Buy?",
+   "link": "https://www.tikr.com/blog/tsmc-sinks-20-in-a-week-on-nvidia-jitters-and-new-us-chip-curbs-on-china-time-to-buy?ref=yahoofinance&tlnk=yf-261121-mwhr248c",
+   "kind": "company",
+   "tickers": [
+    "TSM"
+   ],
+   "topics": [
+    "미중",
+    "반도체"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "TSMC는 한 주 동안 엔비디아 지터와 중국에 대한 새로운 미국 반도체 제한을 20% 감소시킵니다",
+   "ko_v": 6
+  },
+  {
+   "id": "3d44592ab98e",
+   "time": "2026-11-21T06:14:00Z",
+   "source": "Stocktwits",
+   "title": "MKBHD Says He Will Honor Tesla Cybercab’s 2024 Bet, Elon Musk Says ‘Fair Enough’: ‘I Will Accept Delivery…’",
+   "link": "https://stocktwits.com/news-articles/markets/equity/mkbhd-tesla-cybercab-bet-honor-elon-musk/cNbmX1ZR911",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "MKBHD는 테슬라 사이버카브의 2024 베팅을 존중하겠다고 말했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "9558cb698ed8",
+   "time": "2026-11-21T04:00:00Z",
+   "source": "TechCrunch",
+   "title": "Startup sues Apple in India over tap-to-share contacts feature",
+   "link": "https://finance.yahoo.com/technology/articles/startup-sues-apple-india-over-040000799.html",
+   "kind": "company",
+   "tickers": [
+    "AAPL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "스타트업이 애플을 인도에서 탭-투-셰어 연락처 기능에 대해 고소했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "293183e175bd",
+   "time": "2026-11-21T00:45:41Z",
+   "source": "Stocktwits",
+   "title": "Zero To Sixty: Tesla Expands Cybercab To Dallas As Waymo Pauses Freeway Operations This Week",
+   "link": "https://stocktwits.com/news-articles/markets/equity/zero-to-sixty-tesla-expands-cybercab-to-dallas-as-waymo-pauses-freeway-operations-this-week/cNbm5YSR91g",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "0~60: 테슬라가 이번 주 고속도로 운항을 중단하는 와이모와 함께 댈러스로 사이버카를 확장",
+   "ko_v": 6
+  },
+  {
+   "id": "9f21e98e60c8",
+   "time": "2026-11-20T23:30:06Z",
+   "source": "Benzinga",
+   "title": "David Ellison Calls Elon Musk’s $1 Billion Investment ‘an Honor and a Privilege,’ Open to Future Starlink Collaboration",
+   "link": "https://finance.yahoo.com/media-advertising/articles/david-ellison-calls-elon-musk-233006805.html",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "데이비드 엘리슨은 일론 머스크의 10억 달러 투자가 '공예와 특권'이라고 불렀다. 미래 스타링크 협업에 개방",
+   "ko_v": 6
+  },
+  {
+   "id": "938d85543b07",
+   "time": "2026-11-20T13:38:33Z",
+   "source": "Trefis",
+   "title": "One Number That Makes Palantir A Buy",
+   "link": "https://www.trefis.com/stock/pltr/articles/627270/one-number-that-makes-palantir-a-buy/2026-11-20",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "팔란티어를 구매 할 수 있는 한 숫자",
+   "ko_v": 6
+  }
+ ],
+ "errors": [
+  "미 노동통계국: 403 Client Error: Forbidden for url: https://www.bls.gov/feed/bls_latest.rss"
+ ]
+}
