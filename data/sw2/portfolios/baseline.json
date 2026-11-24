@@ -25,13 +25,6 @@
       "entry_date": "2026-11-03",
       "tranche_count": 1
     },
-    "NVDA": {
-      "ticker": "NVDA",
-      "shares": NaN,
-      "entry_price": 125.52999877929688,
-      "entry_date": "2026-11-20",
-      "tranche_count": 1
-    },
     "META": {
       "ticker": "META",
       "shares": NaN,
@@ -119,6 +112,15 @@
       "action": "buy_1",
       "shares": NaN,
       "price": 560.8400268554688,
+      "cash_delta": NaN,
+      "fee": NaN
+    },
+    {
+      "date": "2026-11-23",
+      "ticker": "NVDA",
+      "action": "take_profit",
+      "shares": NaN,
+      "price": 165.0500030517578,
       "cash_delta": NaN,
       "fee": NaN
     }
@@ -351,13 +353,17 @@
     {
       "date": "2026-11-20",
       "equity": NaN
+    },
+    {
+      "date": "2026-11-23",
+      "equity": NaN
     }
   ],
   "last_known_prices": {
-    "TSLA": 345.82000732421875,
-    "MSFT": 484.5199890136719,
-    "GOOGL": 265.2900085449219,
+    "TSLA": 385.4599914550781,
+    "MSFT": 492.5,
+    "GOOGL": 282.1000061035156,
     "NVDA": 125.52999877929688,
-    "META": 560.8400268554688
+    "META": 597.5999755859375
   }
 }
