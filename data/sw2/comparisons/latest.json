@@ -1,26 +1,26 @@
 {
-  "run_date": "2026-11-23",
+  "run_date": "2026-11-24",
   "comparisons": [
     {
       "model_a": "baseline",
       "model_b": "technical_only",
       "mean_daily_return_a": -4.968944099374887e-06,
-      "mean_daily_return_b": 0.0022527186871616344,
-      "t_statistic": -0.6641614173556666,
-      "p_value": 0.5120196216337745,
+      "mean_daily_return_b": 0.0020658933722542167,
+      "t_statistic": -0.6295655645799217,
+      "p_value": 0.5339077727930001,
       "n_a": 23,
-      "n_b": 29,
-      "cohens_d": -0.16480895483697602,
-      "p_value_adjusted": 0.8406093743851983,
+      "n_b": 30,
+      "cohens_d": -0.15242866092716403,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.408295852073963,
+      "p_value_block_bootstrap": 0.3538230884557721,
       "governance": {
         "model_a": "baseline",
         "model_b": "technical_only",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -29,22 +29,22 @@
       "model_a": "baseline",
       "model_b": "conservative",
       "mean_daily_return_a": -4.968944099374887e-06,
-      "mean_daily_return_b": 0.000528441377922704,
-      "t_statistic": -0.3121493375066867,
-      "p_value": 0.7565484369466785,
+      "mean_daily_return_b": 0.0005020075285098259,
+      "t_statistic": -0.3039686628624446,
+      "p_value": 0.7626891147401584,
       "n_a": 23,
-      "n_b": 41,
-      "cohens_d": -0.06069286067220799,
-      "p_value_adjusted": 0.8406093743851983,
+      "n_b": 42,
+      "cohens_d": -0.05814118448969893,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.8065967016491754,
+      "p_value_block_bootstrap": 0.7081459270364817,
       "governance": {
         "model_a": "baseline",
         "model_b": "conservative",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -53,22 +53,22 @@
       "model_a": "baseline",
       "model_b": "price_model_1",
       "mean_daily_return_a": -4.968944099374887e-06,
-      "mean_daily_return_b": -0.0004174931425239281,
-      "t_statistic": 0.4508310819132085,
-      "p_value": 0.6555830859206457,
+      "mean_daily_return_b": -0.0004420630360977655,
+      "t_statistic": 0.4942570020799196,
+      "p_value": 0.6248478019715047,
       "n_a": 23,
-      "n_b": 29,
-      "cohens_d": 0.11187247619425313,
-      "p_value_adjusted": 0.8406093743851983,
+      "n_b": 30,
+      "cohens_d": 0.11966886188027763,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.49975012493753124,
+      "p_value_block_bootstrap": 0.46026986506746626,
       "governance": {
         "model_a": "baseline",
         "model_b": "price_model_1",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -77,22 +77,22 @@
       "model_a": "baseline",
       "model_b": "price_model_2",
       "mean_daily_return_a": -4.968944099374887e-06,
-      "mean_daily_return_b": -0.0004689298526378503,
-      "t_statistic": 0.3332402236103845,
-      "p_value": 0.7414354507859712,
+      "mean_daily_return_b": -0.0005150673612532593,
+      "t_statistic": 0.37901471817100374,
+      "p_value": 0.7074378142724044,
       "n_a": 23,
-      "n_b": 29,
-      "cohens_d": 0.08269237150506027,
-      "p_value_adjusted": 0.8406093743851983,
+      "n_b": 30,
+      "cohens_d": 0.09176620574144144,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.5907046476761619,
+      "p_value_block_bootstrap": 0.5427286356821589,
       "governance": {
         "model_a": "baseline",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -100,23 +100,23 @@
     {
       "model_a": "technical_only",
       "model_b": "conservative",
-      "mean_daily_return_a": 0.0022527186871616344,
-      "mean_daily_return_b": 0.000528441377922704,
-      "t_statistic": 0.4532030880716047,
-      "p_value": 0.6527320431097392,
-      "n_a": 29,
-      "n_b": 41,
-      "cohens_d": 0.11943982929743426,
-      "p_value_adjusted": 0.8406093743851983,
+      "mean_daily_return_a": 0.0020658933722542167,
+      "mean_daily_return_b": 0.0005020075285098259,
+      "t_statistic": 0.4240442076970313,
+      "p_value": 0.6736099012822708,
+      "n_a": 30,
+      "n_b": 42,
+      "cohens_d": 0.10978891370659248,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.3638180909545227,
+      "p_value_block_bootstrap": 0.4547726136931534,
       "governance": {
         "model_a": "technical_only",
         "model_b": "conservative",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -124,23 +124,23 @@
     {
       "model_a": "technical_only",
       "model_b": "price_model_1",
-      "mean_daily_return_a": 0.0022527186871616344,
-      "mean_daily_return_b": -0.0004174931425239281,
-      "t_statistic": 0.7585183208922093,
-      "p_value": 0.45368528958796356,
-      "n_a": 29,
-      "n_b": 29,
-      "cohens_d": 0.19919666995020477,
-      "p_value_adjusted": 0.8406093743851983,
+      "mean_daily_return_a": 0.0020658933722542167,
+      "mean_daily_return_b": -0.0004420630360977655,
+      "t_statistic": 0.7363026407609647,
+      "p_value": 0.46672216914785775,
+      "n_a": 30,
+      "n_b": 30,
+      "cohens_d": 0.19011252436238396,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.23438280859570215,
+      "p_value_block_bootstrap": 0.2303848075962019,
       "governance": {
         "model_a": "technical_only",
         "model_b": "price_model_1",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -148,23 +148,23 @@
     {
       "model_a": "technical_only",
       "model_b": "price_model_2",
-      "mean_daily_return_a": 0.0022527186871616344,
-      "mean_daily_return_b": -0.0004689298526378503,
-      "t_statistic": 0.7409131943502243,
-      "p_value": 0.46340544443184956,
-      "n_a": 29,
-      "n_b": 29,
-      "cohens_d": 0.1945733372176606,
-      "p_value_adjusted": 0.8406093743851983,
+      "mean_daily_return_a": 0.0020658933722542167,
+      "mean_daily_return_b": -0.0005150673612532593,
+      "t_statistic": 0.7262074837663669,
+      "p_value": 0.47210999938223536,
+      "n_a": 30,
+      "n_b": 30,
+      "cohens_d": 0.18750596603455547,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.21489255372313842,
+      "p_value_block_bootstrap": 0.23388305847076463,
       "governance": {
         "model_a": "technical_only",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -172,23 +172,23 @@
     {
       "model_a": "conservative",
       "model_b": "price_model_1",
-      "mean_daily_return_a": 0.000528441377922704,
-      "mean_daily_return_b": -0.0004174931425239281,
-      "t_statistic": 0.48800156442384257,
-      "p_value": 0.6273493304792339,
-      "n_a": 41,
-      "n_b": 29,
-      "cohens_d": 0.10548005900975126,
-      "p_value_adjusted": 0.8406093743851983,
+      "mean_daily_return_a": 0.0005020075285098259,
+      "mean_daily_return_b": -0.0004420630360977655,
+      "t_statistic": 0.5000918586091774,
+      "p_value": 0.6188236941452858,
+      "n_a": 42,
+      "n_b": 30,
+      "cohens_d": 0.10679223847456806,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.5062468765617192,
+      "p_value_block_bootstrap": 0.5047476261869065,
       "governance": {
         "model_a": "conservative",
         "model_b": "price_model_1",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -196,23 +196,23 @@
     {
       "model_a": "conservative",
       "model_b": "price_model_2",
-      "mean_daily_return_a": 0.000528441377922704,
-      "mean_daily_return_b": -0.0004689298526378503,
-      "t_statistic": 0.452487881018208,
-      "p_value": 0.652358818110315,
-      "n_a": 41,
-      "n_b": 29,
-      "cohens_d": 0.10310592362234498,
-      "p_value_adjusted": 0.8406093743851983,
+      "mean_daily_return_a": 0.0005020075285098259,
+      "mean_daily_return_b": -0.0005150673612532593,
+      "t_statistic": 0.47457367800117867,
+      "p_value": 0.6365704964826149,
+      "n_a": 42,
+      "n_b": 30,
+      "cohens_d": 0.10665225359631511,
+      "p_value_adjusted": 0.8474323497112872,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.48875562218890556,
+      "p_value_block_bootstrap": 0.4992503748125937,
       "governance": {
         "model_a": "conservative",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.8406 >= alpha=0.05"
+          "not statistically significant: p=0.8474 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
@@ -220,23 +220,23 @@
     {
       "model_a": "price_model_1",
       "model_b": "price_model_2",
-      "mean_daily_return_a": -0.0004174931425239281,
-      "mean_daily_return_b": -0.0004689298526378503,
-      "t_statistic": 0.030873843267835432,
-      "p_value": 0.9754971527927706,
-      "n_a": 29,
-      "n_b": 29,
-      "cohens_d": 0.00810786845633926,
-      "p_value_adjusted": 0.9754971527927706,
+      "mean_daily_return_a": -0.0004420630360977655,
+      "mean_daily_return_b": -0.0005150673612532593,
+      "t_statistic": 0.045333453698749866,
+      "p_value": 0.9640217125195696,
+      "n_a": 30,
+      "n_b": 30,
+      "cohens_d": 0.011705047413421548,
+      "p_value_adjusted": 0.9640217125195696,
       "autocorrelation_warning_a": false,
       "autocorrelation_warning_b": false,
-      "p_value_block_bootstrap": 0.9665167416291854,
+      "p_value_block_bootstrap": 0.9390304847576212,
       "governance": {
         "model_a": "price_model_1",
         "model_b": "price_model_2",
         "verdict": "hold",
         "reasons": [
-          "not statistically significant: p=0.9755 >= alpha=0.05"
+          "not statistically significant: p=0.9640 >= alpha=0.05"
         ],
         "consecutive_advantage_days_a": null
       }
