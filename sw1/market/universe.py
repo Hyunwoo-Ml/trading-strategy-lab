@@ -100,6 +100,7 @@ GROUPS: dict[str, list[tuple[str, str]]] = {
     "우주·양자": [
         ("RKLB", "Rocket Lab"),
         ("IONQ", "IonQ"),
+        ("SPCX", "SpaceX"),
     ],
 }
 
