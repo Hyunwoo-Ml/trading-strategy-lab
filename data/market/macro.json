@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-26T04:15:33+00:00",
+ "generated_at": "2026-11-27T04:20:49+00:00",
  "as_of": "2026-11-25",
  "strip": [
   {
@@ -29,53 +29,53 @@
   {
    "ticker": "DX-Y.NYB",
    "label": "달러인덱스",
-   "last": 103.814,
-   "change": 0.0,
+   "last": 103.732,
+   "change": 0.06,
    "unit": "pct",
-   "as_of": "2026-11-25"
+   "as_of": "2026-11-26"
   },
   {
    "ticker": "CL=F",
    "label": "WTI 원유",
-   "last": 84.35,
-   "change": 2.8,
+   "last": 85.74,
+   "change": 2.46,
    "unit": "pct",
-   "as_of": "2026-11-25"
+   "as_of": "2026-11-26"
   },
   {
    "ticker": "GC=F",
    "label": "금",
-   "last": 3603.1001,
-   "change": 1.16,
+   "last": 3655.8999,
+   "change": 3.4,
    "unit": "pct",
-   "as_of": "2026-11-25"
+   "as_of": "2026-11-26"
   },
   {
    "ticker": "BTC-USD",
    "label": "비트코인",
-   "last": 60887.8984,
-   "change": 1.91,
+   "last": 61369.9414,
+   "change": 1.64,
    "unit": "pct",
-   "as_of": "2026-11-25"
+   "as_of": "2026-11-26"
   },
   {
    "ticker": "^VIX",
    "label": "VIX",
-   "last": 28.29,
-   "change": 7.32,
+   "last": 26.8,
+   "change": -5.27,
    "unit": "pct",
-   "as_of": "2026-11-25"
+   "as_of": "2026-11-26"
   }
  ],
  "volatility": {
-  "vix": 28.290000915527344,
+  "vix": 26.799999237060547,
   "vix3m": 26.290000915527344,
   "vix9d": 29.610000610351562,
   "vvix": 115.37999725341797,
   "vxn": 38.529998779296875,
   "vxn_pctile_1y": 0.996,
-  "term_ratio": 1.076,
-  "term_label": "backwardation",
+  "term_ratio": 1.019,
+  "term_label": "flat",
   "qqq_realized_vol_20d": 47.78,
   "vol_premium": -9.25
  },
@@ -1629,48 +1629,44 @@
   "median_return_20d": -22.11
  },
  "fear_greed": {
-  "as_of": "2026-11-25",
-  "score": 3.5,
+  "as_of": "2026-11-26",
+  "score": 6.0,
   "label": "extreme_fear",
-  "week_ago": 8.1,
-  "month_ago": 19.3,
+  "week_ago": 12.3,
+  "month_ago": 23.4,
   "components": [
    {
     "key": "momentum",
     "label": "주가 모멘텀 (S&P 500 vs 125일 평균)",
-    "score": 2.0
+    "score": null
    },
    {
     "key": "breadth",
     "label": "시장 폭 (50일선 위 종목 비율)",
-    "score": 8.9
+    "score": null
    },
    {
     "key": "volatility",
     "label": "변동성 (VIX vs 50일 평균)",
-    "score": 2.4
+    "score": 6.0
    },
    {
     "key": "term",
     "label": "변동성 기간구조 (VIX ÷ VIX3M)",
-    "score": 1.2
+    "score": null
    },
    {
     "key": "safe_haven",
     "label": "안전자산 수요 (주식 − 장기채 20일)",
-    "score": 2.0
+    "score": null
    },
    {
     "key": "junk",
     "label": "정크본드 수요 (하이일드 − 투자등급 20일)",
-    "score": 4.8
+    "score": null
    }
   ],
   "history": [
-   {
-    "d": "2026-06-09",
-    "v": 39.6
-   },
    {
     "d": "2026-06-10",
     "v": 28.1
@@ -2146,6 +2142,10 @@
    {
     "d": "2026-11-25",
     "v": 3.5
+   },
+   {
+    "d": "2026-11-26",
+    "v": 6.0
    }
   ]
  }
