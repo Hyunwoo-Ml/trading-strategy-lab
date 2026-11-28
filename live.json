@@ -1,0 +1,90 @@
+{
+ "generated_at": "2026-11-28T10:16:10Z",
+ "strip": [
+  {
+   "ticker": "SPY",
+   "label": "S&P 500",
+   "last": 728.32,
+   "change": 1.62,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "QQQ",
+   "label": "나스닥 100",
+   "last": 650.99,
+   "change": 2.69,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "^TNX",
+   "label": "미 10년물 금리",
+   "last": 4.936,
+   "change": 8.8,
+   "unit": "bp",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "DX-Y.NYB",
+   "label": "달러인덱스",
+   "last": 104.01,
+   "change": 0.33,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "CL=F",
+   "label": "WTI 원유",
+   "last": 83.08,
+   "change": -0.72,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "GC=F",
+   "label": "금",
+   "last": 3639.6001,
+   "change": 2.94,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "BTC-USD",
+   "label": "비트코인",
+   "last": 59385.9414,
+   "change": -0.8,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  },
+  {
+   "ticker": "^VIX",
+   "label": "VIX",
+   "last": 23.81,
+   "change": -11.16,
+   "unit": "pct",
+   "as_of": "2026-11-27"
+  }
+ ],
+ "fedwatch": {
+  "meeting": "2026-12-09",
+  "current_range": "3.75–4.00%",
+  "implied_change_bp": 25.0,
+  "hold": 0.0,
+  "cut": 0,
+  "hike": 1.0,
+  "move_bp": 25,
+  "outcomes": [
+   {
+    "change_bp": 25,
+    "prob": 1.0
+   }
+  ],
+  "futures": {
+   "ZQZ26.CBT": 95.94499969482422,
+   "ZQX26.CBT": 96.12249755859375,
+   "ZQF27.CBT": 95.8550033569336
+  },
+  "effective_rate": 3.88
+ }
+}

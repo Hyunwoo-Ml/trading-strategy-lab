@@ -1,0 +1,742 @@
+{
+ "generated_at": "2026-11-28T10:16:13Z",
+ "macro": [
+  {
+   "id": "e730a260aff9",
+   "time": "2026-11-28T05:32:55Z",
+   "source": "Investing.com",
+   "title": "China’s import logistics demand falls 0.6% in January-October",
+   "link": "https://finance.yahoo.com/economy/articles/china-import-logistics-demand-falls-053255400.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "미중"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "중국의 수입 물류 수요가 1~10월에 0.6% 감소",
+   "ko_v": 6
+  },
+  {
+   "id": "640ce7de600e",
+   "time": "2026-11-27T23:52:26Z",
+   "source": "Stocktwits",
+   "title": "The Weekly Spread: What Shaped US Treasury Yields And The Dollar This Week",
+   "link": "https://stocktwits.com/news-articles/markets/equity/the-weekly-spread-what-shaped-us-treasury-yields-and-the-dollar-this-week-2/cNb6BZLR9VS",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "채권",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "주간 스프레드: 이번 주에 미국 국채 금리와 달러가 어떻게 형성되었는지",
+   "ko_v": 6
+  },
+  {
+   "id": "c13b36b56af8",
+   "time": "2026-11-27T21:29:46Z",
+   "source": "Stocktwits",
+   "title": "S&P 500, Nasdaq End Best Week In Over A Year As AI Optimism Makes Comeback — VZ, ANT, ADBE, TSLA In Focus",
+   "link": "https://stocktwits.com/news-articles/markets/equity/s-and-p-500-nasdaq-end-best-week-in-over-a-year-as-ai-optimism-makes-comeback/cNb6EtcR9VK",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "S&P 500, 나스닥 엔딩 1년 이상 최고의 주 AI 낙관주의가 복귀하면서 VZ, ANT, ADBE",
+   "ko_v": 6
+  },
+  {
+   "id": "ff78cfa41385",
+   "time": "2026-11-27T21:10:00Z",
+   "source": "The Wall Street Journal",
+   "title": "Treasury Yields Gain As U.S. Equities Rally",
+   "link": "https://www.wsj.com/finance/investing/short-term-jgb-yields-rise-on-elevated-tokyo-inflation-data-713a900b?siteid=yhoof2&yptr=yahoo",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "채권"
+   ],
+   "impact": "neutral",
+   "importance": 2,
+   "title_ko": "미국 주식 상승으로 국채 금리 증가",
+   "ko_v": 6
+  },
+  {
+   "id": "812e4645697a",
+   "time": "2026-11-27T20:47:00Z",
+   "source": "The Wall Street Journal",
+   "title": "Oil Futures Settle Lower Ahead of OPEC+ Policy Meeting",
+   "link": "https://www.wsj.com/finance/commodities-futures/oil-mixed-as-markets-track-mideast-developments-u-s-inventories-6daf3fb1?siteid=yhoof2&yptr=yahoo",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가"
+   ],
+   "impact": "neutral",
+   "importance": 2,
+   "title_ko": "OPEC+ 정책 회의에 앞서 석유 선물 수정이 낮아졌다",
+   "ko_v": 6
+  },
+  {
+   "id": "6731f23a18c5",
+   "time": "2026-11-27T20:20:00Z",
+   "source": "The Wall Street Journal",
+   "title": "Precious Metals Rally as AI Trade Revives Risk Appetite",
+   "link": "https://www.wsj.com/finance/commodities-futures/precious-metals-rally-as-ai-trade-revives-risk-appetite-86477a98?siteid=yhoof2&yptr=yahoo",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI"
+   ],
+   "impact": "positive",
+   "importance": 2,
+   "title_ko": "인공지능 무역으로 귀금속 릴레이가 위험 취향을 되살린다",
+   "ko_v": 6
+  },
+  {
+   "id": "cbd8eba873a8",
+   "time": "2026-11-27T20:12:39Z",
+   "source": "Reuters",
+   "title": "Oil notches first weekly gain in November on supply fears",
+   "link": "https://finance.yahoo.com/energy/articles/oil-track-snap-3-week-082519990.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가"
+   ],
+   "impact": "negative",
+   "importance": 2,
+   "title_ko": "11월에 석유가 수급에 대한 두려움으로 첫 주간 상승률",
+   "ko_v": 6
+  },
+  {
+   "id": "0b5acf98f3af",
+   "time": "2026-11-27T20:11:14Z",
+   "source": "Barchart",
+   "title": "Crude Prices Retreat on Possible Increase in OPEC Crude Output",
+   "link": "https://www.barchart.com/story/news/9036917/crude-prices-retreat-on-possible-increase-in-opec-crude-output",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "OPEC 원유 생산량 증가 가능성 때문에 원유 가격 하락",
+   "ko_v": 6
+  },
+  {
+   "id": "2a914a766adf",
+   "time": "2026-11-27T19:27:55Z",
+   "source": "Barchart",
+   "title": "Dollar Moves Higher With T-Note Yields",
+   "link": "https://www.barchart.com/story/news/9036638/dollar-moves-higher-with-t-note-yields",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "채권",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "T-노트 수익률으로 달러가 상승",
+   "ko_v": 6
+  },
+  {
+   "id": "e2c5ca00be07",
+   "time": "2026-11-27T19:25:33Z",
+   "source": "Reuters",
+   "title": "Dollar set for weekly gain as risk appetite returns",
+   "link": "https://finance.yahoo.com/markets/currencies/articles/dollar-lingers-near-22-month-053645025.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "달러"
+   ],
+   "impact": "negative",
+   "importance": 2,
+   "title_ko": "주간 실적을 위해 설정된 달러",
+   "ko_v": 6
+  },
+  {
+   "id": "3c2e61592119",
+   "time": "2026-11-27T17:15:07Z",
+   "source": "Benzinga",
+   "title": "I Tested More Than 100 Trading Strategies With AI. Most Of Them Failed, And The Reasons Why Were More Interesting Than The Winners",
+   "link": "https://finance.yahoo.com/markets/options/articles/tested-more-100-trading-strategies-171507159.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "저는 인공지능으로 100개 이상의 거래 전략을 테스트했습니다. 그 중 대부분은 실패했고, 이기는 것보다 흥미로운 이유는",
+   "ko_v": 6
+  },
+  {
+   "id": "cb27fdbcd183",
+   "time": "2026-11-27T15:01:00Z",
+   "source": "CryptoProwl",
+   "title": "JPMorgan Says Bitcoin ‘Capitulation’ Has Been Reached",
+   "link": "https://www.cryptoprowl.com/releases/jpmorgan-says-bitcoin-capitulation-has-been-reached-8098",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "크립토"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "JP모건은 비트코인 '회복'이 이뤄졌다고 말했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "6345c12b3f9f",
+   "time": "2026-11-27T13:16:50Z",
+   "source": "Reuters",
+   "title": "US stock selloffs trigger a new kind of dollar bounce",
+   "link": "https://finance.yahoo.com/markets/currencies/articles/us-stock-selloffs-trigger-kind-131650853.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "달러"
+   ],
+   "impact": "negative",
+   "importance": 2,
+   "title_ko": "미국 주식 급격한 하락은 새로운 종류의 달러 부흥을 촉발합니다",
+   "ko_v": 6
+  },
+  {
+   "id": "3148b7a17af6",
+   "time": "2026-11-27T12:27:15Z",
+   "source": "MT Newswires",
+   "title": "US Dollar Mixed Early Friday Ahead of Advance Trade, St. Louis GDPNow",
+   "link": "https://finance.yahoo.com/markets/currencies/articles/us-dollar-mixed-early-friday-122715199.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "미국 달러 (USD) 은 선진 무역을 앞두고 금요일에 혼합되었습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "9b239ce9899a",
+   "time": "2026-11-27T11:28:19Z",
+   "source": "MT Newswires",
+   "title": "Treasuries Fall as US Equity Futures Recover, Oil Prices Edge Higher, Commerzbank Says",
+   "link": "https://finance.yahoo.com/economy/policy/articles/treasuries-fall-us-equity-futures-112819287.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "유가",
+    "채권"
+   ],
+   "impact": "positive",
+   "importance": 1,
+   "title_ko": "미국 코스닥 지수 선물로 채무가 하락하고 석유 가격이 약간 상승",
+   "ko_v": 6
+  },
+  {
+   "id": "ee83a52d9930",
+   "time": "2026-11-27T11:04:10Z",
+   "source": "Investing.com",
+   "title": "Sterling today: Pound edges higher as risk rebound offsets Fed repricing",
+   "link": "https://finance.yahoo.com/markets/currencies/articles/sterling-today-pound-edges-higher-110410757.html",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [
+    "연준"
+   ],
+   "impact": "positive",
+   "importance": 2,
+   "title_ko": "스터링 오늘: 파운드는 리스크 회복이 페드의 재부가가치를 상쇄함에 따라 약간 상승했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "f3dbee0903ef",
+   "time": "2026-11-25T14:10:24Z",
+   "source": "SEC",
+   "title": "SEC Investor Advisory Committee to Host Dec. 3 Virtual Meeting",
+   "link": "https://www.sec.gov/newsroom/press-releases/2026-118-sec-investor-advisory-committee-host-dec-3-virtual-meeting",
+   "kind": "macro",
+   "tickers": [],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "SEC 투자자 자문위원회가 12월 3일 가상 회의를 개최한다",
+   "ko_v": 6
+  }
+ ],
+ "company": [
+  {
+   "id": "b62426bda08d",
+   "time": "2026-11-28T08:59:40Z",
+   "source": "Stocktwits",
+   "title": "Gene Munster Admits Focusing On AI Fundamentals Was A Mistake, But Believes Investors Buying NVDA Stock Now Could Be Rewarded",
+   "link": "https://stocktwits.com/news-articles/markets/equity/gene-munster-ai-fundamentals-mistake-nvda-stock-rewarded/cNRRuDVR9Vy",
+   "kind": "company",
+   "tickers": [
+    "NVDA"
+   ],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "진 머스터는 인공지능 기본에 집중하는 것이 실수였다고 인정하지만 NVDA 주식을 구매한 투자자들은 이제 보상을 받을 수 있다고 믿습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "222c7d52a136",
+   "time": "2026-11-28T07:48:29Z",
+   "source": "Stocktwits",
+   "title": "Elon Musk Says GOOGL Has ‘Expressed Interest’ In Renting More Compute From SPCX",
+   "link": "https://stocktwits.com/news-articles/markets/equity/elon-musk-google-expressed-interest-renting-more-compute-spacex/cNRRtGhR9VH",
+   "kind": "company",
+   "tickers": [
+    "GOOGL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "엘론 머스크는 GOOGL가 SPCX에서 더 많은 컴퓨터를 임대하는 데 '표현된 관심'을 가지고 있다고 말했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "164fa40e1d2b",
+   "time": "2026-11-28T03:03:00Z",
+   "source": "TheStreet",
+   "title": "Amazon takes its car store abroad for the first time in 2027",
+   "link": "https://www.thestreet.com/automotive/amazon-takes-its-car-store-abroad-britain-uk-for-first-time-2027",
+   "kind": "company",
+   "tickers": [
+    "AMZN"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "아마존은 2027년에 처음으로 해외에 자동차 매장을 운영한다",
+   "ko_v": 6
+  },
+  {
+   "id": "e0cfb1d6d192",
+   "time": "2026-11-28T01:37:00Z",
+   "source": "TheStreet",
+   "title": "Palantir's new military AI deal has a surprising catch",
+   "link": "https://www.thestreet.com/investing/palantirs-new-military-ai-deal-has-a-surprising-catch",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [
+    "AI"
+   ],
+   "impact": "positive",
+   "importance": 1,
+   "title_ko": "팔란티어의 새로운 군사 인공지능 거래는 놀라운 포획을 가지고 있습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "d4265e7dba76",
+   "time": "2026-11-28T00:33:22Z",
+   "source": "Investing.com",
+   "title": "2027 smartphone market outlook: Apple to outperform as shipments fall 5%",
+   "link": "https://finance.yahoo.com/technology/articles/2027-smartphone-market-outlook-apple-003322633.html",
+   "kind": "company",
+   "tickers": [
+    "AAPL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "2027년 스마트폰 시장 전망: 배송 5% 감소로 애플이 우위를 점할",
+   "ko_v": 6
+  },
+  {
+   "id": "dd0cd24a971a",
+   "time": "2026-11-28T00:12:27Z",
+   "source": "Stocktwits",
+   "title": "Zero To Sixty: Tesla Cybercab Fleet Tops 1,000 In Texas, Lucid Starts Fully Driverless Tests And Chinese EV Maker Posts Stronger Margins",
+   "link": "https://stocktwits.com/news-articles/markets/equity/zero-to-sixty-tesla-cybercab-fleet-tops-1-000-in-texas-lucid-starts-fully-driverless-tests-and-chinese-ev-maker-posts-stronger-margins/cNRRKv9R9Vl",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [
+    "미중"
+   ],
+   "impact": "positive",
+   "importance": 1,
+   "title_ko": "0~60: 테슬라 사이버카브 함대는 텍사스에서 1,000개에 달하고, 루시드는 운전자 없는 테스트를 시작했고 중국 전기차 제조업체는 더 강력한 지점을 올렸다",
+   "ko_v": 6
+  },
+  {
+   "id": "e3674b40115f",
+   "time": "2026-11-27T23:23:55Z",
+   "source": "TIKR",
+   "title": "Plot Twist: Nvidia’s Vera Rubin Gets 2-6.5x GB300’s Tokens per Dollar. Amazon’s Trainium Edge Was Against the Old Chip",
+   "link": "https://www.tikr.com/blog/plot-twist-nvidias-vera-rubin-gets-2-6-5x-gb300s-tokens-per-dollar-amazons-trainium-edge-was-against-the-old-chip?ref=yahoofinance&tlnk=yf-261127-2mxwqf36",
+   "kind": "company",
+   "tickers": [
+    "AMZN"
+   ],
+   "topics": [
+    "반도체",
+    "달러"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "엔비디아의 베라 루빈은 달러당 2.5x GB300 토큰을 얻습니다. 아마존의 트레이니엄 엣지는 구형반도체에 대항했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "e81cc6f70fd3",
+   "time": "2026-11-27T23:23:53Z",
+   "source": "TipRanks",
+   "title": "Meta’s (META) Muse Could Unlock a New Revenue Stream",
+   "link": "https://finance.yahoo.com/technology/ai/articles/meta-meta-muse-could-unlock-232353308.html",
+   "kind": "company",
+   "tickers": [
+    "META"
+   ],
+   "topics": [
+    "실적"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "메타의 뮤즈는 새로운 실적을 창출할 수 있습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "a780c413523a",
+   "time": "2026-11-27T23:22:41Z",
+   "source": "TIKR",
+   "title": "Amazon Hits Its Lowest P/E Ever. Jim Cramer Predicts It Will “Prove to Be the Winner”",
+   "link": "https://www.tikr.com/blog/amazon-hits-its-lowest-p-e-ever-jim-cramer-predicts-it-will-prove-to-be-the-winner?ref=yahoofinance&tlnk=yf-261127-6f785p32",
+   "kind": "company",
+   "tickers": [
+    "AMZN"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "아마존은 역대 최하위 P/E를 기록 했습니다. 짐 크레이머는 \"승을 거둘 것\"이라고 예측했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "bb88af65d46b",
+   "time": "2026-11-27T23:21:23Z",
+   "source": "TIKR",
+   "title": "Warning for Alphabet Investors: MScience Data Show Q4 Search Revenue Tracking Below Consensus",
+   "link": "https://www.tikr.com/blog/warning-for-alphabet-investors-mscience-data-show-q4-search-revenue-tracking-below-consensus?ref=yahoofinance&tlnk=yf-261127-64qqmx2j",
+   "kind": "company",
+   "tickers": [
+    "GOOGL"
+   ],
+   "topics": [
+    "실적"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "알파벳 투자자들에게 경고: MScience 데이터 쇼 Q4 검색 실적 추적 합의 아래",
+   "ko_v": 6
+  },
+  {
+   "id": "79c6bba8cc2c",
+   "time": "2026-11-27T21:38:00Z",
+   "source": "TipRanks",
+   "title": "Palantir Stock (PLTR) Has No Room for Error at This Valuation",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/palantir-stock-pltr-no-room-213800829.html",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "팔란티어 주식은 이 평가에서 실수할 여지가 없습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "c13b36b56af8",
+   "time": "2026-11-27T21:29:46Z",
+   "source": "Stocktwits",
+   "title": "S&P 500, Nasdaq End Best Week In Over A Year As AI Optimism Makes Comeback — VZ, ANT, ADBE, TSLA In Focus",
+   "link": "https://stocktwits.com/news-articles/markets/equity/s-and-p-500-nasdaq-end-best-week-in-over-a-year-as-ai-optimism-makes-comeback/cNb6EtcR9VK",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [
+    "AI"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "S&P 500, 나스닥 엔딩 1년 이상 최고의 주 AI 낙관주의가 복귀하면서 VZ, ANT, ADBE",
+   "ko_v": 6
+  },
+  {
+   "id": "03ee18561568",
+   "time": "2026-11-27T20:41:29Z",
+   "source": "Investing.com",
+   "title": "AI Chip Stocks Swung Wildly—While Warren Buffett’s Apple Climbed 26%",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/ai-chip-stocks-swung-wildly-204129003.html",
+   "kind": "company",
+   "tickers": [
+    "AAPL"
+   ],
+   "topics": [
+    "AI",
+    "반도체"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "인공지능 반도체주는 급격히 상승했고, 워런 버핏의 애플은 26% 증가했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "8eb7d6cc2138",
+   "time": "2026-11-27T20:25:13Z",
+   "source": "Trefis",
+   "title": "Alphabet Down Nearly 20%: What Would Its CEO Say?",
+   "link": "https://www.trefis.com/stock/googl/articles/629198/alphabet-down-nearly-20-what-would-its-ceo-say/2026-11-27",
+   "kind": "company",
+   "tickers": [
+    "GOOGL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "알파벳 약 20% 감소: CEO가 뭐라고 말했을까요?",
+   "ko_v": 6
+  },
+  {
+   "id": "497faa8ab046",
+   "time": "2026-11-27T20:15:58Z",
+   "source": "Trefis",
+   "title": "Can Meta's Business Pay For Its Spending?",
+   "link": "https://www.trefis.com/stock/meta/articles/629199/can-meta-s-business-pay-for-its-spending/2026-11-27",
+   "kind": "company",
+   "tickers": [
+    "META"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "메타의 사업은 지출을 지불 할 수 있습니까?",
+   "ko_v": 6
+  },
+  {
+   "id": "d12e33cf1296",
+   "time": "2026-11-27T20:13:53Z",
+   "source": "Stocktwits",
+   "title": "OpenAI Reportedly Fires Back At Apple Over Trade Secrets And Hardware Suppliers",
+   "link": "https://stocktwits.com/news-articles/markets/equity/open-ai-reportedly-fires-back-at-apple-over-trade-secrets-and-hardware-suppliers/cNb65s2R9Vi",
+   "kind": "company",
+   "tickers": [
+    "AAPL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "오픈AI는 애플에서 무역 비밀 및 하드웨어 공급업체에 대해 다시 화재를 일으킨 것으로 알려졌습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "279f0dbb6d55",
+   "time": "2026-11-27T19:59:21Z",
+   "source": "Trefis",
+   "title": "Should You Pick Palantir Over Its Big Tech Rivals?",
+   "link": "https://www.trefis.com/stock/pltr/articles/629344/should-you-pick-palantir-over-its-big-tech-rivals/2026-11-27",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "팔란티어를 기술 경쟁자들보다 선택해야 할까요?",
+   "ko_v": 6
+  },
+  {
+   "id": "8af292d622f2",
+   "time": "2026-11-27T19:55:54Z",
+   "source": "Stocktwits",
+   "title": "TSLA Stock Clocks Best Week In 18 Months: Tesla Reportedly Eyes Buying German Toolmaker Amid Cybercab, Optimus Scaling Plans",
+   "link": "https://stocktwits.com/news-articles/markets/equity/tsla-stock-clocks-best-week-in-18-months-tesla-reportedly-eyes-buying-german-toolmaker-amid-cybercab-optimus-scaling-plans/cNb6PBlR9VL",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "TSLA 주식 시계가 18개월 만에 가장 좋은 일: 테슬라",
+   "ko_v": 6
+  },
+  {
+   "id": "541df515dfaa",
+   "time": "2026-11-27T19:54:29Z",
+   "source": "Investor's Business Daily",
+   "title": "Dow Jones Futures: Stock Market Makes Bullish Move, Tesla Leads 7 New Buys; Nvidia's Jensen Huang Heads To Capitol Hill",
+   "link": "https://www.investors.com/market-trend/stock-market-today/dow-jones-futures-bullish-move-tesla-new-buys-nvidia-ceo-jensen-huang-congress/?src=A00220&yptr=yahoo",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "positive",
+   "importance": 1,
+   "title_ko": "다우 존스 선물: 증권 시장이 급성장, 테슬라가 7개의 새로운 구매를 이끌고 엔비디아의 젠센 허앙은 캐피톨힐로 향한다",
+   "ko_v": 6
+  },
+  {
+   "id": "24952eaf75fb",
+   "time": "2026-11-27T18:41:36Z",
+   "source": "Stocktwits",
+   "title": "PLTR Stock Sees Best Week In 4 Months: Palantir Bags Reported $300M Defense Deal With Poland",
+   "link": "https://stocktwits.com/news-articles/markets/equity/pltr-stock-sees-best-week-in-4-months-palantir-bags-reported-300-m-defense-deal-with-poland/cNb6TaWR9Vg",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [],
+   "impact": "positive",
+   "importance": 1,
+   "title_ko": "PLTR 주식은 4개월 만에 가장 좋은 주에 성공했다: 팔란티어 가방은 폴란드와 3억 달러 규모의 국방협정을 맺었다",
+   "ko_v": 6
+  },
+  {
+   "id": "cca73eb8a03b",
+   "time": "2026-11-27T18:30:03Z",
+   "source": "Barchart",
+   "title": "‘Superfan’ Elon Musk Says ‘China Is Cool’ as Tesla Boosts Production in Shanghai: ‘The More the US and China Cooperate, the Better Off Both Will Be’",
+   "link": "https://www.barchart.com/story/news/9036157/superfan-elon-musk-says-china-is-cool-as-tesla-boosts-production-in-shanghai-the-more-the-us-and-china-cooperate-the-better-off-both-will-be",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [
+    "미중"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "'슈퍼팬' 엘론 머스크는 테슬라가 상하이에서 생산을 강화하면서 \"중국과 미국이 협조할수록 더 좋은 상황이 될 것\"이라고 말했다",
+   "ko_v": 6
+  },
+  {
+   "id": "405b08067f4f",
+   "time": "2026-11-27T18:29:33Z",
+   "source": "Moby",
+   "title": "Peter Thiel Takes $122M of Palantir Off the Market",
+   "link": "https://app.moby.co/home/news/news-peter-thiel-takes-122m-of-palantir-off-the-market?utm_source=yahoo_finance&utm_medium=rss",
+   "kind": "company",
+   "tickers": [
+    "PLTR"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "피터 티엘은 1억 2,200만 달러의 팔란티어",
+   "ko_v": 6
+  },
+  {
+   "id": "42aa97d526c9",
+   "time": "2026-11-27T18:28:19Z",
+   "source": "TIKR",
+   "title": "Stanley Druckenmiller, David Tepper and 5 Other Famous Investors Own Taiwan Semiconductor. Here’s Who Sold Recently",
+   "link": "https://www.tikr.com/blog/stanley-druckenmiller-david-tepper-and-5-other-famous-investors-own-taiwan-semiconductor-heres-who-sold-recently?ref=yahoofinance&tlnk=yf-261127-678h6x89",
+   "kind": "company",
+   "tickers": [
+    "TSM"
+   ],
+   "topics": [
+    "지정학",
+    "반도체"
+   ],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "스탠리 드루켄밀러, 데이비드 테퍼 그리고 5명의 유명 투자자들이 TSMC를 소유하고 있습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "de7422c95ab3",
+   "time": "2026-11-27T18:11:54Z",
+   "source": "CRE Daily",
+   "title": "Tesla Takes 1.2M SF at Houston’s Cedar Port Industrial Park",
+   "link": "https://www.credaily.com/briefs/tesla-takes-1-2m-sf-at-houstons-cedar-port-industrial-park/",
+   "kind": "company",
+   "tickers": [
+    "TSLA"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "테슬라는 휴스턴의 시더 포트 산업공원에서 1.2m SF를 걸고",
+   "ko_v": 6
+  },
+  {
+   "id": "2e13a087dd73",
+   "time": "2026-11-27T17:17:00Z",
+   "source": "TheStreet",
+   "title": "New $799 smart glasses challenge Apple, but with a major catch",
+   "link": "https://www.thestreet.com/technology/new-orrorin-799-smart-glasses-challenge-apple-but-dont-offer-all-features",
+   "kind": "company",
+   "tickers": [
+    "AAPL"
+   ],
+   "topics": [],
+   "impact": "neutral",
+   "importance": 1,
+   "title_ko": "새로운 799달러의 스마트 안경은 애플에 도전하지만 큰 잡음으로",
+   "ko_v": 6
+  },
+  {
+   "id": "883ec5a9cad9",
+   "time": "2026-11-27T15:12:18Z",
+   "source": "Yahoo Finance",
+   "title": "Stocks snap from a $6 trillion washout to a $3.5 trillion surge as Nvidia, Micron, and SpaceX bounce back",
+   "link": "https://finance.yahoo.com/markets/article/stocks-snap-from-a-6-trillion-washout-to-a-3-trillion-surge-as-nvidia-micron-and-spacex-bounce-back-151218930.html",
+   "kind": "company",
+   "tickers": [
+    "NVDA"
+   ],
+   "topics": [],
+   "impact": "positive",
+   "importance": 1,
+   "title_ko": "엔비디아, 마이크론 및 스페이스X가 다시 상승하면서 주가가 6조 달러의 파손에서 3조 5,000억 달러로 급락했습니다",
+   "ko_v": 6
+  },
+  {
+   "id": "4b9dcc36a374",
+   "time": "2026-11-27T13:40:36Z",
+   "source": "TIKR",
+   "title": "Trump’s New Tariffs Hit Taiwan but Spare Its Chips. That’s Good News for TSMC and Apple",
+   "link": "https://www.tikr.com/blog/trumps-new-tariffs-hit-taiwan-but-spare-its-chips-thats-good-news-for-tsmc-and-apple?ref=yahoofinance&tlnk=yf-261127-wff3mmwm",
+   "kind": "company",
+   "tickers": [
+    "TSM"
+   ],
+   "topics": [
+    "관세",
+    "지정학",
+    "반도체"
+   ],
+   "impact": "negative",
+   "importance": 1,
+   "title_ko": "트럼프의 새로운 관세는 타이완에 타격을 주지만 반도체를 절약합니다",
+   "ko_v": 6
+  }
+ ],
+ "errors": [
+  "미 노동통계국: 403 Client Error: Forbidden for url: https://www.bls.gov/feed/bls_latest.rss"
+ ]
+}
